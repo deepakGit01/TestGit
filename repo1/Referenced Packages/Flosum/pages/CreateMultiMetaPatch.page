@@ -1,0 +1,204 @@
+<apex:page standardController="Flosum__Patch__c" extensions="Flosum.CreateMultiMetaPatchController" sidebar="false">
+<style>
+div .pagination {
+	text-align: center;
+}
+td .dataCell label {
+font-weight: normal;
+}
+span.paginationEle {
+margin-left: 4px;
+}
+.pagination input {
+margin-left: 4px;
+} 
+body .searchRow {
+  margin-left: 1%;
+}
+body .searchRowLast {
+  margin-left: .5%;
+}
+</style>
+	<c:Wait />	
+	<apex:form id="form"> 
+		<apex:pagemessages id="msg"/>
+		<apex:pageBlock title="Create Patch" id="pBlock"> 
+			<apex:pageBlockButtons >
+		        <apex:commandButton value="Refresh List" action="{!listRecordType}" rendered="{!if(organisationId !=null && snapshotId !=null && metaItemList.size>0,true,false)}" oncomplete="hide();" rerender="form" onclick="show();"/>
+		        <apex:commandButton value="Add To Patch" action="{!performSavePatch}" rendered="{!if(availableMetatypes.size>0,true,false)}" oncomplete="hide();" rerender="form" onclick="show();"/>
+		        
+		        <apex:commandButton value="Refresh List" action="{!listSnapShot}" rendered="{!if(organisationId == 'repository' && compMetatypes.size>0,true,false)}" oncomplete="hide();" rerender="form" onclick="show();"/>
+		        <apex:commandButton value="Add To Patch" action="{!componentSavePatch}" rendered="{!if(organisationId == 'repository' && compMetatypes.size>0,true,false)}" oncomplete="hide();" rerender="form" onclick="show();"/>
+			</apex:pageBlockButtons>
+			
+			<apex:pageBlockSection columns="1">
+				<apex:pageBlockSectionItem >
+				 	<apex:outputLabel value="Organization :" />
+					 <apex:selectList label="Organization :" size="1" value="{!organisationId}" >
+		                <apex:selectOptions value="{!organisationNames}" />
+		                <apex:actionSupport event="onchange"  reRender="pBlock,msg" action="{!listSnapShot}" oncomplete="hide();" onsubmit="show();"/> 
+		            </apex:selectList>
+	            </apex:pageBlockSectionItem>
+	            <apex:pageBlockSectionItem rendered="{!if(organisationId != '' && organisationId != 'repository',true,false)}">
+	            	<apex:outputLabel value="Snapshot :" />
+		            <apex:selectList label="Snapshot :" size="1" value="{!snapshotId}" id="snaplist">
+		                <apex:selectOptions value="{!snapshotNames}"/>
+		                <apex:actionSupport event="onchange" action="{!listRecordType}"  reRender="pBlock,msg" oncomplete="hide();" onsubmit="show();"/> 
+		            </apex:selectList> 
+		        </apex:pageBlockSectionItem>
+		        <apex:pageBlockSectionItem rendered="{!if(availableMetatypes.size>0 || organisationId == 'repository',true,false)}">
+	            	<apex:outputLabel value="Patch Name :" />
+	            	<apex:InputText value="{!patchName}"/>
+	            </apex:pageBlockSectionItem> 
+		        <apex:pageBlockSectionItem rendered="{!If(availableMetatypes.size>0 || (compMetatypes.size>0 && organisationId == 'repository'),true,false)}">
+					<apex:outputPanel >
+						<apex:outputLabel value="{!If(compMetatypes.size>0 && organisationId == 'repository','Component Types :','Metadata types :')}"/>      
+						<apex:selectList value="{!selectedMetadataType}" multiselect="false" size="1" label="Metadata types :" rendered="{!if(availableMetatypes.size>0,true,false)}" styleClass="searchRow">
+			             	<apex:selectoptions value="{!availableMetatypes}" /> 
+			             	<apex:actionSupport event="onchange" action="{!fillMetadataItems}"  reRender="pBlock,msg" oncomplete="hide();" onsubmit="show();"/>
+			            </apex:selectList>
+			            <apex:selectList value="{!selectedComponentType}" multiselect="false" size="1" label="Component Types :" rendered="{!if(compMetatypes.size>0 && organisationId == 'repository' ,true,false)}" styleClass="searchRow">
+			             	<apex:selectoptions value="{!compMetatypes}" /> 
+			             	<apex:actionSupport event="onchange" action="{!fillComponentItems}"  reRender="pBlock,msg" oncomplete="hide();" onsubmit="show();"/>    
+			            </apex:selectList>
+			            <apex:inputText value="{!searchText}" styleClass="searchRow"/>   
+			            <apex:commandButton action="{!searchComponent}" value="Search" onClick="show();" onComplete="hide();" reRender="pBlock,msg" styleClass="searchRow" />
+			            <apex:commandButton action="{!hideSearch}" value="Hide Search" onClick="show();" onComplete="hide();" reRender="pBlock,msg" rendered="{!if(IsSearch,true,false)}" styleClass="searchRowLast" />
+		            </apex:outputPanel>   
+	            </apex:pageBlockSectionItem>      	            
+			</apex:pageBlockSection>
+			<apex:pageBlockSection id="cb" columns="1">
+				<apex:outputpanel rendered="{!if(organisationId == 'repository',true,false)}">
+					<apex:actionFunction name="refreshVersion" action="{!refreshLastModified}" reRender="cb,msg" oncomplete="hide();">
+	             		<apex:param assignTo="{!componentHistoryId}" value="" name="componentHistoryId"/>
+	             	</apex:actionFunction>
+					<apex:pageBlockTable value="{!componentList}" var="mi" rendered="{!if(componentList.size>0,true,false)}">
+						<apex:column headervalue="Select">
+							<apex:facet name="header"><input type="checkbox" onclick="checkItemAll(this);" styleclass="sli" >&nbsp;</input></apex:facet>
+							<apex:inputCheckbox value="{!mi.checkStatus}" styleclass="sli"/>
+						</apex:column>
+						<apex:column >
+							<apex:facet name="header">
+								<apex:commandLink value="{!If(OrderByFieldName == 'Component_Type__c',If(Order == 'ASC','Component Type ▲','Component Type ▼') ,'Component Type')}" action="{!orderByComponents}" onClick="show();" onComplete="hide();" reRender="cb,msg">
+									<apex:param assignTo="{!TempOrderByFieldName}" value="Component_Type__c" name="OrderByFieldName"/>
+								</apex:commandLink>
+							</apex:facet>
+							<apex:outputLabel value="{!mi.componentType}" />
+						</apex:column>
+						<apex:column >
+							<apex:facet name="header">
+								<apex:commandLink value="{!If(OrderByFieldName == 'Component_Name__c',If(Order == 'ASC','Component Name ▲','Component Name ▼') ,'Component Name')}" action="{!orderByComponents}" onClick="show();" onComplete="hide();" reRender="cb,msg">
+									<apex:param assignTo="{!TempOrderByFieldName}" value="Component_Name__c" name="OrderByFieldName"/>
+								</apex:commandLink>
+							</apex:facet>
+							<apex:outputLabel value="{!mi.componentName}" />
+						</apex:column>
+						<apex:column >
+							<apex:facet name="header">
+								<apex:commandLink value="{!If(OrderByFieldName == 'Version__c',If(Order == 'ASC','Version ▲','Version ▼') ,'Version')}" action="{!orderByComponents}" onClick="show();" onComplete="hide();" reRender="cb,msg">
+									<apex:param assignTo="{!TempOrderByFieldName}" value="Version__c" name="OrderByFieldName"/>
+								</apex:commandLink>
+							</apex:facet>
+							<apex:selectList value="{!mi.selectedHistoryId}" multiselect="false" size="1" onchange="refreshVersion(this.value);show();">
+				             	<apex:selectoptions value="{!mi.historyOptions}"/> 
+				            </apex:selectList>
+			            </apex:column>
+			        	<apex:column >
+			        		<apex:facet name="header">
+								<apex:commandLink value="{!If(OrderByFieldName == 'LastModifiedDate',If(Order == 'ASC','Last Modified Date ▲','Last Modified Date ▼') ,'Last Modified Date')}" action="{!orderByComponents}" onClick="show();" onComplete="hide();" reRender="cb,msg">
+									<apex:param assignTo="{!TempOrderByFieldName}" value="LastModifiedDate" name="OrderByFieldName"/>
+								</apex:commandLink>
+							</apex:facet>
+			        		<apex:outputLabel value="{!mi.LastModifiedDate}" />
+			        	</apex:column>
+			        	<apex:column >
+			        		<apex:facet name="header">
+								<apex:commandLink value="{!If(OrderByFieldName == 'lastModifiedBy.Name',If(Order == 'ASC','Last Modified By ▲','Last Modified By ▼') ,'Last Modified By')}" action="{!orderByComponents}" onClick="show();" onComplete="hide();" reRender="cb,msg">
+									<apex:param assignTo="{!TempOrderByFieldName}" value="lastModifiedBy.Name" name="OrderByFieldName"/>
+								</apex:commandLink>
+							</apex:facet>
+			        		<apex:outputLabel value="{!mi.LastModifiedBy}" />
+			        	</apex:column>
+					</apex:pageBlockTable>
+					<apex:outputPanel layout="block" styleClass="pagination" rendered="{!if(componentList.size > 0 && !IsSearch,true,false)}">
+							<apex:commandbutton value="First" action="{!componentFirstPage}" reRender="cb,msg" disabled="{!ComponentPrev}" onClick="show();" onComplete="hide();"/>
+							<apex:commandbutton value="Previous" action="{!componentPrevious}" reRender="cb,msg" disabled="{!ComponentPrev}" onClick="show();" onComplete="hide();"/>
+							<apex:outputText value="{!paginationStr}" styleClass="paginationEle"/>
+							<apex:commandbutton value="Next" action="{!componentNext}" reRender="cb,msg" disabled="{!ComponentNxt}" onClick="show();" onComplete="hide();"/>
+							<apex:commandbutton value="Last" action="{!componentLastPage}" reRender="cb,msg" disabled="{!ComponentNxt}" onClick="show();" onComplete="hide();"/>
+					</apex:outputPanel>
+				</apex:outputPanel>	
+			</apex:pageBlockSection>
+			<!--Display all type related to metadata type -->
+			<apex:pageBlockSection id="tb" columns="1">
+				<apex:pageBlocktable value="{!metaItemList}" var="mi" rendered="{!if(metaItemList.size>0,true,false)}">
+					<apex:column headervalue="Select">
+						<apex:facet name="header"><input type="checkbox" onclick="checkItemAll(this);" styleclass="sli" >&nbsp;</input></apex:facet>
+						<apex:inputCheckbox value="{!mi.checkStatus}" styleclass="sli"/>
+					</apex:column>
+		        	<apex:column >
+		        		<apex:facet name="header">
+								<apex:commandLink value="{!If(OrderByFieldName == 'API_Name__c',If(Order == 'ASC','Full Name ▲','Full Name ▼') ,'Full Name')}" action="{!orderByComponents}" onClick="show();" onComplete="hide();" reRender="tb,msg">
+									<apex:param assignTo="{!TempOrderByFieldName}" value="API_Name__c" name="OrderByFieldName"/>
+								</apex:commandLink>
+							</apex:facet>
+							<apex:outputLabel value="{!mi.fullname}" />
+					</apex:column>
+					<apex:column >
+		        		<apex:facet name="header">
+								<apex:commandLink value="{!If(OrderByFieldName == 'Last_Modified_Date__c',If(Order == 'ASC','Last Modified Date ▲','Last Modified Date ▼') ,'Last Modified Date')}" action="{!orderByComponents}" onClick="show();" onComplete="hide();" reRender="tb,msg">
+									<apex:param assignTo="{!TempOrderByFieldName}" value="Last_Modified_Date__c" name="OrderByFieldName"/>
+								</apex:commandLink>
+							</apex:facet>
+							<apex:outputLabel value="{!mi.lastmodifiedbydate}" />
+					</apex:column>
+					<apex:column >
+		        		<apex:facet name="header">
+								<apex:commandLink value="{!If(OrderByFieldName == 'LastModifiedBy.Name',If(Order == 'ASC','Last Modified By ▲','Last Modified By ▼') ,'Last Modified By')}" action="{!orderByComponents}" onClick="show();" onComplete="hide();" reRender="tb,msg">
+									<apex:param assignTo="{!TempOrderByFieldName}" value="LastModifiedBy.Name" name="OrderByFieldName"/>
+								</apex:commandLink>
+							</apex:facet>
+							<apex:outputLabel value="{!mi.lastmodifiedbyname}" />
+					</apex:column>
+					<apex:column >
+		        		<apex:facet name="header">
+								<apex:commandLink value="{!If(OrderByFieldName == 'CreatedBy.Name',If(Order == 'ASC','Created By ▲','Created By ▼') ,'Created By')}" action="{!orderByComponents}" onClick="show();" onComplete="hide();" reRender="tb,msg">
+									<apex:param assignTo="{!TempOrderByFieldName}" value="CreatedBy.Name" name="OrderByFieldName"/>
+								</apex:commandLink>
+							</apex:facet>
+							<apex:outputLabel value="{!mi.createdbyname}" />
+					</apex:column>
+		        </apex:pageBlocktable>
+		        <apex:outputPanel rendered="{!if(metaItemList.size > 0 && !IsSearch,true,false)}" layout="block" styleClass="pagination">
+						<apex:commandbutton value="First" action="{!FirstPage}" reRender="tb,msg" disabled="{!prev}" onClick="show();" onComplete="hide();"/>
+						<apex:commandbutton value="Previous" action="{!previous}" reRender="tb,msg" disabled="{!prev}" onClick="show();" onComplete="hide();"/>
+						<apex:outputText value="{!paginationStr}" styleClass="paginationEle"/>
+						<apex:commandbutton value="Next" action="{!next}" reRender="tb,msg" disabled="{!nxt}" onClick="show();" onComplete="hide();"/>
+						<apex:commandbutton value="Last" action="{!LastPage}" reRender="tb,msg" disabled="{!nxt}" onClick="show();" onComplete="hide();"/>
+				</apex:outputPanel>
+			</apex:pageBlockSection>
+			<apex:outputText value="No records to display." rendered="{!if((metaItemList.size == 0 && componentList.size == 0 )&& IsSearch,true,false)}"/>
+		</apex:pageBlock>
+
+	</apex:form>
+	<script>
+	function checkItemAll(ele) {
+		var changeClass = ele.getAttribute('styleclass');
+		var checkboxes = document.getElementsByClassName(changeClass);
+	     if (ele.checked) {
+	         for (var i = 0; i < checkboxes.length; i++) {
+	             if (checkboxes[i].type == 'checkbox') {
+	                 checkboxes[i].checked = true;
+	             }
+	         }
+	     } else {
+	         for (var i = 0; i < checkboxes.length; i++) {
+	             if (checkboxes[i].type == 'checkbox') {
+	                 checkboxes[i].checked = false;
+	             }
+	         }
+	     }
+	}
+ 
+	</script>
+</apex:page>

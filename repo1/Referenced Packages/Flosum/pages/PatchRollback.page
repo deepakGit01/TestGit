@@ -1,0 +1,728 @@
+<apex:page standardController="Flosum__Patch__c" extensions="Flosum.PatchRollbackExtension" sidebar="false">
+<apex:includeScript value="{!URLFOR($Resource.Flosum__jszipmaster, 'jszip-master/dist/jszip.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.Flosum__jsforce)}"/>
+<script type="text/javascript" async="" src="{!URLFOR($Resource.zipp,'res/ga.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.zipp,'res/js/zip.js')}"></script>
+<c:Wait />
+	<apex:form id="formid">
+		<apex:pagemessages id="msg"/>
+		<apex:pageblock Title="Rollback" id="block">
+			<apex:actionfunction name="createLog" action="{!createLog}" reRender="msg" onComplete="logHandler('{!createdLogId}');"/>
+			<apex:actionFunction name="redirectToLog" action="{!redirectToLog}" reRender="msg" onComplete="enableBoth();">
+				<apex:param assignTo="{!IsSuccessDeployment}" value="" name="deploymentFlag"/>
+			</apex:actionFunction>
+			<apex:pageBlockButtons >
+				<apex:commandButton value="Validate" action="{!startRollback}" rendered="{!IF(selectedLogId != null && selectedLogId != '',true,false)}" onClick="show();" styleClass="disableitem" reRender="msg" onComplete="getBackupInformation('{!selectedLogId}','{!selectedOrg}',{!IsValidate});">
+		        	<apex:param assignTo="{!IsValidate}" value="true" name="newstr"/>
+		        </apex:commandButton>
+		        <apex:commandButton value="Rollback" action="{!startRollback}" rendered="{!IF(selectedLogId != null && selectedLogId != '',true,false)}" onClick="show();" styleClass="disableitem" reRender="msg" onComplete="getBackupInformation('{!selectedLogId}','{!selectedOrg}',{!IsValidate});">
+		        	<apex:param assignTo="{!IsValidate}" value="false" name="newstr"/>
+		        </apex:commandButton>
+		    </apex:pageBlockButtons>
+		    <apex:pageBlockSection columns="1">
+		        <apex:pageBlockSectionItem >
+		            <apex:outputLabel value="Patch Name" />
+		            <apex:outputLabel value="{!patchName}" />
+		        </apex:pageBlockSectionItem>
+		        <apex:pageBlockSectionItem rendered="{!AND(patchId != null,patchId != '')}">
+		        	<apex:outputLabel value="Target Org" />
+		            <apex:selectList size="1" value="{!selectedOrg}" styleClass="disableitem">
+		                <apex:selectOptions value="{!targetOrgOptions}"/>
+		                <apex:actionSupport event="onchange"  action="{!listDeploymentLogs}" rerender="msg,block" onsubmit="show();" oncomplete="hide();"/>
+		            </apex:selectList>
+		        </apex:pageBlockSectionItem>
+		        <apex:pageBlockSectionItem rendered="{!AND(patchId != null,patchId != '')}" >
+		            <apex:outputLabel value="Target Deployment Log" />
+		            <apex:selectList size="1" value="{!selectedLogId}" styleClass="disableitem">
+		                <apex:selectOptions value="{!rollBackLogOptions}"/>
+		                <apex:actionSupport event="onchange" rerender="msg,block" onsubmit="show();" oncomplete="hide();"/>
+		            </apex:selectList>
+		        </apex:pageBlockSectionItem>
+	        </apex:pageBlockSection>
+		</apex:pageblock>
+		<apex:actionfunction action="{!showMessage}" reRender="msg" name="showMessage" onComplete="hide();enableBoth();">
+			<apex:param assignTo="{!message}" value="" name="newstr"/>
+		</apex:actionfunction>
+	</apex:form>
+	<script>
+		zip.workerScriptsPath = "{!URLFOR($Resource.zipp,'res/js/workers')}/";
+        var zipFileEntry, zipWriter, writer, creationMethod, URL = window.webkitURL || window.mozURL || window.URL;
+		Visualforce.remoting.timeout = 120000;
+		var backupIds = [];
+		var zipFileLi = [];
+		var targetSession = '';
+		var targetReferesh = '';
+		var targetInstance = '';
+		var apiVersion = '33.0';
+		var IsCheckOnly;
+		var UnknownErrorInDeploy = [];
+     	var successItemMap = {};
+    	var errorItemMap = {};
+    	var runAllTestMap = {};
+    	var successLog = '';
+	    var errorLog = '';
+	    var runTestLog = '';
+    	var successDeployment = false;
+    	var deploymentLogId;
+    	var flosumsf = jsforce;
+    	
+		function checkRollBackStatus(status)
+		{
+			var gap;
+			if(status == 'CHECK STATUS')
+			{
+				gap = setTimeout(checkStatusOfRollBack, 3000);
+			}
+			else if(status == 'DONE')
+			{
+				enableBoth()
+			}
+			else if(status == 'DONE_WITH_ERROR')
+			{
+				enableBoth();
+			}
+			else if(status == 'EXCEPTION')
+			{
+				enableBoth();
+			}
+			else if(status == 'NO PERMISSION')
+			{
+				enableBoth();
+			}
+		}
+		
+		function getBackupInformation(logId,targetOrgId,IsValidate)
+		{
+			UnknownErrorInDeploy = [];
+     		successItemMap = {};
+    		errorItemMap = {};
+    		runAllTestMap = {};
+    		successDeployment = false;
+			IsCheckOnly = IsValidate;
+			zipFileLi = [];
+			backupIds = [];
+			if(logId != undefined && logId != null)
+			{
+				disableBoth();
+				$(".messageText").text("Collecting information for roll back...");
+				Visualforce.remoting.Manager.invokeAction(
+					            '{!$RemoteAction.PatchRollbackExtension.getRollBackInformation}',
+					            logId,
+					            targetOrgId,
+					            handleResult   
+					        );
+			}
+			hide();
+		}
+		
+		function handleResult(r,e)
+		{
+			if(e.status) 
+			{
+				if(r.targetSession != '')
+				{
+					targetSession = r.targetSession;
+					targetReferesh = r.targetRefreshToken;
+					targetInstance = r.targetInstance;
+					if(r.backupAttIds != undefined && r.backupAttIds.length > 0)
+					{
+						if(r.infoWrap != undefined && r.infoWrap != null)
+						{
+							var createdList =  r.infoWrap.createdSet;
+							var updateList =  r.infoWrap.updatedSet;
+							var deletedList =  r.infoWrap.deletedSet;
+							
+							var fileInfo = new Object();
+							fileInfo.name = 'destructiveChangesPost.xml';
+							fileInfo.data = postDestructiveXmlCreator(createdList);
+							fileInfo.type = 'TEXT';
+				        	zipFileLi.push(fileInfo);
+							
+							backupIds = r.backupAttIds;
+							getAttachments();
+						}
+						else
+						{
+							showMessage('No deploy information found.');
+						}
+					}
+					else
+					{
+						showMessage('No backup zip found.');
+					}
+				}
+				else
+				{
+					showMessage('You do not have permission for deployment in this organisaton.');
+				}
+			}
+			else
+			{
+				showMessage(e.message);
+			}
+		}
+		
+		function getAttachments()
+		{
+			if(backupIds.length > 0)
+			{
+				var attId = backupIds[0];
+				Visualforce.remoting.Manager.invokeAction(
+						            '{!$RemoteAction.PatchRollbackExtension.getAttachment}',
+						            attId,
+						            handleGetAttachments   
+						        );
+				backupIds.shift();
+			}
+		}
+		
+		function handleGetAttachments(r,e)
+		{
+			if(e.status && r) 
+		    {
+		    	if(r.length > 0)
+		    	{
+		    		// use a Data64URIReader to read the zip from a base64 string
+					zip.createReader(new zip.Data64URIReader(r[0]), function(reader) {
+						var EntryIndex = 0;
+						// get all entries from the zip
+						reader.getEntries(function(entries) {
+							if(entries.length)
+							{
+								var readSingleFile = function(){
+									    if (EntryIndex < entries.length) 
+									    {
+									    	var singleEntry = entries[EntryIndex];
+									    	var fileName = singleEntry.filename;
+									    	
+											entries[EntryIndex].getData(new zip.BlobWriter(), function(blobData) {
+										        	var fileInfo = new Object();
+													fileInfo.name = fileName;
+													fileInfo.data = blobData;
+													fileInfo.type = 'BLOB';
+										        	zipFileLi.push(fileInfo);
+										        
+												EntryIndex++;
+												readSingleFile();
+									    	});
+								    	}
+								    	else
+								    	{
+								    		// close the zip reader
+									        reader.close(function() {
+									          // onclose callback
+									          	if(backupIds.length > 0)
+												{
+													getAttachments();
+												}
+												else
+												{
+													createLog();
+												}
+									        });
+								    	}
+							    	}
+							    	readSingleFile();
+							}
+							else
+							{
+								console.log('!entries.length');
+							}
+						});
+					}, function(error) {
+						// onerror callback
+						if(error.message != undefined)
+						{
+							showMessage(error.message);
+						}
+						else
+						{
+							showMessage('Unknown error.');
+						}
+					});
+		    	}
+		    	else
+		    	{
+		    		showMessage('Backup zip file not found.');
+		    	}
+		    }
+		    else
+		    {
+		    	showMessage(e.message);
+		    }
+		}
+		
+		function logHandler(logId)
+		{
+			if(logId != '' && logId != null )
+			{
+				deploymentLogId = logId;
+				deploymentZipFileCreator(zipFileLi);
+			}
+		}
+		
+		function deploymentZipFileCreator(files) {
+			var addIndex = 0;
+			function nextFile() 
+			{
+				var file = files[addIndex];
+				if(file.type == 'BLOB')
+				{
+					zipWriter.add(file.name, new zip.BlobReader(file.data), function() {
+						addIndex++;
+						if(addIndex < files.length)
+							nextFile();
+						else
+						{
+							zipWriter.close(function(base64Data) {
+			    				startRollbackDeployment(base64Data);
+		    				});
+						}
+					});
+				}
+				else
+				{
+					zipWriter.add(file.name, new zip.TextReader(file.data), function() {
+						addIndex++;
+						if(addIndex < files.length)
+							nextFile();
+						else
+						{
+							zipWriter.close(function(base64Data) {
+			    				startRollbackDeployment(base64Data);
+		    				});
+						}
+					});
+				}
+			}
+
+			function createZipWriter() {
+                   zip.createWriter(writer, function(writer) {
+					zipWriter = writer;
+					nextFile();
+				}, onerror);
+			}
+			
+			writer = new zip.Data64URIWriter();
+			createZipWriter();
+		}
+		
+		function startRollbackDeployment(base64Data)
+		{
+			if(IsCheckOnly)
+				$(".messageText").text("Validate roll back...");
+			else
+				$(".messageText").text("Deploying roll back...");
+			base64Data = base64Data.slice(base64Data.indexOf(';base64,') + 8);
+			conn1 = createConnection(targetSession,targetReferesh,targetInstance);
+			conn1.metadata.pollTimeout = 12000000;
+			conn1.metadata.pollInterval = 4000;
+			var deployOption = getDeployOptions();
+			conn1.metadata.deploy(base64Data, deployOption).complete(function(err, result){
+            	if(err) 
+                {
+                	if(err != null && err != undefined && err.errorCode != undefined)
+		           	{
+		            	UnknownErrorInDeploy.push(err.errorCode);
+		           	}
+		           	else
+		           	{
+		           		UnknownErrorInDeploy.push('The metadata to be deployed was sent to the target Salesforce org. However, the target Salesforce org did not return any response.\nTo check the success of deployment, please login to the target Salesforce organization, and check the deployment status.');
+		           	}
+		           	finishDeployment();
+                }
+                else
+                {
+                	if(result != undefined && result.id != undefined)
+                	{
+                		conn1.metadata.checkDeployStatus(result.id,true,deployDetail)	
+                	}
+                	else
+                	{
+                		UnknownErrorInDeploy.push('Async Id not found.');
+                		finishDeployment();
+                	}
+                }
+           	});
+		}
+		
+		function deployDetail(err, result)
+		{
+    		if(err)
+            {
+            	if(err != null && err != undefined && err.errorCode != undefined)
+	           	{
+	           		UnknownErrorInDeploy.push(err.errorCode);
+	           	}
+               	else
+               	{
+               		UnknownErrorInDeploy.push('The metadata to be deployed was sent to the target Salesforce org. However, the target Salesforce org did not return any response.\nTo check the success of deployment, please login to the target Salesforce organization, and check the deployment status.');
+               	}
+               	//finish deployment and save logs.
+		        finishDeployment();
+       		}
+            else
+            {
+            	if(result.done)
+	        	{
+	        		if(result.success)
+	        		{
+	        			successDeployment = true;
+	        		}
+	        		else
+	        		{
+	        			successDeployment = false;
+	        		}
+	        		if(result.details != undefined)
+		            {
+		            	if(result.details.runTestResult != undefined)
+		            	{
+		            		runTestLog ='No. of Test Run: '+result.details.runTestResult.numTestsRun +'  Failures: '+result.details.runTestResult.numFailures+' Total Time: '+result.details.runTestResult.totalTime+'\n\n';
+		            		if(result.details.runTestResult.codeCoverageWarnings != undefined)
+        					{
+				        		for(var index in result.details.runTestResult.codeCoverageWarnings)
+				        		{
+				        			if(index < result.details.runTestResult.codeCoverageWarnings.length)
+				        			{
+				        				var warning = result.details.runTestResult.codeCoverageWarnings[index];
+					        			var error = '\n Coverage Warning: ' + 
+							                           '\n Message: '+warning.message;
+								    	runAllTestMap[warning.name +''+new Date().getTime()]= error;
+					                }
+				        		}
+        					}
+        					if(result.details.runTestResult.failures != undefined)
+        					{
+				        		for(var index in result.details.runTestResult.failures)
+				        		{
+				        			if(index < result.details.runTestResult.failures.length)
+				        			{
+				        				var rtf = result.details.runTestResult.failures[index];
+					        			var error = '\n Component Fail name: '+rtf.name + 
+		                           						'\n Message: '+rtf.message;
+						                runAllTestMap[rtf.type_x+''+rtf.name]= error;
+					                }
+				        		}
+        					}
+        					if(result.details.runTestResult.successes != undefined)
+        					{
+				        		for(var index in result.details.runTestResult.successes)
+				        		{
+				        			if(index < result.details.runTestResult.successes.length)
+				        			{
+				        				var rtf = result.details.runTestResult.successes[index];
+					        			var scc = '\n Component Pass name: '+rtf.name + 
+		                           				'\n Method Name: '+rtf.methodName;
+						                runAllTestMap[scc.name+''+scc.methodName]= scc;
+					                }
+				        		}
+        					}	
+		            	}
+		            	if(result.details.componentFailures != undefined)
+		            	{
+		            		if(Array.isArray(result.details.componentFailures))
+		            		{
+			            		for(var index in result.details.componentFailures)
+				        		{
+				        			if(index < result.details.componentFailures.length)
+				        			{
+				        				var failureComp = result.details.componentFailures[index];
+				        				var error = '\n File name: '+failureComp.fileName + 
+							                            	', Component name: '+failureComp.fullName + 
+							                                ' (Line: ' + failureComp.lineNumber + ': Column:' + failureComp.columnNumber + ') : ' + 
+							                                '\n Message: '+failureComp.problem;
+				        				errorItemMap[failureComp.componentType+':'+failureComp.fileName+''+failureComp.fullName] = error;
+				        			}
+				        		}
+			        		}
+			        		else
+			        		{
+			        			var failureComp = result.details.componentFailures;
+			        			var error = '\n File name: '+failureComp.fileName + 
+							                            	', Component name: '+failureComp.fullName + 
+							                            	'\n Message: '+failureComp.problem;
+			        			errorItemMap[failureComp.componentType+':'+failureComp.fileName+''+failureComp.fullName] = error;
+			        		}
+		            	}
+		            	if(result.details.componentSuccesses != undefined && result.success)
+		            	{
+		            		
+		            		if(Array.isArray(result.details.componentSuccesses))
+		            		{
+			            		for(var index in result.details.componentSuccesses)
+				        		{
+				        			if(index < result.details.componentSuccesses.length)
+				        			{
+				        				var successComp = result.details.componentSuccesses[index];
+				        				
+				        				if(successComp.fullName != 'package.xml')
+				        				{
+					        				var componentStatus = ( successComp.created == 'true' ? 'CREATED ' : successComp.changed == 'true' ? 'UPDATED ' : successComp.deleted == 'true' ? 'DELETED ' : ' N/A ');
+											var successMessage = "";	
+													
+											if(componentStatus != ' N/A ')
+						            		{
+							                	successMessage = '\n Component '+successComp.fullName + ' is '+componentStatus;   
+						            		}
+						            		else
+						            		{
+						            			//if item status in N/A.
+						            			successMessage = '\n Component '+successComp.fullName + '  NO CHANGE';
+						            		}
+					        				successItemMap[successComp.componentType+':'+successComp.fileName+''+successComp.fullName] = successMessage;
+				        				}
+				        			}
+				        		}
+			        		}
+			        		else
+			        		{
+			        			var successComp = result.details.componentSuccesses;
+			        			if(successComp.fullName != 'package.xml')
+				        		{
+				        			var componentStatus = ( successComp.created == 'true' ? 'CREATED ' : successComp.changed == 'true' ? 'UPDATED ' : successComp.deleted == 'true' ? 'DELETED ' : ' N/A ');
+				        			var successMessage = '\n Component '+successComp.fullName + ' is '+componentStatus;
+				        			successItemMap[successComp.componentType+':'+successComp.fileName+''+successComp.fullName] = successMessage;
+			        			}
+			        		}
+		            	}
+		            }
+		            //finish deployment and save logs.
+		            finishDeployment();
+		        }
+		        else
+		        {
+		        	UnknownErrorInDeploy.push('Unknown error while checking deployment status.');
+					finishDeployment();
+		        }
+            }
+       	}
+       	
+       	//finish deployment and save logs.
+       	function finishDeployment()
+       	{
+	    	if(deploymentLogId != undefined && deploymentLogId != null)
+	    	{
+	    		//Success Log
+	    		successLog += '\n---------- Success Log Begin ----------------\n';
+	    		var tempMap = {};
+		        for(var key in successItemMap)
+		        {
+		        	var successList = [];
+		        	var temp = key.split(':');
+		        	var mType = 'Unknown';
+		        	if(temp.length > 0)
+		        	{
+		        		mType = temp[0];
+		        	}
+		        	if(tempMap[mType])
+		        	{
+		        		successList = tempMap[mType];
+		        	}
+		        	successList.push(successItemMap[key]);
+		        	tempMap[mType] = successList;
+		        }
+		        //successItemMap = {};
+		        for(var key in tempMap)
+		        {
+		        	if(IsCheckOnly)
+		        		successLog +=  '\n\n---------- Validate '+key+' ----------------\n';
+		        	else
+		        		successLog +=  '\n\n---------- Deployed '+key+' ----------------\n';
+		        	var successList = tempMap[key];
+		        	for(var index in successList)
+		        	{
+		        		if(index < successList.length)
+			        		successLog += successList[index];
+			        }
+		        }
+		        tempMap = {};
+		        successLog += '\n\n---------- Success Log Finished ----------------\n';
+	    		
+	    		// Error Log
+		        errorLog += '\n---------- Error Log Begin ----------------\n';
+		        for(var index in UnknownErrorInDeploy)
+		        {
+		        	if(index < UnknownErrorInDeploy.length)
+		        	{
+		        		errorLog += UnknownErrorInDeploy[index];
+		        		errorLog += '\n';
+		        	}
+		        }
+		        tempMap = {};
+		        for(var key in errorItemMap)
+		        {
+		        	var successList = [];
+		        	var temp = key.split(':');
+		        	var mType = 'Unknown';
+		        	if(temp.length > 0)
+		        	{
+		        		mType = temp[0];
+		        	}
+		        	if(tempMap[mType])
+		        	{
+		        		successList = tempMap[mType];
+		        	}
+		        	successList.push(errorItemMap[key]);
+		        	tempMap[mType] = successList;
+		        }
+		        //errorItemMap = {};
+		        for(var key in tempMap)
+		        {
+		        	if(IsCheckOnly)
+		        		errorLog +=  '\n\n---------- Validate '+key+' ----------------\n';
+		        	else
+		        		errorLog +=  '\n\n---------- Deployed '+key+' ----------------\n';
+		        	var successList = tempMap[key];
+		        	for(var index in successList)
+		        	{
+		        		if(index < successList.length)
+			        		errorLog += successList[index];
+			        }
+		        }
+		        tempMap = {};
+		        errorLog += '\n---------- Error Log Finished ----------------\n';
+	    		
+	    		
+	    		
+	    		
+	    		var attDMLList = [];
+	    		attDMLList.push({ParentId: deploymentLogId,Name : IsCheckOnly ? 'Validate Success Log' : 'Deployment Success Log',Body: window.btoa(successLog),ContentType : 'text/plain'});
+		    	var IsRunTestEmpty=true;
+		    	for(var key in runAllTestMap)
+		    	{
+		    		IsRunTestEmpty=false;
+		    		break;
+		    	}
+		    	if(!IsRunTestEmpty)
+		    	{
+		    		//Run all test log
+		    		var fulldetail = runTestLog;
+		    		runTestLog = '\n---------- Run All Tests Log Begin ----------------\n';
+		    		runTestLog += fulldetail;
+	                for(var key in runAllTestMap)
+	                {
+	                	runTestLog +=  runAllTestMap[key];
+	                	runTestLog += '\n';
+	                }
+	                runTestLog += '\n\n---------- Run All Tests Log Finished ----------------\n';
+		    		attDMLList.push({ParentId: deploymentLogId,Name : 'Run All Tests Log',Body: window.btoa(runTestLog),ContentType : 'text/plain'});
+		    	}
+		    	attDMLList.push({ParentId: deploymentLogId,Name : IsCheckOnly ? 'Validate Error Log' : 'Deployment Error Log',Body: window.btoa(errorLog),ContentType : 'text/plain'});
+	    		var selfConn = new flosumsf.Connection({ accessToken: '{!$API.Session_Id}' });
+	        	selfConn.sobject('Attachment').create(attDMLList,logSaveHandler);
+	    	}
+       	}
+       	
+       	function logSaveHandler(err, ret)
+        {
+        	if (err) 
+           	{ 
+           		showMessage(err.errorCode);
+           	}
+           	else
+           	{
+           		redirectToLog(successDeployment);
+           	}
+       	}
+		
+		//to get deployOptions
+		function getDeployOptions()
+		{
+			var deployOption = new Object();
+			deployOption.allowMissingFiles=true;
+           	deployOption.autoUpdatePackage=false;
+           	deployOption.checkOnly=IsCheckOnly;
+           	deployOption.ignoreWarnings=false;
+           	deployOption.performRetrieve=false;
+           	deployOption.purgeOnDelete=false;
+           	deployOption.rollbackOnError=true;
+           	deployOption.singlePackage=true;
+           	deployOption.runTests=[];
+           	deployOption.testLevel='NoTestRun';
+           	
+           	return deployOption;
+		}
+		
+		function createConnection(accessToken,refreshToken,instanceUrl)
+		{
+			return new flosumsf.Connection({
+			  oauth2 : {
+			    clientId : '{!cred.ConsumerKey__c}',
+			    clientSecret : '{!cred.ConsumerSecret__c}',
+			    redirectUri : '{!cred.Redirect_URL__c}'
+			  },
+			  accessToken : accessToken,
+              proxyUrl: "/services/proxy",
+              //logLevel: "DEBUG",
+			  refreshToken : refreshToken,
+			  maxRequest: 100000,
+			  serverUrl: instanceUrl});
+		}
+		
+		function postDestructiveXmlCreator(createdList)
+		{
+			var itemMap = {};
+			for(var index in createdList)
+			{
+				if(index < createdList.length)
+				{
+					var str = createdList[index];
+					var li = str.split(':');
+					if(li.length == 2)
+					{
+						var itemLi = [];
+						if(itemMap[li[0]] != undefined)
+							itemLi = itemMap[li[0]];
+						
+						itemLi.push(li[1]);
+						itemMap[li[0]] = itemLi;
+					}
+				}
+			}
+			
+			var xml = '<?xml version="1.0" encoding="UTF-8"?><Package xmlns="http://soap.sforce.com/2006/04/metadata">';
+			for(var mType in itemMap)
+			{
+				var packageXmlLi = [];
+				packageXmlLi = itemMap[mType];
+				xml = xml + '<types>';
+				for(var index in packageXmlLi)
+				{
+					if(index < packageXmlLi.length)
+					{
+						xml = xml + '<members>';
+						xml = xml + packageXmlLi[index];
+						xml = xml + '</members>';
+					}
+				}
+				xml = xml + '<name>'+mType+'</name></types>';
+			}
+			xml = xml + '<version>'+apiVersion+'</version></Package>';
+			return xml;
+		}
+		
+		function disableBoth()
+		{
+			var toDisableItems = document.getElementsByClassName('disableitem');
+			for (var i = 0; i < toDisableItems.length; i++) 
+			{
+				if(toDisableItems[i].type == 'button' || toDisableItems[i].type == 'select-one')
+				{
+					toDisableItems[i].disabled = true;
+				}
+			}
+		}
+		
+		function enableBoth()
+		{
+			var toDisableItems = document.getElementsByClassName('disableitem');
+			for (var i = 0; i < toDisableItems.length; i++) 
+			{
+				if(toDisableItems[i].type == 'button' || toDisableItems[i].type == 'select-one')
+				{
+					toDisableItems[i].disabled = false;
+				}
+			}
+		}
+	</script>
+</apex:page>

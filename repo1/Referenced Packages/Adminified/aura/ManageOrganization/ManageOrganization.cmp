@@ -1,0 +1,95 @@
+<aura:component controller="stivadmn.SettingModuleController">
+    <ltng:require styles="/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.css,/resource/stivadmn__AdminifiedStaticResource/smoothness/jquery-ui.css" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js,/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.js,/resource/stivadmn__AdminifiedStaticResource/jquery.blockUI.js" afterScriptsLoaded="{!c.documentReady}" />
+    <!--Define Attributes-->
+    <aura:attribute name="allOrg" type="List" access="GLOBAL" Description="Holds all connected organization details in json format."/>
+    <aura:attribute name="delOrgId" type="String" access="GLOBAL" Description="Hold deleted organization id."/>
+    <aura:attribute name="delOrgName" type="String" access="GLOBAL" Description="Hold deleted organization name."/>
+    <aura:attribute name="delOrgType" type="String" access="GLOBAL" Description="Hold deleted organization type."/>
+    <aura:attribute name="delOrgError" type="String" access="GLOBAL" Description="Hold server error when delete the connected oranization."/>
+    <aura:attribute name="thisObj" type="Object" access="GLOBAL" Description="Store this object for perform some action."/>
+    <!--Register Events-->
+    <aura:registerEvent name="AfterDeleteOrg" type="stivadmn:AfterDeleteOrg" Description="Manage connected organization list after delete organization."/>
+    <aura:registerEvent name="ManageOrganizationEvent" type="stivadmn:ManageOrganizationEvent"/>
+    <aura:registerEvent name="handleError" type="stivadmn:handleError" Description="Handle error which is getting from server."/>
+    <aura:registerEvent name="DisabledSreenButtonEvent" type="stivadmn:DisabledSreenButtonEvent" Description="Disable all input when performing some action."/>
+    <aura:registerEvent name="downloadCsvEvent" type="stivadmn:downloadCsvEvent" Description=""/>
+    <aura:registerEvent name="openViewAuditTrailEvent" type="stivadmn:openViewAuditTrailEvent" Description=""/>
+    
+    <!--Handle Events-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" Description="Get connected organization details list."/>
+    <aura:handler event="stivadmn:OrgCmpEvent1" action="{!c.getOrgCmpDetails}" Description="Showing new organiztion has connected."/>
+    
+    <div class="slds-notify slds-notify--alert slds-theme--alert-texture alert-noti" style="display:none" role="Success">
+        <span class="slds-assistive-text">Info</span>
+        <h2><div class="msg-cls"></div></h2>
+    </div> 
+    
+    <div Class="slds-scrollable--y common_scroll section-class ManagOrgScrollPos">
+        <!-- Table -->
+        
+        
+        <table class="slds-table slds-table--bordered manage-org ">
+            <thead>                
+                <tr class="slds-text-heading--label toggle-orgsection">
+                    <th  scope="col" class="slds-text-heading--label" style="display: none">
+                        <span class="slds-truncate">Organization ID</span>                    
+                    </th>
+                    
+                    <th  scope="col" class="slds-text-heading--label">
+                        <span class="slds-truncate">Organization Name</span>                    
+                    </th>
+                    
+                    <th scope="col" class="slds-text-heading--label">
+                        <span class="slds-truncate">Organization Type</span>
+                    </th>
+                    
+                    <th scope="col" class="slds-text-heading--label">
+                        <span class="slds-truncate">Action</span>
+                    </th>                                
+                </tr>            
+            </thead>
+            
+            <tbody class="managetbody">   
+                <tr class="loaderTr-manageorg datarow"><td colspan="3"><div class=" slds-container--center slds-spinner--small dataLoader " ><img src="/resource/stivadmn__SLDS0120/assets/images/spinners/slds_spinner_brand.gif" alt="Loading..." /> Loading. Please wait...</div></td></tr>
+                <aura:iteration items="{!v.allOrg}" var="org">
+                    <tr class="slds-hint-parent slds-is-sortable datarow">  
+                        <td   style="display: none" >
+                            <span class="slds-truncate org-id">{!org.stivadmn__Organization_ID__c}</span>
+                        </td>                    
+                        <td >
+                            <span class="slds-truncate org-name">{!org.stivadmn__User_Name__c}</span>
+                        </td>                                        
+                        <td >
+                            <span class="slds-truncate org-type">{!org.stivadmn__Organization_Type__c}</span>
+                        </td>                                        
+                        <td >
+                            <a href="javascript:void(0);" title="Delete Organization" style="text-decoration:none;" class="slds-truncate slds-button--icon-x-small delOr"><stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#delete" category="utility " size="x-small" name="delete" class="slds-icon"/> </a>|
+                            <a href="javascript:void(0);" title="View Setup Audit Trail" style="text-decoration:none;" class="slds-truncate slds-button--icon-x-small trail" id="{!org.stivadmn__Organization_ID__c}" onclick="{!c.viewSetUpAuditTrail}"><stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#setup" category="utility " size="x-small" name="setup" class="slds-icon"/> </a>  
+                        </td>                                        
+                    </tr>     
+                </aura:iteration>                               
+            </tbody>  
+        </table>       
+    </div>                    
+    <!-- Confirm Box   -->
+    <div class='confirm-box confirm-box-org header-color-cls' style="display:none">
+        <div aria-hidden="false" role="dialog" class="slds-modal slds-modal--prompt slds-fade-in-open">
+            <div class="slds-modal__container slds-modal--prompt">
+                <div class="slds-modal__header slds-theme--error slds-theme--alert-texture" >
+                    <h2 class="slds-text-heading--medium">Confirm</h2>
+                    
+                </div>
+                <div class="slds-modal__content" >
+                    <div>
+                        <p>Are you sure you want to delete <b><span class="delete-org-name">{!v.delOrgName}</span></b>?</p>
+                    </div>
+                </div>
+                <div class="slds-modal__footer slds-theme--default">
+                    <button type="button" class="slds-button slds-button--neutral" onclick="{!c.cancel}">Cancel</button> &nbsp;&nbsp; 
+                    <button type="button" class="slds-button slds-button--neutral slds-button--brand" onclick="{!c.confirmDel}">Ok</button>
+                </div>
+            </div>
+        </div>
+    </div> 
+       
+</aura:component>

@@ -1,0 +1,4 @@
+<aura:event type="APPLICATION" Description="Create organization details table in manage organization component." >
+   <aura:attribute name="orgData" type="List" /> 
+   <aura:attribute name="userName" type="String" />
+</aura:event>

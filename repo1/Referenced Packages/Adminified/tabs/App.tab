@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomTab xmlns="http://soap.sforce.com/2006/04/metadata">
+    <auraComponent>UserModuleTab</auraComponent>
+    <icon>SharedDocuments/adminifiedTabIcon.png</icon>
+    <label>App</label>
+    <mobileReady>false</mobileReady>
+    <motif>Custom294: TV Widescreen</motif>
+</CustomTab>

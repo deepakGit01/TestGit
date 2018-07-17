@@ -1,0 +1,10 @@
+<aura:event type="COMPONENT" Description="Set organization details in all module." >
+    <aura:attribute name="orgId" type="String" /> 
+    <aura:attribute name="userName" type="String" /> 
+    <aura:attribute name="randomNumber" type="Integer" /> 
+    <aura:attribute name="index" type="Integer" /> 
+    <aura:attribute name="instanceType" type="String" /> 
+    <aura:attribute name="orgType" type="String" /> 
+    <aura:attribute name="id" type="String" /> 
+    <aura:attribute name="moduleName" type="String" />
+</aura:event>

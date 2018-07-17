@@ -1,0 +1,37 @@
+<aura:component implements="force:appHostable">
+    <ltng:require styles="/resource/stivadmn__SLDS0120/assets/styles/salesforce-lightning-design-system.css" /> 
+    <ltng:require styles="" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js" afterScriptsLoaded="{!c.documentReady}" />
+    <aura:attribute name="whichTab" type="String" default="User" Description="Hold tab name for navigation from one module to other. E.g. User tab, Profile tab."/>
+    <aura:registerEvent name="LoaderEvent" type="stivadmn:LoaderEvent"/> 
+    <aura:registerEvent name="WhichTabEvent" type="stivadmn:WhichTabEvent"/> 
+    <aura:attribute name="isModuleOpen" type="String" default="userModule"/> 
+    
+    <aura:handler name="WhichTabEvent" event="stivadmn:WhichTabEvent" action="{!c.getTabName}" Description="Perform navigation using set whichtab attribute."/>
+    
+    <div class="layer loader-main" style="display:none"><div class="slds-form-element__control slds-text-align--center" align="center" ><span class="slds-avatar slds-avatar--large"><img src="/resource/stivadmn__SLDS0120/assets/images/spinners/slds_spinner_brand.gif" alt="Loading data" /></span></div></div>
+    <div class="slds-tabs--default main-tabs" style="display:none">
+        <ul id="navTab" class="slds-tabs--default__nav adminifiedTabsUl" role="tablist" style="background:#fff;">
+            <li class="{!v.isModuleOpen=='userModule'?'slds-tabs__item slds-text-heading--label tab-li userModule slds-active':'slds-tabs__item slds-text-heading--label tab-li userModule'}" title="User" role="presentation"><a href="javascript:void(0);" role="tab" tabindex="0" aria-selected="true" aria-controls="userModule" >User</a></li>
+            <li class="{!v.isModuleOpen=='profileModule'?'slds-tabs__item slds-text-heading--label tab-li profileModule slds-active':'slds-tabs__item slds-text-heading--label tab-li profileModule'}" title="Profile" role="presentation"><a href="javascript:void(0);" role="tab" tabindex="-1" aria-selected="false" aria-controls="profileModule" >Profile</a></li>
+			<li class="{!v.isModuleOpen=='permissionModule'?'slds-tabs__item slds-text-heading--label tab-li permissionModule slds-active':'slds-tabs__item slds-text-heading--label tab-li permissionModule'}" title="Permission Set" role="presentation"><a href="javascript:void(0);" role="tab" tabindex="-1" aria-selected="false" aria-controls="permissionModule" >Permission Set</a></li>
+            <li class="{!v.isModuleOpen=='settingsModule'?'slds-tabs__item slds-text-heading--label tab-li settingsModule slds-active':'slds-tabs__item slds-text-heading--label tab-li settingsModule'}" title="Settings" role="presentation"><a href="javascript:void(0);" role="tab" tabindex="-1" aria-selected="false" aria-controls="settingsModule" >Settings</a></li>
+            <li class="{!v.isModuleOpen=='helpModule'?'slds-tabs__item slds-text-heading--label tab-li help-tab helpModule slds-active':'slds-tabs__item slds-text-heading--label tab-li help-tab helpModule'}" title="Help" role="presentation"><a href="javascript:void(0);" role="tab" tabindex="-1" aria-selected="false" aria-controls="helpModule" >Help</a></li> </ul>
+        <div id="userModule" class="{!v.isModuleOpen=='userModule'?'slds-tabs__content slds-show':'slds-hide'}" role="tabpanel">
+            <stivadmn:UserModule aura:id="UserModule"/>
+        </div>
+        <div id="profileModule" class="{!v.isModuleOpen=='profileModule'?'slds-tabs__content slds-show':'slds-hide'}" role="tabpanel">
+            <stivadmn:ProfileModule aura:id="ProfileModule"/>
+        </div>
+        <div id="permissionModule" class="{!v.isModuleOpen=='permissionModule'?'slds-tabs__content slds-show':'slds-hide'}" role="tabpanel">
+            <stivadmn:PermissionSetModule aura:id="PermissionSetModule"/>
+        </div>
+        <div id="settingsModule" class="{!v.isModuleOpen=='settingsModule' ?'slds-tabs__content slds-show':'slds-hide'}" role="tabpanel">
+            <aura:if isTrue="{!v.whichTab == 'Settings'}"> 
+                <stivadmn:SettingModule aura:id="SettingModule"/>
+            </aura:if>
+        </div>
+        <div id="helpModule" class="{!v.isModuleOpen=='helpModule'?'slds-tabs__content slds-show':'slds-hide'}" role="tabpanel">
+            <stivadmn:HelpModule aura:id="HelpModule"/>
+        </div>
+    </div>
+</aura:component>

@@ -1,0 +1,5 @@
+<aura:event type="COMPONENT" Description="Get all connected organizaion." >
+    <aura:attribute name="userName" type="String"/>
+    <aura:attribute name="orgId" type="String"/>
+    <aura:attribute name="instanceType" type="String"/>
+</aura:event>

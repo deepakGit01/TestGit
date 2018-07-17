@@ -1,0 +1,1226 @@
+<apex:page controller="Flosum.SnapshotToBranchCommitController" sidebar="false">
+	<apex:includeScript value="{!URLFOR($Resource.Flosum__jszipmaster, 'jszip-master/dist/jszip.js')}"/>
+	<apex:includeScript value="{!URLFOR($Resource.Flosum__jsforce)}"/>
+	<script src="{!$Resource.xmltojson}"></script>
+	<script src="{!$Resource.X2JS}"></script>
+	<style>
+		.pagination { 
+			padding: 1%; 
+		} 
+		div .pagination { 
+			text-align: center; 
+		} 
+		td .dataCell label { 
+			font-weight: normal; 
+		} 
+		span.paginationEle { 
+			margin-left: 4px; 
+		} 
+		.pagination input { 
+			margin-left: 4px; 
+		} 
+	</style>
+	<c:Wait />	
+	<apex:pagemessages id="msg"/>
+	<apex:form rendered="{!if(snapName != null,true,false)}" id="fullform">
+<!-- 		<apex:actionfunction name="commit" action="{!commitInChunks}" rerender="msg" oncomplete="commitInChunks();"> -->
+<!-- 			<apex:param assignTo="{!jsonStr}" value="" name="commitstr"/> -->
+<!-- 		</apex:actionfunction> -->
+		<apex:actionfunction action="{!showMessage}" reRender="msg" name="showMessage" onComplete="hide();">
+			<apex:param assignTo="{!message}" value="" name="newstr"/>
+		</apex:actionfunction>
+		<apex:actionfunction name="showCommitSections" action="{!showCommitSections}" rerender="msg,fullform" oncomplete="hide();">
+			<apex:param assignTo="{!MetaJSNToCommit}" value="" name="newstr"/>
+		</apex:actionfunction>
+	
+		<apex:actionfunction name="CallFirst" action="{!oneSectionFirst}" rerender="msg,form1,form2" oncomplete="hide();">
+			<apex:param assignTo="{!section}" value="" name="newstr"/>
+		</apex:actionfunction>
+		<apex:actionfunction name="CallPrevious" action="{!oneSectionPrev}" rerender="msg,form1,form2" oncomplete="hide();">
+			<apex:param assignTo="{!section}" value="" name="newstr"/>
+		</apex:actionfunction>
+		<apex:actionfunction name="CallNext" action="{!oneSectionNext}" rerender="msg,form1,form2" oncomplete="hide();">
+			<apex:param assignTo="{!section}" value="" name="newstr"/>
+		</apex:actionfunction>
+		<apex:actionfunction name="CallLast" action="{!oneSectionLast}" rerender="msg,form1,form2" oncomplete="hide();">
+			<apex:param assignTo="{!section}" value="" name="newstr"/>
+		</apex:actionfunction>
+		
+		<apex:sectionHeader title="Commit"/>
+		<apex:pageblock >
+			<apex:pageblockSection columns="1">
+				<apex:pageblocksectionItem >
+					<apex:outputLabel value="Snapshot"/>
+					<apex:outputText value="{!snapName}"/>
+				</apex:pageblocksectionItem>
+				<apex:pageblocksectionItem >
+					<apex:outputLabel value="Commit To"/>
+					<apex:selectList value="{!commitTo}" multiselect="false" size="1" disabled="{!if(GoToCommitType == 'oncommit',true,false)}">
+						<apex:selectOptions value="{!commitList}"/>
+			        </apex:selectList>
+			    </apex:pageblocksectionItem>
+			</apex:pageblockSection>
+		</apex:pageblock>
+		<apex:pageblock title="Components"  rendered="{!if(GoToCommitType == 'onsnap',true,false)}" id="tb">
+			<script>
+            	var isLimitReached = "{!IsLimitReached}" == "true";
+            </script>
+            <apex:pageblockSection columns="1">
+				<apex:pageblocksectionItem >
+					<apex:outputLabel value="Component Type"/>
+					<apex:selectList value="{!selectedMetadataType}" multiselect="false" size="1" StyleClass="selectedMetadataTypeList">
+						<apex:selectOptions value="{!availableMetatypes}"/>
+						<apex:actionSupport event="onchange" action="{!fillMetadataItems}"  reRender="tb,msg" oncomplete="getTotalRecords();hide();" onsubmit="show();"/>
+			        </apex:selectList>
+			    </apex:pageblocksectionItem>
+			</apex:pageblockSection>
+			<apex:pageBlockSection id="tb" columns="1">
+				<apex:pageBlocktable value="{!metaItemList}" var="mi" rendered="{!if(metaItemList.size>0,true,false)}">
+					<apex:column headervalue="Select">
+						<apex:facet name="header"><input type="checkbox" onclick="checkItemAll(this);" styleclass="sli" >&nbsp;</input></apex:facet>
+						<apex:inputCheckbox value="{!mi.checkStatus}" styleclass="sli"/>
+					</apex:column>
+		        	<apex:column headervalue="Metadata Item Name" value="{!mi.comp.Flosum__API_Name__c}" />
+		        	<apex:column headervalue="Metadata Type" value="{!mi.comp.RecordType.Name}" />
+		        	<apex:column headerValue="Last Modified Date(Source Org)" value="{!mi.comp.Flosum__Last_Modified_Date__c}" />
+		        	<apex:column headerValue="Last Modified By(Source Org)" value="{!mi.comp.Flosum__Last_Updated_By__c}" />
+		        	<apex:column value="{!mi.comp.CreatedById}" />
+		        </apex:pageBlocktable>
+		        <apex:outputPanel rendered="{!if(metaItemList.size > 0,true,false)}" layout="block" styleClass="pagination">
+						<apex:commandbutton value="First" action="{!FirstPage}" reRender="tb,msg" disabled="{!prev}" onClick="show();" onComplete="changePage('first');hide();"/>
+						<apex:commandbutton value="Previous" action="{!previous}" reRender="tb,msg" disabled="{!prev}" onClick="show();" onComplete="changePage('prev');hide();"/>
+						<apex:outputText value="{!paginationStr}" styleClass="paginationEle paginationString"/>
+                    	<apex:commandbutton value="Next" action="{!next}" reRender="tb,msg" disabled="{!nxt}" onClick="show();" onComplete="changePage('next');hide();"/>
+						<apex:commandbutton value="Last" action="{!LastPage}" reRender="tb,msg" disabled="{!nxt}" onClick="show();" onComplete="changePage('last');hide();"/>
+				</apex:outputPanel>
+			</apex:pageBlockSection>
+			<apex:pageBlockButtons >
+				<apex:commandButton value="Go To Commit" action="{!goToCommit}" reRender="msg" onClick="show();" oncomplete="getCommitInformation('{!MetaJSNToCommit}','{!commitTo}','{!snapId}');" />
+            </apex:pageBlockButtons>
+		</apex:pageblock>
+		<apex:outputPanel id="form2">
+			<apex:pageblock rendered="{!if(GoToCommitType == 'oncommit',true,false)}" id="commitblock">
+				<apex:pageBlockButtons >
+					<apex:commandButton value="Back To Snapshot" action="{!backToSnap}" reRender="msg,fullform" onClick="show();" onComplete="hide();"/>
+					<apex:commandButton value="Commit" action="{!snapCommit}" reRender="msg" onClick="show();" onComplete="finalCommit({!commitSuccess},'{!MetaJSNToCommit}','{!commitTo}');"/>
+				</apex:pageBlockButtons>
+				<apex:pageBlock title="Conflict components">
+					<apex:pageblocktable value="{!conflictCommitMetaList}" var="item" rendered="{!if(conflictCommitMetaList.size > 0,true,false)}">
+						<apex:column headervalue="Select">
+							<apex:inputCheckbox value="{!item.check}" styleclass="sli"/>
+						</apex:column>
+			        	<apex:column headerValue="Metadata Type" value="{!item.meta.RecordType.Name}" />
+			        	<apex:column headerValue="Metadata Item Name" value="{!item.meta.Flosum__API_Name__c}" />
+			        	<apex:column headerValue="Last Modified By(Source Org)" value="{!item.meta.Flosum__Last_Updated_By__c}" />
+			        	<apex:column headerValue="Last Modified Date(Source Org)" value="{!item.meta.Flosum__Last_Modified_Date__c}"/>
+					</apex:pageblocktable>
+					<apex:outputPanel rendered="{!if(conflictCommitMetaList.size > 0,true,false)}" layout="block" styleClass="pagination">
+							<apex:commandbutton value="First" onClick="show();CallFirst('not'); return false;" disabled="{!IsNotToMergePrev}" reRender="none"/>
+							<apex:commandbutton value="Previous" onClick="show();CallPrevious('not'); return false;" disabled="{!IsNotToMergePrev}" reRender="none"/>
+		<!-- 					<apex:outputText value="{!paginationStr}" styleClass="paginationEle"/> -->
+							<apex:commandbutton value="Next" onClick="show();CallNext('not'); return false;" disabled="{!IsNotToMergeNext}" reRender="none"/>
+							<apex:commandbutton value="Last" onClick="show();CallLast('not'); return false;" disabled="{!IsNotToMergeNext}" reRender="none"/>
+					</apex:outputPanel>
+					<apex:outputText value="No records to display." rendered="{!if(conflictCommitMetaList.size == 0,true,false)}"/>
+				</apex:pageBlock>
+				<apex:pageBlock title="Safe to commit components">
+					<apex:pageblocktable value="{!SafeCommitMetaList}" var="item" rendered="{!if(SafeCommitMetaList.size > 0,true,false)}">
+			        	<apex:column headerValue="Metadata Type" value="{!item.RecordType.Name}" />
+			        	<apex:column headerValue="Metadata Item Name" value="{!item.Flosum__API_Name__c}" />
+			        	<apex:column headerValue="Last Modified By(Source Org)" value="{!item.Flosum__Last_Updated_By__c}" />
+			        	<apex:column headerValue="Last Modified Date(Source Org)" value="{!item.Flosum__Last_Modified_Date__c}"/>
+					</apex:pageblocktable>
+					<apex:outputPanel rendered="{!if(SafeCommitMetaList.size > 0,true,false)}" layout="block" styleClass="pagination">
+						<apex:commandbutton value="First" onClick="show();CallFirst('safe'); return false;" disabled="{!IsSafeToMergePrev}" reRender="none"/>
+						<apex:commandbutton value="Previous" onClick="show();CallPrevious('safe'); return false;" disabled="{!IsSafeToMergePrev}" reRender="none"/>
+						<apex:commandbutton value="Next" onClick="show();CallNext('safe'); return false;" disabled="{!IsSafeToMergeNext}" reRender="none"/>
+						<apex:commandbutton value="Last" onClick="show();CallLast('safe'); return false;" disabled="{!IsSafeToMergeNext}" reRender="none"/>
+					</apex:outputPanel>
+					<apex:outputText value="No records to display." rendered="{!if(SafeCommitMetaList.size == 0,true,false)}"/>
+				</apex:pageBlock>
+				<apex:pageBlock title="Components will not be merged">
+					<apex:pageblocktable value="{!NotCommitMetaList}" var="item" rendered="{!if(NotCommitMetaList.size > 0,true,false)}">
+			        	<apex:column headerValue="Metadata Type" value="{!item.meta.RecordType.Name}" />
+			        	<apex:column headerValue="Metadata Item Name" value="{!item.meta.Flosum__API_Name__c}" />
+			        	<apex:column headerValue="Reason">
+			        		<apex:outputText value="{!If(item.info.isFromRepository,('Same as Version '+TEXT(item.info.sameToVersion)+' in Repository'),('Same as Version '+TEXT(item.info.sameToVersion)+' in Branch: '+branchName))}"/>
+			        	</apex:column>
+			        	<apex:column headerValue="Last Modified By(Source Org)" value="{!item.meta.Flosum__Last_Updated_By__c}" />
+			        	<apex:column headerValue="Last Modified Date(Source Org)" value="{!item.meta.Flosum__Last_Modified_Date__c}"/>
+					</apex:pageblocktable>
+					<apex:outputPanel rendered="{!if(NotCommitMetaList.size > 0,true,false)}" layout="block" styleClass="pagination">
+							<apex:commandbutton value="First" onClick="show();CallFirst('not'); return false;" disabled="{!IsNotToMergePrev}" reRender="none"/>
+							<apex:commandbutton value="Previous" onClick="show();CallPrevious('not'); return false;" disabled="{!IsNotToMergePrev}" reRender="none"/>
+							<apex:commandbutton value="Next" onClick="show();CallNext('not'); return false;" disabled="{!IsNotToMergeNext}" reRender="none"/>
+							<apex:commandbutton value="Last" onClick="show();CallLast('not'); return false;" disabled="{!IsNotToMergeNext}" reRender="none"/>
+					</apex:outputPanel>
+					<apex:outputText value="No records to display." rendered="{!if(NotCommitMetaList.size == 0,true,false)}"/>
+				</apex:pageBlock>
+			</apex:pageblock>
+		</apex:outputPanel>
+	</apex:form>
+	<script>
+		var flosumsf = jsforce;
+		Visualforce.remoting.timeout = 120000;
+		var totalRecords = 0;
+		var NameSpacePrefix = '{!NameSpacePrefix}';
+		var attList = [];
+		var metaItemList = [];
+		var metaFoundMap = {};
+		var fileMap = {};
+		var normalZip = new JSZip(); 
+		var ComponentAttachmentWraperList = [];
+		
+		var mmap = new Object();
+	    mmap['CustomField'] = true;
+	    mmap['CustomLabel'] = true;
+	    mmap['CompactLayout'] = true;
+	    mmap['WebLink'] = true;
+	    mmap['RecordType'] = true;
+	    mmap['ListView'] = true;
+	    mmap['FieldSet'] = true;
+	    mmap['AssignmentRule'] = true;
+	    mmap['AutoResponseRule'] = true;
+	    mmap['ValidationRule'] = true;
+	    mmap['WorkflowTask'] = true;
+		mmap['WorkflowOutboundMessage'] = true;
+		mmap['WorkflowFieldUpdate'] = true;
+		mmap['WorkflowAlert'] = true;
+		mmap['WorkflowRule'] = true;
+		
+		mmap['SharingOwnerRule'] = true;
+		mmap['SharingCriteriaRule'] = true;
+		mmap['BusinessProcess'] = true;
+		mmap['SharingReason'] = true;
+		mmap['EscalationRule'] = true;
+		mmap['MatchingRule'] = true;
+		mmap['ManagedTopic'] = true;
+		
+		var folderMap = new Object();
+		folderMap['DocumentFolder'] = 'Document';
+		folderMap['DashboardFolder'] = 'Dashboard';
+		folderMap['ReportFolder'] = 'Report';
+		folderMap['EmailFolder'] = 'EmailTemplate';
+
+		var commitIds, bodySize, componentMetaMap, metaIds, fileIndex, commitSuccess, branchId, componentMetaMap, currentIndex;
+
+		function finalCommit(commitSuccess,MetaJSNIds,branchIdInput) {
+            if(commitSuccess)
+			{
+				ComponentAttachmentWraperList = [];
+				commitIds = JSON.parse(MetaJSNIds);
+				bodySize = 0;
+				componentMetaMap = {};
+				metaIds = [];
+                fileIndex = 0;
+                currentIndex = 0;
+                branchId = branchIdInput;
+                proccesFiles();
+                metafound = false;
+			}
+			else
+			{
+				hide();
+			}
+		}
+
+		function finishCommit() {
+            if(commitIds.length <= fileIndex && mapCounter(componentMetaMap))
+            {
+                var commitObj = new Object();
+                commitObj.dataMap = componentMetaMap;
+                commitObj.metaIds = metaIds;
+                ComponentAttachmentWraperList.push(commitObj);
+                componentMetaMap = {};
+            }
+            if(ComponentAttachmentWraperList.length > 0)
+            {
+                commitInChunks(branchId);
+            }
+            else
+            {
+                showMessage('No metadata items found.');
+            }
+        }
+
+		function proccesFiles()
+		{
+            if(metaFoundMap[commitIds[fileIndex]] != undefined)
+            {
+                var deployNeeded = false;
+                var item = metaFoundMap[commitIds[fileIndex]];
+                var fileZip = new JSZip();
+                if(fileMap[item.key+"-meta.xml"] != undefined)
+                {
+                    fileZip.file(item.File_Name+"-meta.xml",fileMap[item.key+"-meta.xml"].data,{binary:true});
+                    fileMap[item.key+"-meta.xml"] = {};
+                }
+                fileZip.file(item.File_Name,fileMap[item.key].data,{binary:true});
+                item.data = fileZip.generate({type:"base64",compression:"DEFLATE"});
+                fileMap[item.key] = {};
+                fileZip = new JSZip();
+                if(item.data.length + bodySize > 2500000 || currentIndex == 400)
+                {
+                    if(mapCounter(componentMetaMap))
+                    {
+                        var commitObj = new Object();
+                        commitObj.dataMap = componentMetaMap;
+                        commitObj.metaIds = metaIds;
+                        ComponentAttachmentWraperList.push(commitObj);
+                        bodySize = 0;
+                        componentMetaMap = {};
+                        metaIds = [];
+                        deployNeeded = true;
+                        currentIndex = 0;
+                        
+                    }
+                }
+                bodySize  = bodySize + item.data.length;
+                var newObj = new Object();
+                newObj.data=item.data;
+                newObj.crc32=item.crc32;
+                componentMetaMap[item.MetaType+'#'+item.API_Name] = newObj;
+                metaIds.push(commitIds[fileIndex]);
+                metaFoundMap[commitIds[fileIndex]] = {};
+                currentIndex = currentIndex + 1;
+                
+            }
+            else
+            {
+                console.log('Item not found in zip.');
+            }
+            
+            fileIndex ++;
+            if (commitIds.length > fileIndex && deployNeeded == false) {
+                proccesFiles();
+            }
+            else finishCommit();
+		}
+		
+		function commitInChunks(branchId)
+		{
+			if(ComponentAttachmentWraperList.length > 0)
+			{
+				var commitObj = ComponentAttachmentWraperList[0];
+				ComponentAttachmentWraperList.remove(commitObj);
+                console.log(ComponentAttachmentWraperList.length);
+                console.log(fileIndex);
+				var selfConn1 = new flosumsf.Connection({ accessToken: '{!$API.Session_Id}',
+        									  proxyUrl: "/services/proxy", });
+      
+                var restUrl = '/services/apexrest/SaveCommitFile?&parId='+branchId;
+                if(NameSpacePrefix != undefined && NameSpacePrefix != '')
+                {
+                    restUrl = '/services/apexrest/'+NameSpacePrefix+'/SaveCommitFile?&parId='+branchId;
+                }
+       			selfConn1.apex.post(restUrl, commitObj, function(err, res) {
+					if(err) 
+				  	{
+				  		return showMessage('Some error occurred while commit components.');
+				  	}
+				  	else
+				  	{
+				  		ComponentAttachmentWraperList.remove(commitObj);
+						commitInChunks(branchId);
+				  	}
+				  // the response object structure depends on the definition of apex class
+				});
+			}
+			else
+			{
+				//console.log('commit done');
+                if (commitIds.length > fileIndex) {
+                    proccesFiles();
+                }
+                else showMessage('Commit done successfuly.#confirm');
+			}
+		}
+		
+		function mapCounter(componentMetaMap)
+		{
+			for(var key in componentMetaMap)
+			{
+				return true;
+			}
+			return false;
+		}
+		
+		function getCommitInformation(metaJSN,branchId,snapshotId)
+		{
+			ComponentAttachmentWraperList = [];
+			attList = [];
+			fileMap = {};
+			metaItemList = [];
+			metaFoundMap = {};
+			normalZip = new JSZip();
+			if(branchId != null && branchId != undefined)
+			{
+				if(metaJSN != '')
+				{
+					var metaLi = JSON.parse(metaJSN);
+					if(metaLi.length > 0)
+					{
+						Visualforce.remoting.Manager.invokeAction(
+					        '{!$RemoteAction.SnapshotToBranchCommitController.getInformationToCommit}',
+					        metaLi,
+					        branchId,
+					        snapshotId,
+					        handleCommitInformation
+					    );
+					}
+					else
+					{
+						showMessage('No metadata items found.');
+					}
+				}
+				else
+				{
+					showMessage('No metadata items found.');
+				}
+			}
+			else
+			{
+				showMessage('Branch not found.');
+			}
+		}
+		
+		function handleCommitInformation(r,e)
+		{
+		    if(e.status && r) 
+		    {
+		    	metaItemList = r.metaItemList;
+		    	if(r.attList.length > 0)
+				{
+					attList = [];
+					var bodySize = 0;
+					var temp = [];
+					for(var i in r.attList)
+					{
+						if(i< r.attList.length)
+						{
+							var att = r.attList[i];
+							if(bodySize+att.BodyLength > 2000000 && temp.length > 0) 
+							{
+								console.log(bodySize);
+								attList.push(temp);
+								bodySize = 0;
+								temp = [];
+							}
+							bodySize = bodySize+att.BodyLength;
+							temp.push(att.Id);
+						}
+					}
+					if(temp.length > 0)
+					{
+						console.log(bodySize);
+						attList.push(temp);
+					}
+					if(attList.length > 0)
+					{
+						console.log(attList.length);
+						var attSet = attList[0];
+							Visualforce.remoting.Manager.invokeAction(
+					        '{!$RemoteAction.SnapshotToBranchCommitController.getAttachments}',
+					        JSON.stringify(attSet),
+					        handleAttachments
+					    );
+					    
+					    attList.remove(attSet);
+					}
+					else
+					{
+						showMessage('No attachments found.');
+					}
+				}
+				else
+				{
+					showMessage('No attachments found.');
+				}
+		    }
+		    else
+		    {
+		    	showMessage(e.message);
+		    }
+		}
+		
+		function getAttachments()
+		{
+			if(attList.length > 0)
+			{
+				console.log(attList.length);
+				var attSet = attList[0];	
+					Visualforce.remoting.Manager.invokeAction(
+			        '{!$RemoteAction.SnapshotToBranchCommitController.getAttachments}',
+			        JSON.stringify(attSet),
+			        handleAttachments
+			    ); 
+			    attList.remove(attSet);
+			}
+		}
+		
+		function handleAttachments(r,e)
+		{
+			if(e.status && r) 
+		    {
+		    	for(var index in r)
+		    	{	
+		    		if(index < r.length)
+		    		{	
+			    		var id = r[index].parentId;
+			    		var componentType = r[index].compType;
+			    		var zip = new JSZip(r[index].base64, {base64:true});
+                        createFileMap(componentType,zip);
+					}
+		    	}
+                
+		    	if(attList.length > 0)
+				{
+					getAttachments();
+				}
+				else
+				{
+					var fileZip = new JSZip();
+					var metaCrcMap = {};
+					var isFound = false;
+					for(var i in metaItemList)
+					{
+						if(i < metaItemList.length)
+						{
+							var meta = metaItemList[i];
+							var API_Name = meta.API_Name;
+							var File_Name  = meta.File_Name;
+							var MetaType = meta.MetaType;
+							var crc32 = meta.crc32;
+							var metId = meta.metId;
+							var snapId = meta.snapId;
+							var key = '';
+							if(mmap[MetaType] == undefined)
+							{
+								if(folderMap[MetaType] != undefined)
+								{
+									key = folderMap[MetaType]+"#"+File_Name;
+								}
+								else
+								{
+									key = MetaType+"#"+File_Name;
+								}
+							}
+							else
+							{
+								key = MetaType+"#"+API_Name;
+							}
+							if(fileMap[key] != undefined && metId != undefined)
+							{
+								fileZip = new JSZip();
+								var tempMeta = new Object();
+								tempMeta.Id = metId;
+								tempMeta.crc32 = fileMap[key].crc32;
+								tempMeta.MetaType = MetaType;
+								tempMeta.API_Name = API_Name;
+                                tempMeta.File_Name = File_Name;
+                                tempMeta.key = key;
+								
+                                if(fileMap[key+"-meta.xml"] != undefined)
+								{
+									tempMeta.crc32 = tempMeta.crc32+' '+fileMap[key+"-meta.xml"].crc32;
+								}
+                                
+								metaCrcMap[metId] = tempMeta.crc32;
+                                metaFoundMap[metId] = tempMeta;
+								
+								isFound = true;
+							}
+						}
+					}
+					if(isFound)
+					{
+                        //return;
+						showCommitSections(JSON.stringify(metaCrcMap));
+					}
+					else
+					{
+						showMessage('No metadata items found.');
+					}
+				}
+		    }
+		    else
+		    {
+		    	showMessage(e.message);
+		    }
+		}
+		
+		function singleZiper(meta)
+        {
+            var API_Name = meta.API_Name;
+            var File_Name  = meta.File_Name;
+            var MetaType = meta.MetaType;
+            var crc32 = meta.crc32;
+            var metId = meta.metId;
+            var snapId = meta.snapId;
+            var key = '';
+            if(mmap[MetaType] == undefined)
+            {
+                if(folderMap[MetaType] != undefined)
+                {
+                    key = folderMap[MetaType]+"#"+File_Name;
+                }
+                else
+                {
+                    key = MetaType+"#"+File_Name;
+                }
+            }
+            else
+            {
+                key = MetaType+"#"+API_Name;
+            }
+            if(fileMap[key] != undefined && metId != undefined)
+            {
+                var tempMeta = new Object();
+                tempMeta.Id = metId;
+                tempMeta.crc32 = fileMap[key].crc32;
+                tempMeta.MetaType = MetaType;
+                tempMeta.API_Name = API_Name;
+                tempMeta.metaData = undefined;
+                tempMeta.metaDataXml = undefined;
+                
+                if(fileMap[key+"-meta.xml"] != undefined)
+                {
+                    tempMeta.crc32 = tempMeta.crc32+' '+fileMap[key+"-meta.xml"].crc32;
+                    
+                    tempMeta.metaDataXml = fileMap[key+"-meta.xml"].data;
+                }
+                tempMeta.metaData = fileMap[key].data;
+                metaFoundMap[metId] = tempMeta;
+                metaCrcMap[metId] = tempMeta.crc32;
+            }
+        }
+		
+		function createFileMap(tempComponentType,tempZip)
+		{
+			if(tempComponentType == 'Profile' || tempComponentType == 'PermissionSet')
+			{
+				tempZip.remove('objects');
+                tempZip.remove('classes');
+                tempZip.remove('pages');
+                tempZip.remove('layouts');
+                tempZip.remove('tabs');
+                tempZip.remove('applications');
+                tempZip.remove('dataSources');
+                tempZip.remove('customPermissions');
+				for(var fileName in tempZip.files)
+				{
+					if(fileName != undefined && (fileName.indexOf("profiles/") == 0 || fileName.indexOf("permissionsets/") == 0)) 
+	            	{
+	            		var fileData = tempZip.files[fileName].asText();
+	            		if(fileMap[tempComponentType+"#"+fileName] != undefined)
+	            		{
+	            			if(tempComponentType == 'Profile')
+	            				fileData = profileJoinOneByOne(fileMap[tempComponentType+"#"+fileName].data,fileData);
+	            			else if(tempComponentType == 'PermissionSet')
+	            				fileData = permissionSetJoinOneByOne(fileMap[tempComponentType+"#"+fileName].data,fileData);
+	            		}
+	            		
+	            		fileMap[tempComponentType+"#"+fileName] = getCrcWithData(fileData);
+	            	}
+				}
+			}
+			else if(mmap[tempComponentType] == undefined)
+	    	{ 
+	     			for(var fileName in tempZip.files)
+					{
+						if(fileName != undefined && fileName.charAt(fileName.length - 1) != '/' && fileName != 'package.xml' && fileName != 'undefined') 
+		            	{
+		            		var fileData = tempZip.files[fileName].asBinary();
+		            		fileMap[tempComponentType+"#"+fileName] = getCrcWithData(fileData);
+		            	}
+					}
+	   		}
+	   		else
+	   		{
+	     			for(var fileName in tempZip.files)
+					{
+						if(fileName != undefined && fileName.charAt(fileName.length - 1) != '/' && fileName != 'package.xml' && fileName != 'undefined') 
+		            	{
+		            		getChildFileMap(tempComponentType,tempZip.files[fileName].asText(),fileName);
+		            	}
+					}
+			}
+		}
+		
+		function getChildFileMap(metaType,xml,fileName)
+		{
+			var fullName = '';
+			if(metaType != 'CustomLabel')
+			{
+				fullName = fileName.slice(fileName.indexOf("/")+1,fileName.lastIndexOf('.'))+".";
+			}
+	
+	   		var x2js = new X2JS();
+	   		var jsnMap ={};
+			var tempJSON = '';
+			var srcjson = x2js.xml_str2json(xml);
+			if(srcjson != undefined && srcjson != null)
+			{
+				var srcitems;
+				if(metaType == 'CustomLabel')
+				{
+					var srcMetaItem = srcjson.CustomLabels;
+					srcitems = srcMetaItem.labels;
+				}
+				else if(metaType == 'CustomField')
+				{
+					var srcMetaItem = srcjson.CustomObject;
+					srcitems = srcMetaItem.fields;
+				}
+				else if(metaType == 'ListView')
+				{
+					var srcMetaItem = srcjson.CustomObject;
+					srcitems = srcMetaItem.listViews;
+				}
+				else if(metaType == 'CompactLayout')
+				{
+					var srcMetaItem = srcjson.CustomObject;
+					srcitems = srcMetaItem.compactLayouts;
+				}
+				else if(metaType == 'WebLink')
+				{
+					var srcMetaItem = srcjson.CustomObject;
+					srcitems = srcMetaItem.webLinks;
+				}
+				else if(metaType == 'RecordType')
+				{
+					var srcMetaItem = srcjson.CustomObject;
+					srcitems = srcMetaItem.recordTypes;
+				}
+				else if(metaType == 'FieldSet')
+				{
+					var srcMetaItem = srcjson.CustomObject;
+					srcitems = srcMetaItem.fieldSets;
+				}
+				else if(metaType == 'ValidationRule')
+				{
+					var srcMetaItem = srcjson.CustomObject;
+					srcitems = srcMetaItem.validationRules;
+				}
+				else if(metaType == 'AssignmentRule')
+				{
+					var srcMetaItem = srcjson.AssignmentRules;
+					srcitems = srcMetaItem.assignmentRule;
+				}
+				else if(metaType == 'AutoResponseRule')
+				{
+					var srcMetaItem = srcjson.AutoResponseRules;
+					srcitems = srcMetaItem.autoResponseRule;
+				}
+				else if(metaType == 'WorkflowTask')
+				{
+					var srcMetaItem = srcjson.Workflow;
+					srcitems = srcMetaItem.tasks;
+				}
+				else if(metaType == 'WorkflowOutboundMessage')
+				{
+					var srcMetaItem = srcjson.Workflow;
+					srcitems = srcMetaItem.outboundMessages;
+				}
+				else if(metaType == 'WorkflowFieldUpdate')
+				{
+					var srcMetaItem = srcjson.Workflow;
+					srcitems = srcMetaItem.fieldUpdates;
+				}
+				else if(metaType == 'WorkflowAlert')
+				{
+					var srcMetaItem = srcjson.Workflow;
+					srcitems = srcMetaItem.alerts;
+				}
+				else if( metaType == 'WorkflowRule')
+				{
+					var srcMetaItem = srcjson.Workflow;
+					srcitems = srcMetaItem.rules;
+				}
+				else if(metaType == 'SharingCriteriaRule')
+				{
+					var srcMetaItem = srcjson.SharingRules;
+					srcitems = srcMetaItem.sharingCriteriaRules;
+				}
+				else if(metaType == 'SharingOwnerRule')
+				{
+					var srcMetaItem = srcjson.SharingRules;
+					srcitems = srcMetaItem.sharingOwnerRules;
+				}
+				else if(metaType == 'BusinessProcess')
+				{
+					var srcMetaItem = srcjson.CustomObject;
+					srcitems = srcMetaItem.businessProcesses;
+				}
+				else if(metaType == 'SharingReason')
+				{
+					var srcMetaItem = srcjson.CustomObject;
+					srcitems = srcMetaItem.sharingReasons;
+				}
+				else if(metaType == 'EscalationRule')
+				{
+					var srcMetaItem = srcjson.EscalationRules;
+					srcitems = srcMetaItem.escalationRule;
+				}
+				else if(metaType == 'MatchingRule')    
+				{
+					var srcMetaItem = srcjson.MatchingRules;
+					srcitems = srcMetaItem.matchingRules;
+				}
+				else if(metaType == 'ManagedTopic')
+				{
+					var srcMetaItem = srcjson.ManagedTopics;
+					srcitems = srcMetaItem.ManagedTopic;
+				}
+				if(srcitems != undefined)
+				{
+					if(srcitems.fullName == undefined)
+				    {	
+				    	for(var i in srcitems)	
+				    	{
+				    		if(i < srcitems.length)
+				    		{
+				    			var v = srcitems[i];
+				    			jsnMap[v.fullName]= JSON.stringify(v);
+				    		}
+				    	}	    	 
+				    }
+				    else
+				    {
+					    jsnMap[srcitems.fullName] = JSON.stringify(srcitems);
+				    }
+			    }
+			}
+			for(var name in jsnMap)
+			{
+				var tempXml = '';
+				var tempJSON = jsnMap[name];
+				if(tempJSON != undefined)
+				{
+					//header
+					if(metaType == 'CustomLabel')
+					{
+						tempXml = '<?xml version="1.0" encoding="UTF-8"?><CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">';
+					}
+					else if(metaType == 'AssignmentRule' )
+					{
+						tempXml = '<?xml version="1.0" encoding="UTF-8"?><AssignmentRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+					}
+					else if(metaType == 'AutoResponseRule')
+					{
+						tempXml = '<?xml version="1.0" encoding="UTF-8"?><AutoResponseRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+					}
+					else if(metaType == 'WorkflowAlert' || metaType == 'WorkflowFieldUpdate'|| metaType == 'WorkflowOutboundMessage'|| metaType == 'WorkflowTask' || metaType == 'WorkflowRule')
+					{
+						tempXml = '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">';
+					}
+					else if(metaType == 'SharingCriteriaRule' || metaType == 'SharingOwnerRule')
+					{
+						tempXml = '<?xml version="1.0" encoding="UTF-8"?><SharingRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+					}
+					else if(metaType == 'EscalationRule')
+					{
+						tempXml = '<?xml version="1.0" encoding="UTF-8"?><EscalationRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+					}
+					else if(metaType == 'MatchingRule')
+					{
+						tempXml = '<?xml version="1.0" encoding="UTF-8"?><MatchingRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+					}
+					else if(metaType == 'ManagedTopic')
+					{
+						tempXml = '<?xml version="1.0" encoding="UTF-8"?><ManagedTopics xmlns="http://soap.sforce.com/2006/04/metadata">';
+					}
+					else
+					{
+						tempXml = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+					}
+					
+					//body
+					if(metaType == 'CustomLabel')
+					{
+						tempXml = tempXml +'<labels>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</labels>';
+					}
+					else if(metaType == 'CustomField')
+					{
+						tempXml = tempXml +'<fields>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</fields>';
+					}
+					else if(metaType == 'ListView')
+					{
+						tempXml = tempXml +'<listViews>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</listViews>';
+					}
+					else if(metaType == 'CompactLayout')
+					{
+						tempXml = tempXml +'<compactLayouts>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</compactLayouts>';
+					}
+					else if(metaType == 'WebLink')
+					{
+						tempXml = tempXml +'<webLinks>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</webLinks>';
+					}
+					else if(metaType == 'RecordType')
+					{
+						tempXml = tempXml +'<recordTypes>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</recordTypes>';
+					}
+					else if(metaType == 'FieldSet')
+					{
+						tempXml = tempXml +'<fieldSets>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</fieldSets>';
+					}
+					else if(metaType == 'ValidationRule')
+					{
+						tempXml = tempXml +'<validationRules>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</validationRules>';
+					}
+					else if(metaType == 'AssignmentRule')
+					{
+						tempXml = tempXml +'<assignmentRule>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</assignmentRule>';
+					}
+					else if(metaType == 'AutoResponseRule')
+					{
+						tempXml = tempXml +'<autoResponseRule>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</autoResponseRule>';
+					}
+					else if(metaType == 'WorkflowAlert')
+					{
+						tempXml = tempXml +'<alerts>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</alerts>';
+					}
+					else if(metaType == 'WorkflowFieldUpdate')
+					{
+						tempXml = tempXml +'<fieldUpdates>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</fieldUpdates>';
+					}
+					else if(metaType == 'WorkflowOutboundMessage')
+					{
+						tempXml = tempXml +'<outboundMessages>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</outboundMessages>';
+					}
+					else if(metaType == 'WorkflowTask')
+					{
+						tempXml = tempXml +'<tasks>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</tasks>';
+					}
+					else if(metaType == 'WorkflowRule')
+					{
+						tempXml = tempXml +'<rules>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</rules>';
+					}
+					else if(metaType == 'SharingCriteriaRule')
+					{
+						tempXml = tempXml +'<sharingCriteriaRules>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</sharingCriteriaRules>';
+					}
+					else if(metaType == 'SharingOwnerRule')
+					{
+						tempXml = tempXml +'<sharingOwnerRules>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</sharingOwnerRules>';
+					}
+					else if(metaType == 'EscalationRule')
+					{
+						tempXml = tempXml +'<escalationRule>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</escalationRule>';
+					}
+					else if(metaType == 'MatchingRule')
+					{
+						tempXml = tempXml +'<matchingRules>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</matchingRules>';
+					}
+					else if(metaType == 'ManagedTopic')
+					{
+						tempXml = tempXml +'<managedTopic>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</managedTopic>';
+					}
+					else if(metaType == 'BusinessProcess')
+					{
+						tempXml = tempXml +'<businessProcesses>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</businessProcesses>';
+					}
+					else if(metaType == 'SharingReason')
+					{
+						tempXml = tempXml +'<sharingReasons>'+x2js.json2xml_str($.parseJSON(tempJSON))+'</sharingReasons>';
+					}
+					
+					
+					//footer
+					if(metaType == 'CustomLabel')
+					{
+						tempXml = tempXml +'</CustomLabels>';
+					}
+					else if(metaType == 'AssignmentRule' )
+					{
+						tempXml = tempXml +'</AssignmentRules>';
+					}
+					else if(metaType == 'AutoResponseRule')
+					{
+						tempXml = tempXml +'</AutoResponseRules>';
+					}
+					else if(metaType == 'WorkflowAlert' || metaType == 'WorkflowFieldUpdate'|| metaType == 'WorkflowOutboundMessage'|| metaType == 'WorkflowTask' || metaType == 'WorkflowRule')
+					{
+						tempXml = tempXml +'</Workflow>';
+					}
+					else if(metaType == 'SharingCriteriaRule' || metaType == 'SharingOwnerRule')
+					{
+						tempXml = tempXml +'</SharingRules>';
+					}
+					else if(metaType == 'EscalationRule')
+					{
+						tempXml = tempXml +'</EscalationRules>';
+					}
+					else if(metaType == 'MatchingRule')
+					{
+						tempXml = tempXml +'</MatchingRules>';
+					}
+					else if(metaType == 'ManagedTopic')
+					{
+						tempXml = tempXml +'</ManagedTopics>';
+					}
+					else
+					{
+						tempXml = tempXml +'</CustomObject>';
+					}
+					fileMap[metaType+"#"+fullName+""+name]=	getCrcWithData(tempXml);
+				}
+			}
+		}
+		
+		function getCrcWithData(zipData)
+		{
+			var r = new Object();
+			r.crc32 = normalZip.crc32(zipData,32);
+			r.data = zipData;
+            normalZip = new JSZip();
+			return r;
+		}
+		
+		function profileJoinOneByOne(oldProfileXML,newProfileXML)
+		{
+			var x2js = new X2JS();
+			var oldJSN = x2js.xml_str2json(oldProfileXML);
+			var newJSN = x2js.xml_str2json(newProfileXML);
+			if(newJSN.Profile != undefined && oldJSN.Profile != undefined)
+			{
+				srcjson = newJSN.Profile;
+				var profile = oldJSN.Profile;
+				
+				if(srcjson._xmlns != undefined)
+				{
+					profile._xmlns = srcjson._xmlns;
+				}
+				if(srcjson.applicationVisibilities != undefined)
+				{
+					profile.applicationVisibilities = srcjson.applicationVisibilities;
+				}
+				if(srcjson.classAccesses != undefined)
+				{
+					profile.classAccesses = srcjson.classAccesses;
+				}
+				if(srcjson.custom != undefined)
+				{
+					profile.custom = srcjson.custom;
+				}
+				if(srcjson.customPermissions != undefined)
+				{
+					profile.customPermissions = srcjson.customPermissions;
+				}
+				if(srcjson.description != undefined)
+				{
+					profile.description = srcjson.description;
+				}
+				if(srcjson.externalDataSourceAccesses != undefined)
+				{
+					profile.externalDataSourceAccesses = srcjson.externalDataSourceAccesses;
+				}
+				if(srcjson.fieldLevelSecurities != undefined)
+				{
+					profile.fieldLevelSecurities = srcjson.fieldLevelSecurities;
+				}
+				if(srcjson.fieldPermissions != undefined)
+				{
+					profile.fieldPermissions = srcjson.fieldPermissions;
+				}
+				if(srcjson.fullName != undefined)
+				{
+					profile.fullName = srcjson.fullName;
+				}
+				if(srcjson.layoutAssignments != undefined)
+				{
+					profile.layoutAssignments = srcjson.layoutAssignments;
+				}
+				if(srcjson.loginHours != undefined)
+				{
+					profile.loginHours = srcjson.loginHours;
+				}
+				if(srcjson.loginIpRanges != undefined)
+				{
+					profile.loginIpRanges = srcjson.loginIpRanges;
+				}
+				if(srcjson.objectPermissions != undefined)
+				{
+					profile.objectPermissions = srcjson.objectPermissions;
+				}
+				if(srcjson.pageAccesses != undefined)
+				{
+					profile.pageAccesses = srcjson.pageAccesses;
+				}
+				if(srcjson.recordTypeVisibilities != undefined)
+				{
+					profile.recordTypeVisibilities = srcjson.recordTypeVisibilities;
+				}
+				if(srcjson.tabVisibilities != undefined)
+				{
+					profile.tabVisibilities = srcjson.tabVisibilities;
+				}
+				if(srcjson.userLicense != undefined)
+				{
+					profile.userLicense = srcjson.userLicense;
+				}
+				if(srcjson.userPermissions != undefined)
+				{
+					profile.userPermissions = srcjson.userPermissions;
+				}
+				oldJSN.Profile = profile;
+			}
+			fullXML = x2js.json2xml_str(oldJSN);
+			return fullXML;
+		}
+		
+		function permissionSetJoinOneByOne(oldPermissionSetXML,newPermissionSetXML)
+		{
+			var x2js = new X2JS();
+			var oldJSN = x2js.xml_str2json(oldPermissionSetXML);
+			var newJSN = x2js.xml_str2json(newPermissionSetXML);
+			if(newJSN.PermissionSet != undefined && oldJSN.PermissionSet != undefined)
+			{
+				srcjson = newJSN.PermissionSet;
+				var perm = oldJSN.PermissionSet;
+				
+				if(srcjson._xmlns != undefined)
+				{
+					perm._xmlns = srcjson._xmlns;
+				}
+				if(srcjson.applicationVisibilities != undefined)
+				{
+					perm.applicationVisibilities = srcjson.applicationVisibilities;
+				}
+				if(srcjson.classAccesses != undefined)
+				{
+					perm.classAccesses = srcjson.classAccesses;
+				}
+				if(srcjson.customPermissions != undefined)
+				{
+					perm.customPermissions = srcjson.customPermissions;
+				}
+				if(srcjson.description != undefined)
+				{
+					perm.description = srcjson.description;
+				}
+				if(srcjson.externalDataSourceAccesses != undefined)
+				{
+					perm.externalDataSourceAccesses = srcjson.externalDataSourceAccesses;
+				}
+				if(srcjson.fieldLevelSecurities != undefined)
+				{
+					perm.fieldLevelSecurities = srcjson.fieldLevelSecurities;
+				}
+				if(srcjson.fieldPermissions != undefined)
+				{
+					perm.fieldPermissions = srcjson.fieldPermissions;
+				}
+				if(srcjson.label != undefined)
+				{
+					perm.label = srcjson.label;
+				}
+				if(srcjson.objectPermissions != undefined)
+				{
+					perm.objectPermissions = srcjson.objectPermissions;
+				}
+				if(srcjson.pageAccesses != undefined)
+				{
+					perm.pageAccesses = srcjson.pageAccesses;
+				}
+				if(srcjson.recordTypeVisibilities != undefined)
+				{
+					perm.recordTypeVisibilities = srcjson.recordTypeVisibilities;
+				}
+				if(srcjson.tabSettings != undefined)
+				{
+					perm.tabSettings = srcjson.tabSettings;
+				}
+				if(srcjson.userLicense != undefined)
+				{
+					perm.userLicense = srcjson.userLicense;
+				}
+				if(srcjson.userPermissions != undefined)
+				{
+					perm.userPermissions = srcjson.userPermissions;
+				}
+				oldJSN.PermissionSet = perm;
+			}
+			fullXML = x2js.json2xml_str(oldJSN);
+			return fullXML;
+		}
+		
+		function checkItemAll(ele) {
+			var changeClass = ele.getAttribute('styleclass');
+			var checkboxes = document.getElementsByClassName(changeClass);
+		     if (ele.checked) {
+		         for (var i = 0; i < checkboxes.length; i++) {
+		             if (checkboxes[i].type == 'checkbox') {
+		                 checkboxes[i].checked = true;
+		             }
+		         }
+		     } else {
+		         for (var i = 0; i < checkboxes.length; i++) {
+		             if (checkboxes[i].type == 'checkbox') {
+		                 checkboxes[i].checked = false;
+		             }
+		         }
+		     }
+		}
+
+		function getTotalRecords() {       
+            if (!isLimitReached) return;
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.SnapshotToBranchCommitController.getTotalItems}',
+                '{!snapId}',
+                $(".selectedMetadataTypeList").val(),
+                function(result, event){
+                    if (event.status) {
+                        totalRecords = result;
+                        setUpPaging();
+                    } else {
+                        console.log(event);
+                    }
+                }, 
+                {escape: true}
+            );
+        }
+		var currentPageNo;
+		var totalPage;
+		
+		function setUpPaging() {
+            try {
+                var limitSize = 50;
+                currentPageNo = totalRecords == 0 ? totalRecords : 1;
+                totalPage = Math.ceil(totalRecords/limitSize);
+                if (!isLimitReached) return;
+                displayPaging();
+            }
+            catch (err) {}
+        }
+
+		function changePage(action) {
+            try {
+                if (!isLimitReached) return;
+                switch (action) {
+                   case "next":
+                      currentPageNo = currentPageNo + 1;
+                      break;
+                   case "prev":
+                      currentPageNo = currentPageNo - 1;
+                      break;
+                   case "last":
+                      currentPageNo = totalPage;
+                      break;
+                   case "first":
+                      currentPageNo = 1;
+                      break;
+                }
+                displayPaging();
+            }
+            catch (err) {}
+        }
+		
+		function displayPaging() {
+            var paginationStr = 'Total '+totalRecords+' components, Page '+currentPageNo+' of '+totalPage;
+            $(".paginationString").html(paginationStr);
+        }
+
+		getTotalRecords();
+	</script>
+</apex:page>

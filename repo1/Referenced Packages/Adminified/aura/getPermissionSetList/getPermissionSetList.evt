@@ -1,0 +1,1 @@
+<aura:event type="COMPONENT" Description="Showing permission set name of particular user in user information structure." />

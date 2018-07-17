@@ -1,0 +1,4 @@
+<aura:event type="COMPONENT" Description="Create user standard fields and structure using json format data after edit,search,toggle and setting action. E.g. General Information section and its standard field like user name etc. " >
+    <aura:attribute name="userTemplate" type="Object" Description="Holds data, in json format, which is used while creating structure for user module. E.g. General Information section and it's standard fields, Permissions section and it's standard fields."/>
+    <aura:attribute name="index" type="Integer" Description="Maintain indexing of user information blocks."/>
+</aura:event>

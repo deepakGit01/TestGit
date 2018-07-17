@@ -1,0 +1,1559 @@
+<apex:page standardController="Flosum__Patch__c" extensions="Flosum.SchedulePatchDeploymentExtension" sidebar="false">
+	<apex:includeScript value="{!URLFOR($Resource.Flosum__jszipmaster, 'jszip-master/dist/jszip.js')}"/>
+	<script src="{!$Resource.xmltojson}"></script>
+	<script src="{!$Resource.X2JS}"></script>
+	<c:Wait />
+	<apex:form id="formid">
+		<apex:actionfunction action="{!saveAttachment}" name="saveAttachments" reRender="msg" onComplete="checkAttachmentStatus(true);">
+			<apex:param assignTo="{!base64AttBody}" value="" name="newstr"/>
+			<apex:param assignTo="{!attPostFix}" value="" name="attPostFix"/>
+		</apex:actionfunction>
+		<apex:actionfunction action="{!createLogRecord}" name="createLogRecord" reRender="msg" onComplete="checkAttachmentStatus({!IsValid});"/>
+		<apex:actionfunction action="{!scheduleDeploymentBatch}" name="scheduleDeployment" reRender="msg" onComplete="enableBoth();"/>
+		<apex:pagemessages id="msg"/>
+		<apex:pageblock Title="Schedule Deployment" id="block" rendered="{!AND(patchId != null,patchId != '')}">
+			<apex:pageBlockButtons >
+		        <apex:commandButton value="Schedule Deployment" action="{!validateScheduleDeployment}" rendered="{!IF(authSuccesfull,true,false)}" onClick="disableBoth();" onComplete="getPatchDetail({!IsValid},'{!patchId}');" reRender="msg" styleClass="disableitem"/>
+		    </apex:pageBlockButtons>
+			<apex:pageBlockSection columns="1">
+		        <apex:pageBlockSectionItem >
+		            <apex:outputLabel value="Patch Name" />
+		            <apex:outputLabel value="{!patchName}" />
+		        </apex:pageBlockSectionItem>
+		        <apex:pageBlockSectionItem >
+		        	<apex:outputLabel value="Target Org" />
+		            <apex:selectList size="1" value="{!selectedOrg}" styleClass="disableitem">
+		                <apex:selectOptions value="{!targetOrgOptions}"/>
+		                <apex:actionSupport event="onchange"  action="{!validateOrg}" rerender="msg,block" onsubmit="show();" oncomplete="hide();"/>
+		            </apex:selectList>
+		        </apex:pageBlockSectionItem>
+		        <apex:pageBlockSectionItem rendered="{!IF(authSuccesfull,true,false)}">
+		        	<apex:outputLabel value="Date & Time of Deployment" />
+		        	<apex:inputField value="{!comp.Flosum__Last_Modified_Date__c}" styleClass="disableitem"/>
+		        </apex:pageBlockSectionItem>
+	        </apex:pageBlockSection>
+		</apex:pageblock>
+		<apex:actionfunction action="{!showMessage}" reRender="msg" name="showMessage" onComplete="hide();enableBoth();">
+			<apex:param assignTo="{!message}" value="" name="newstr"/>
+		</apex:actionfunction>
+	</apex:form>
+	<script>
+		Visualforce.remoting.timeout = 120000;
+		var attachmentMap = {};
+		var attList = [];
+		var patchDataMap = {};
+		var patchItems = [];
+		var preDestructiveManifest = '';
+    	var postDestructiveManifest = '';
+    	var packageXml = '';
+    	var patchList = {};
+    	var limitofZip = 3000000;
+    	//var limitofZip = 352;
+    	var xmlname= 'package.xml';
+    	var deploymentPatchId = '';
+    	
+    	var attSaveIndex = 0;
+	    var attPostFix = '';
+		
+		var mmap = new Object();
+	    mmap['CustomField'] = true;
+	    mmap['CustomLabel'] = true;
+	    mmap['CompactLayout'] = true;
+	    mmap['WebLink'] = true;
+	    mmap['RecordType'] = true;
+	    mmap['ListView'] = true;
+	    mmap['FieldSet'] = true;
+	    mmap['AssignmentRule'] = true;
+	    mmap['AutoResponseRule'] = true;
+	    mmap['ValidationRule'] = true;
+	    mmap['WorkflowTask'] = true;
+		mmap['WorkflowOutboundMessage'] = true;
+		mmap['WorkflowFieldUpdate'] = true;
+		mmap['WorkflowAlert'] = true;
+		mmap['WorkflowRule'] = true;
+		
+		mmap['SharingOwnerRule'] = true;
+		mmap['SharingCriteriaRule'] = true;
+		mmap['BusinessProcess'] = true;
+		mmap['SharingReason'] = true;
+		mmap['EscalationRule'] = true;
+		mmap['MatchingRule'] = true;
+		mmap['ManagedTopic'] = true;
+		
+		var folderMap = {};
+		folderMap['DocumentFolder'] = 'Document';
+		folderMap['DashboardFolder'] = 'Dashboard';
+		folderMap['ReportFolder'] = 'Report';
+		folderMap['EmailFolder'] = 'EmailTemplate';
+		
+		
+		var metadataTypeHeaderMap = {};
+		metadataTypeHeaderMap['CustomLabel'] = '<?xml version="1.0" encoding="UTF-8"?><CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['CustomField'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['CompactLayout'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['WebLink'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['RecordType'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['ListView'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['FieldSet'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['BusinessProcess'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['SharingReason'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['ValidationRule'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['AssignmentRule'] = '<?xml version="1.0" encoding="UTF-8"?><AssignmentRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['AutoResponseRule'] = '<?xml version="1.0" encoding="UTF-8"?><AutoResponseRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['WorkflowTask'] = '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['WorkflowOutboundMessage'] = '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['WorkflowFieldUpdate'] = '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['WorkflowAlert'] = '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['WorkflowRule'] = '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['SharingOwnerRule'] = '<?xml version="1.0" encoding="UTF-8"?><SharingRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['SharingCriteriaRule'] = '<?xml version="1.0" encoding="UTF-8"?><SharingRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['EscalationRule'] = '<?xml version="1.0" encoding="UTF-8"?><EscalationRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['MatchingRule'] = '<?xml version="1.0" encoding="UTF-8"?><MatchingRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['ManagedTopic'] = '<?xml version="1.0" encoding="UTF-8"?><ManagedTopics xmlns="http://soap.sforce.com/2006/04/metadata">';
+		
+		var metadataTypeFooterMap = {};
+		metadataTypeFooterMap['CustomLabel'] = '</CustomLabels>';
+		metadataTypeFooterMap['CustomField'] = '</CustomObject>';
+	    metadataTypeFooterMap['CompactLayout'] = '</CustomObject>';
+	    metadataTypeFooterMap['WebLink'] = '</CustomObject>';
+	    metadataTypeFooterMap['RecordType'] = '</CustomObject>';
+	    metadataTypeFooterMap['ListView'] = '</CustomObject>';
+	    metadataTypeFooterMap['FieldSet'] = '</CustomObject>';
+	    metadataTypeFooterMap['BusinessProcess'] = '</CustomObject>';
+		metadataTypeFooterMap['SharingReason'] = '</CustomObject>';
+	    metadataTypeFooterMap['ValidationRule'] = '</CustomObject>';
+	    metadataTypeFooterMap['AssignmentRule'] = '</AssignmentRules>';
+	    metadataTypeFooterMap['AutoResponseRule'] = '</AutoResponseRules>';
+	    metadataTypeFooterMap['WorkflowTask'] = '</Workflow>';
+		metadataTypeFooterMap['WorkflowOutboundMessage'] = '</Workflow>';
+		metadataTypeFooterMap['WorkflowFieldUpdate'] = '</Workflow>';
+		metadataTypeFooterMap['WorkflowAlert'] = '</Workflow>';
+		metadataTypeFooterMap['WorkflowRule'] = '</Workflow>';
+		metadataTypeFooterMap['SharingOwnerRule'] = '</SharingRules>';
+		metadataTypeFooterMap['SharingCriteriaRule'] = '</SharingRules>';
+		metadataTypeFooterMap['EscalationRule'] = '</EscalationRules>';
+		metadataTypeFooterMap['MatchingRule'] = '</MatchingRules>';
+		metadataTypeFooterMap['ManagedTopic'] = '</ManagedTopics>';
+		
+		var metadataTypePreTagMap = {};
+		metadataTypePreTagMap['CustomLabel'] = '<labels>';
+		metadataTypePreTagMap['CustomField'] = '<fields>';
+	    metadataTypePreTagMap['CompactLayout'] = '<compactLayouts>';
+	    metadataTypePreTagMap['WebLink'] = '<webLinks>';
+	    metadataTypePreTagMap['RecordType'] = '<recordTypes>';
+	    metadataTypePreTagMap['ListView'] = '<listViews>';
+	    metadataTypePreTagMap['FieldSet'] = '<fieldSets>';
+	    metadataTypePreTagMap['BusinessProcess'] = '<businessProcesses>';
+		metadataTypePreTagMap['SharingReason'] = '<sharingReasons>';
+	    metadataTypePreTagMap['ValidationRule'] = '<validationRules>';
+	    metadataTypePreTagMap['AssignmentRule'] = '<assignmentRule>';
+	    metadataTypePreTagMap['AutoResponseRule'] = '<autoResponseRule>';
+	    metadataTypePreTagMap['WorkflowTask'] = '<tasks>';
+		metadataTypePreTagMap['WorkflowOutboundMessage'] = '<outboundMessages>';
+		metadataTypePreTagMap['WorkflowFieldUpdate'] = '<fieldUpdates>';
+		metadataTypePreTagMap['WorkflowAlert'] = '<alerts>';
+		metadataTypePreTagMap['WorkflowRule'] = '<rules>';
+		metadataTypePreTagMap['SharingOwnerRule'] = '<sharingOwnerRules>';
+		metadataTypePreTagMap['SharingCriteriaRule'] = '<sharingCriteriaRules>';
+		metadataTypePreTagMap['EscalationRule'] = '<escalationRule>';
+		metadataTypePreTagMap['MatchingRule'] = '<matchingRules>';
+		metadataTypePreTagMap['ManagedTopic'] = '<managedTopic>';
+		
+		var metadataTypePostTagMap = {};
+		metadataTypePostTagMap['CustomLabel'] = '</labels>';
+		metadataTypePostTagMap['CustomField'] = '</fields>';
+	    metadataTypePostTagMap['CompactLayout'] = '</compactLayouts>';
+	    metadataTypePostTagMap['WebLink'] = '</webLinks>';
+	    metadataTypePostTagMap['RecordType'] = '</recordTypes>';
+	    metadataTypePostTagMap['ListView'] = '</listViews>';
+	    metadataTypePostTagMap['FieldSet'] = '</fieldSets>';
+	    metadataTypePostTagMap['BusinessProcess'] = '</businessProcesses>';
+		metadataTypePostTagMap['SharingReason'] = '</sharingReasons>';
+	    metadataTypePostTagMap['ValidationRule'] = '</validationRules>';
+	    metadataTypePostTagMap['AssignmentRule'] = '</assignmentRule>';
+	    metadataTypePostTagMap['AutoResponseRule'] = '</autoResponseRule>';
+	    metadataTypePostTagMap['WorkflowTask'] = '</tasks>';
+		metadataTypePostTagMap['WorkflowOutboundMessage'] = '</outboundMessages>';
+		metadataTypePostTagMap['WorkflowFieldUpdate'] = '</fieldUpdates>';
+		metadataTypePostTagMap['WorkflowAlert'] = '</alerts>';
+		metadataTypePostTagMap['WorkflowRule'] = '</rules>';
+		metadataTypePostTagMap['SharingOwnerRule'] = '</sharingOwnerRules>';
+		metadataTypePostTagMap['SharingCriteriaRule'] = '</sharingCriteriaRules>';
+		metadataTypePostTagMap['EscalationRule'] = '</escalationRule>';
+		metadataTypePostTagMap['MatchingRule'] = '</matchingRules>';
+		metadataTypePostTagMap['ManagedTopic'] = '</managedTopic>';
+		
+		function getPatchDetail(IsValid,patchId)
+		{
+			attachmentMap = {};
+			patchDataMap = {};
+			attList = [];
+			patchItems = [];
+			preDestructiveManifest = '';
+	    	postDestructiveManifest = '';
+	    	packageXml = '';
+	    	patchList = {};
+	    	attSaveIndex = 0;
+	    	attPostFix = '';
+			//console.log('patchId------:'+patchId);
+			//console.log('IsValid------:'+IsValid);
+			deploymentPatchId = patchId;
+			if(IsValid && patchId != undefined && patchId.length == 18)
+			{
+				Visualforce.remoting.Manager.invokeAction(
+						            '{!$RemoteAction.SchedulePatchDeploymentExtension.getPatchData}',
+						            patchId,
+						            handlePatchDetail   
+						        );
+			}
+			else
+			{
+				enableBoth();
+			}
+		}
+		
+		function handlePatchDetail(r,e)
+		{
+			if(e.status && r) 
+		    {
+		    	preDestructiveManifest = destructiveXmlCreator(r.destructiveInfo.postMap);
+		    	postDestructiveManifest = destructiveXmlCreator(r.destructiveInfo.preMap);
+		    	packageXml = packageXmlCreator(r.MetaItemlist);
+		    	if(r.MetaItemlist.length > 0 || preDestructiveManifest != '' || postDestructiveManifest != '')
+		    	{
+		    		patchItems = r.MetaItemlist;
+		    		for(var index in r.MetaItemlist)
+					{
+						if(index < r.MetaItemlist.length)
+						{
+							var metaItems = r.MetaItemlist[index];
+							var packageXmlLi = metaItems.items;
+							for(var index2 in packageXmlLi)
+							{
+								if(index2 < packageXmlLi.length)
+								{
+									var attIds = packageXmlLi[index2].attachmentIds;
+									for(var index3 in attIds)
+									{
+										if(index3 < attIds.length)
+										{
+											attachmentMap[attIds[index3]] = attIds[index3];
+										}
+									}
+								}
+							}
+						}
+					}
+					if(patchItems.length > 0)
+					{
+						getAttachmentsDetail();
+					}
+					else
+					{
+						deploymentZipFileCreator();
+					}
+		    	}
+		    	else
+		    	{
+		    		showMessage('There should be at least one item in manifest or destructive changes related list.');
+		    	}
+		    }
+		    else
+		    {
+		    	showMessage(e.message);
+		    }
+		}
+		
+		function getAttachmentsDetail()
+		{
+			Visualforce.remoting.Manager.invokeAction(
+						            '{!$RemoteAction.SchedulePatchDeploymentExtension.getAttachmentsDetail}',
+						            JSON.stringify(attachmentMap),
+						            handleAttachmentDetail   
+						        );
+		}
+		
+		function handleAttachmentDetail(r,e)
+		{
+			if(e.status && r) 
+		    {
+		    	if(r.length > 0)
+				{
+					attList = [];
+					var bodySize = 0;
+					var temp = [];
+					for(var i in r)
+					{
+						if(i< r.length)
+						{
+							var att = r[i];
+							if((bodySize +att.BodyLength) > 3000000 && temp.length > 0) 
+							{
+								attList.push(temp);
+								bodySize = 0;
+								temp = [];
+							}
+							temp.push(att.Id);
+							bodySize = bodySize+att.BodyLength;
+						}
+					}
+					if(temp.length > 0)
+					{
+						attList.push(temp);
+					}
+				}
+				if(attList.length > 0)
+				{
+					//attachment found.
+					getAttachments();
+				}
+				else
+				{
+					showMessage('No attachment found.');
+				}
+		    }
+		    else
+		    {
+		    	showMessage(e.message);
+		    }
+		}
+		
+		function getAttachments()
+		{
+			if(attList.length > 0)
+			{
+				var attLi = attList[0];
+				Visualforce.remoting.Manager.invokeAction(
+						            '{!$RemoteAction.SchedulePatchDeploymentExtension.getAttachments}',
+						            JSON.stringify(attLi),
+						            deploymentPatchId,
+						            handleGetAttachments   
+						        );
+				attList.remove(attLi);
+			}
+		}
+		
+		function handleGetAttachments(r,e)
+		{
+			if(e.status && r) 
+		    {
+		    	if(r.length > 0)
+		    	{
+		    		for(var i in r)
+					{
+						if(i< r.length)
+						{
+							var att = r[i];
+							var parentId = att.parentId;
+				    		var componentType = att.compType;
+				    		var zip = new JSZip(att.base64, {base64:true});
+				    		fileMapCreator(zip,componentType,parentId);
+						}
+					}
+		    	}
+		    	if(attList.length > 0)
+				{
+					//attachment found.
+					getAttachments();
+				}
+				else
+				{
+					//all attachment collected succesfully.
+					deploymentZipFileCreator();
+				}
+			}
+		    else
+		    {
+		    	showMessage(e.message);
+		    }
+		}
+		
+		function deploymentZipFileCreator()
+		{
+			try
+			{
+				if(patchItems.length > 0 || preDestructiveManifest != '' || postDestructiveManifest != '')
+			    {
+			    	var zip = new JSZip();
+			    	/*var bodySize = 0;
+					var temp = [];*/
+					if(preDestructiveManifest != '')
+					{
+						zip.file('destructiveChangesPre.xml',preDestructiveManifest);
+					}
+					if(postDestructiveManifest != '')
+					{
+						zip.file('destructiveChangesPost.xml',postDestructiveManifest);
+					}
+			    	for(var index in patchItems)
+			    	{
+			    		if(index < patchItems.length)
+			    		{
+			    			var metaTypeitemDetail = patchItems[index];
+			    			var componentType = metaTypeitemDetail.metaType;
+			    			var metaTypeitems = metaTypeitemDetail.items;
+			    			for(var index2 in metaTypeitems)
+			    			{
+			    				if(index2 < metaTypeitems.length)
+			    				{
+			    					var item = metaTypeitems[index2];
+			    					var fileName = item.fileName;
+					    			var fullName = item.itemName;
+					    			var parentId = item.snapId;
+					    			
+					    			var fileData = undefined;
+					    			var compKey = parentId+'#'+componentType+'#'+fileName;
+					    			
+					    			if(mmap[componentType] == undefined)
+									{
+										if(folderMap[componentType] != undefined)
+						    			{
+						    				compKey = parentId+'#'+folderMap[componentType]+'#'+fileName;
+						    			}
+										if(patchDataMap[compKey] != undefined)
+										{
+											fileData = patchDataMap[compKey];
+										}
+										else
+										{
+											//console.log('item not found.'+componentType+'----'+fullName);
+										}
+									}
+									else
+									{
+										compKey = parentId+'#'+componentType+'#'+fullName;
+										if(patchDataMap[compKey] != undefined)
+										{
+											if(zip.files[fileName] != undefined)
+											{
+												var zipData = zip.files[fileName].asText();
+												var newData = patchDataMap[compKey];
+												var tempData = childXMLJoin(zipData,newData,componentType,fullName);
+												zip.file(''+fileName,tempData,{binary:true});
+											}
+											else if(patchList['Patch'] != undefined)
+											{
+												var li = [];
+												li = patchList['Patch'];
+												var tempbase64str = '';
+												var foundIndex;
+												for(var zipIndex in li)
+												{
+													if(zipIndex < li.length)
+													{
+														var tempZip = new JSZip(li[zipIndex],{base64:true});
+														if(tempZip.files[fileName] != undefined)
+														{
+															var zipData = tempZip.files[fileName].asText();
+															var newData = patchDataMap[compKey];
+															var tempData = childXMLJoin(zipData,newData,componentType,fullName);
+															tempZip.file(''+fileName,tempData,{binary:true});
+															tempbase64str = tempZip.generate({type:"base64",compression:"DEFLATE"});
+															foundIndex = zipIndex;
+															break;
+														}
+													}
+												}
+												if(tempbase64str != '' && foundIndex != undefined && li[foundIndex] != undefined)
+												{
+													li[foundIndex] = tempbase64str;
+													patchList['Patch'] = li;
+												}
+											}
+											else
+											{
+												fileData = patchDataMap[compKey];
+											}
+										}
+										else
+										{
+											//console.log('item not found.'+componentType+'----'+fullName);
+										}
+									}
+									if(fileData != undefined)
+									{
+										if((JSON.stringify(zip).length+JSON.stringify(fileData).length) > limitofZip)
+										{
+											var isEmpty = true;	                 			
+											for(var index in zip.files)
+											{
+												if(index != undefined && index.charAt(index.length - 1) != '/' && isEmpty) 
+							                 	{
+							                 		isEmpty = false;
+													break;
+							                 	}
+											}
+											if(!isEmpty)
+											{
+												zip.file(xmlname,packageXml);
+												
+												var li = [];
+												if(patchList['Patch'] != undefined)
+												{
+													li = patchList['Patch'];
+												}
+												var tempbase64str = zip.generate({type:"base64",compression:"DEFLATE"});
+												li.push(tempbase64str);
+												patchList['Patch'] = li;
+												zip = new JSZip();
+				                 			}
+										}
+										zip.file(""+fileName, fileData, {binary:true});
+										var metaXmlKey = compKey+'-meta.xml';
+										if(patchDataMap[metaXmlKey] != undefined)
+										{
+											var metaXmlFileName = fileName+'-meta.xml';
+											zip.file(metaXmlFileName,patchDataMap[metaXmlKey]);
+										}
+									}
+			    				}
+			    			}
+			    		}
+			    	}
+					var isEmpty = true;	                 			
+					for(var index in zip.files)
+					{
+						if(zip.files[index].name != undefined && index.charAt(index.length - 1) != '/' && isEmpty) 
+	                 	{
+	                 		isEmpty = false;
+							break;
+	                 	}
+					}
+					if(!isEmpty)
+					{
+						zip.file(xmlname,packageXml);
+						var li = [];
+						if(patchList['Patch'] != undefined)
+						{
+							li = patchList['Patch'];
+						}
+						var tempbase64str = zip.generate({type:"base64",compression:"DEFLATE"});
+						li.push(tempbase64str);
+						patchList['Patch'] = li;
+						zip = new JSZip();
+	              	}
+	              	if(patchList['Patch'] != undefined)
+	              	{
+	              		createLogRecord();
+	              	}
+	              	else
+	              	{
+	              		showMessage('No item found.');
+	              	}
+			    }
+			    else
+			    {
+			    	showMessage('No item found.');
+			    }
+			}
+			catch(err)
+			{
+				showMessage('Unknown error.');
+				//console.log(err.message);
+			}
+		}
+		
+		//save Attachments
+	    function checkAttachmentStatus(IsValid)
+	    {
+	    	if(IsValid)
+	    	{
+		    	var atts = patchList['Patch'];
+		    	if(atts.length > 0 && attSaveIndex < atts.length)
+		    	{
+		    		if(attSaveIndex == 0)
+		    		{	
+		    			attPostFix = 'A';
+		    			saveAttachments(""+atts[attSaveIndex],attPostFix);
+		    		}
+		    		else
+		    		{
+		    			attPostFix = ""+succ(attPostFix);
+			    		saveAttachments(""+atts[attSaveIndex],attPostFix);
+		    		}
+		    		attSaveIndex++;
+		    	}
+		    	else
+		    	{
+		    		scheduleDeployment();
+		    	}
+	    	}
+	    	else
+	    	{
+	    		enableBoth();
+	    	}
+	    }
+		
+		function childXMLJoin(zipData,newData,metaType,fullName)
+		{
+			if(metaType != 'CustomLabel')
+			{
+				fullName = fullName.slice(fullName.lastIndexOf(".")+1,(fullName.length));
+			}
+			var joinData = ''+zipData;
+			if(mmap[metaType] != undefined)
+			{
+				var fullParentObject = new Object();
+				var x2js = new X2JS();
+				var tgtmap = {};
+				var srcjson = x2js.xml_str2json(newData);
+				if(srcjson != null)
+				{
+					var srcitems;
+					if(metaType == 'CustomLabel')
+					{
+						var srcMetaItem = srcjson.CustomLabels;
+						srcitems = srcMetaItem.labels;
+					}
+					else if(metaType == 'CustomField')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.fields;
+					}
+					else if(metaType == 'ListView')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.listViews;
+					}
+					else if(metaType == 'CompactLayout')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.compactLayouts;
+					}
+					else if(metaType == 'WebLink')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.webLinks;
+					}
+					else if(metaType == 'RecordType')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.recordTypes;
+					}
+					else if(metaType == 'FieldSet')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.fieldSets;
+					}
+					else if(metaType == 'ValidationRule')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.validationRules;
+					}
+					else if(metaType == 'AssignmentRule')
+					{
+						var srcMetaItem = srcjson.AssignmentRules;
+						srcitems = srcMetaItem.assignmentRule;
+					}
+					else if(metaType == 'AutoResponseRule')
+					{
+						var srcMetaItem = srcjson.AutoResponseRules;
+						srcitems = srcMetaItem.autoResponseRule;
+					}
+					else if(metaType == 'WorkflowTask')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.tasks;
+					}
+					else if(metaType == 'WorkflowOutboundMessage')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.outboundMessages;
+					}
+					else if(metaType == 'WorkflowFieldUpdate')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.fieldUpdates;
+					}
+					else if(metaType == 'WorkflowAlert')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.alerts;
+					}
+					else if( metaType == 'WorkflowRule')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.rules;
+					}
+					else if(metaType == 'SharingCriteriaRule')
+					{
+						var srcMetaItem = srcjson.SharingRules;
+						srcitems = srcMetaItem.sharingCriteriaRules;
+					}
+					else if(metaType == 'SharingOwnerRule')
+					{
+						var srcMetaItem = srcjson.SharingRules;
+						srcitems = srcMetaItem.sharingOwnerRules;
+					}
+					else if(metaType == 'BusinessProcess')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.businessProcesses;
+					}
+					else if(metaType == 'SharingReason')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.sharingReasons;
+					}
+					else if(metaType == 'EscalationRule')
+					{
+						var srcMetaItem = srcjson.EscalationRules;
+						srcitems = srcMetaItem.escalationRule;
+					}
+					else if(metaType == 'MatchingRule')
+					{
+						var srcMetaItem = srcjson.MatchingRules;
+						srcitems = srcMetaItem.matchingRules;
+					}
+					else if(metaType == 'ManagedTopic')
+					{
+						var srcMetaItem = srcjson.ManagedTopics;
+						srcitems = srcMetaItem.ManagedTopic;
+					}
+					
+					if(srcitems != undefined)
+					{
+						if(srcitems.fullName == undefined)
+					    {			    	
+					    	$.each(srcitems, function( i, v )
+						    {
+						    	tgtmap[v.fullName] = JSON.stringify(v);
+						    });  
+					    }
+					    else
+					    {
+						    tgtmap[srcitems.fullName] = JSON.stringify(srcitems);
+					    }
+				    }
+				    if(tgtmap[fullName] != undefined)
+				    {
+				    	var oldjson = x2js.xml_str2json(zipData);
+				    	if(oldjson != undefined)
+				    	{
+				    		var srcitems;
+				    		if(metaType == 'CustomLabel')
+							{
+								var srcMetaItem = oldjson.CustomLabels;
+								srcitems = srcMetaItem.labels;
+							}
+							else if(metaType == 'CustomField')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.fields;
+							}
+							else if(metaType == 'ListView')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.listViews;
+							}
+							else if(metaType == 'CompactLayout')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.compactLayouts;
+							}
+							else if(metaType == 'WebLink')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.webLinks;
+							}
+							else if(metaType == 'RecordType')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.recordTypes;
+							}
+							else if(metaType == 'FieldSet')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.fieldSets;
+							}
+							else if(metaType == 'ValidationRule')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.validationRules;
+							}
+							else if(metaType == 'AssignmentRule')
+							{
+								var srcMetaItem = oldjson.AssignmentRules;
+								srcitems = srcMetaItem.assignmentRule;
+							}
+							else if(metaType == 'AutoResponseRule')
+							{
+								var srcMetaItem = oldjson.AutoResponseRules;
+								srcitems = srcMetaItem.autoResponseRule;
+							}
+							else if(metaType == 'WorkflowTask')
+							{
+								var srcMetaItem = oldjson.Workflow;
+								srcitems = srcMetaItem.tasks;
+							}
+							else if(metaType == 'WorkflowOutboundMessage')
+							{
+								var srcMetaItem = oldjson.Workflow;
+								srcitems = srcMetaItem.outboundMessages;
+							}
+							else if(metaType == 'WorkflowFieldUpdate')
+							{
+								var srcMetaItem = oldjson.Workflow;
+								srcitems = srcMetaItem.fieldUpdates;
+							}
+							else if(metaType == 'WorkflowAlert')
+							{
+								var srcMetaItem = oldjson.Workflow;
+								srcitems = srcMetaItem.alerts;
+							}
+							else if( metaType == 'WorkflowRule')
+							{
+								var srcMetaItem = oldjson.Workflow;
+								srcitems = srcMetaItem.rules;
+							}
+							else if(metaType == 'SharingCriteriaRule')
+							{
+								var srcMetaItem = oldjson.SharingRules;
+								srcitems = srcMetaItem.sharingCriteriaRules;
+							}
+							else if(metaType == 'SharingOwnerRule')
+							{
+								var srcMetaItem = oldjson.SharingRules;
+								srcitems = srcMetaItem.sharingOwnerRules;
+							}
+							else if(metaType == 'BusinessProcess')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.businessProcesses;
+							}
+							else if(metaType == 'SharingReason')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.sharingReasons;
+							}
+							else if(metaType == 'EscalationRule')
+							{
+								var srcMetaItem = oldjson.EscalationRules;
+								srcitems = srcMetaItem.escalationRule;
+							}
+							else if(metaType == 'MatchingRule')
+							{
+								var srcMetaItem = oldjson.MatchingRules;
+								srcitems = srcMetaItem.matchingRules;
+							}
+							else if(metaType == 'ManagedTopic')
+							{
+								var srcMetaItem = oldjson.ManagedTopics;
+								srcitems = srcMetaItem.ManagedTopic;
+							}
+							var preMap = {};
+							if(srcitems != undefined)
+							{
+								if(srcitems.fullName == undefined)
+							    {			    	
+							    	$.each(srcitems, function( i, v )
+								    {
+								    	preMap[v.fullName] = JSON.stringify(v);
+								    });  
+							    }
+							    else
+							    {
+								    preMap[srcitems.fullName] = JSON.stringify(srcitems);
+							    }
+							}
+							preMap[fullName] = tgtmap[fullName];
+
+							var updatedJsn = '[';
+							for(var name in preMap)
+							{
+								if(updatedJsn == '[')
+								{
+									updatedJsn += preMap[name];
+								}
+								else
+								{
+									updatedJsn+=','+preMap[name];
+								}
+							}
+							updatedJsn+=']';
+							srcitems = JSON.parse(updatedJsn);
+							
+							
+							if(metaType == 'CustomLabel')
+							{
+								srcMetaItem.labels = srcitems;
+								oldjson.CustomLabels = srcMetaItem;
+							}
+							else if(metaType == 'CustomField')
+							{
+								srcMetaItem.fields = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							else if(metaType == 'ListView')
+							{
+								srcMetaItem.listViews = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							else if(metaType == 'CompactLayout')
+							{
+								srcMetaItem.compactLayouts = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							else if(metaType == 'WebLink')
+							{
+								srcMetaItem.webLinks = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							else if(metaType == 'RecordType')
+							{
+								srcMetaItem.recordTypes = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							else if(metaType == 'FieldSet')
+							{
+								srcMetaItem.fieldSets = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							else if(metaType == 'ValidationRule')
+							{	
+								srcMetaItem.validationRules = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							else if(metaType == 'AssignmentRule')
+							{		
+								srcMetaItem.assignmentRule = srcitems;
+								oldjson.AssignmentRules = srcMetaItem;
+							}
+							else if(metaType == 'AutoResponseRule')
+							{
+								srcMetaItem.autoResponseRule = srcitems;
+								oldjson.AutoResponseRules = srcMetaItem;
+							}
+							else if(metaType == 'WorkflowTask')
+							{
+								srcMetaItem.tasks = srcitems;
+								oldjson.Workflow = srcMetaItem;
+							}
+							else if(metaType == 'WorkflowOutboundMessage')
+							{
+								srcMetaItem.outboundMessages = srcitems;
+								oldjson.Workflow = srcMetaItem;
+							}
+							else if(metaType == 'WorkflowFieldUpdate')
+							{
+								srcMetaItem.fieldUpdates = srcitems;
+								oldjson.Workflow = srcMetaItem;
+							}
+							else if(metaType == 'WorkflowAlert')
+							{
+								srcMetaItem.alerts = srcitems;
+								oldjson.Workflow = srcMetaItem;
+							}
+							else if(metaType == 'WorkflowRule')
+							{
+								srcMetaItem.rules = srcitems;
+								oldjson.Workflow = srcMetaItem;
+							}
+							else if(metaType == 'SharingCriteriaRule')
+							{
+								srcMetaItem.sharingCriteriaRules = srcitems;
+								oldjson.SharingRules = srcMetaItem;
+							}
+							else if(metaType == 'SharingOwnerRule')
+							{
+								srcMetaItem.sharingOwnerRules = srcitems;
+								oldjson.SharingRules = srcMetaItem;
+							}
+							else if(metaType == 'EscalationRule')
+							{
+								srcMetaItem.escalationRule = srcitems;
+								oldjson.EscalationRules= srcMetaItem;
+							}
+							else if(metaType == 'MatchingRule')
+							{
+								srcMetaItem.matchingRules = srcitems;
+								oldjson.MatchingRules = srcMetaItem;
+							}
+							else if(metaType == 'ManagedTopic')
+							{
+								srcMetaItem.managedTopic = srcitems;
+								oldjson.ManagedTopics = srcMetaItem;
+							}
+							else if(metaType == 'BusinessProcess')
+							{
+								srcMetaItem.businessProcesses = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							else if(metaType == 'SharingReason')
+							{
+								srcMetaItem.sharingReasons = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							joinData = x2js.json2xml_str(oldjson);
+				    	}
+				    }
+				    else
+				    {
+				    	//console.log('item not found-----'+fullName);
+				    }
+				}
+			}
+			return joinData;
+		}
+		
+		function fileMapCreator(zipFile,metaType,parentId)
+		{
+			if(metaType == 'Profile' || metaType == 'PermissionSet')
+			{
+				for(var fileName in zipFile.files)
+				{
+					if(fileName != undefined && (fileName.indexOf("profiles/") == 0 || fileName.indexOf("permissionsets/") == 0)) 
+	            	{
+	            		var keyFileName = parentId+'#'+metaType+'#'+fileName;
+						if(patchDataMap[keyFileName] != undefined)
+						{
+							var profileXmlList = [];
+							profileXmlList.push(patchDataMap[keyFileName]);
+							profileXmlList.push(zipFile.files[fileName].asText());
+							var fileData = '';
+							if(metaType == 'Profile')
+							{
+								fileData = profileJoin(profileXmlList);
+							}
+							else if(metaType == 'PermissionSet')
+							{
+								fileData = permissionSetJoin(profileXmlList);
+							}
+							patchDataMap[keyFileName] = fileData;
+						}	
+						else
+						{
+							patchDataMap[keyFileName] = zipFile.files[fileName].asText();
+						}
+					}
+				}
+			}
+			else if(mmap[metaType] == undefined)
+			{
+				for(var fileName in zipFile.files)
+				{
+					if(fileName != undefined && fileName.charAt(fileName.length - 1) != '/' && fileName != 'package.xml' && fileName != 'undefined') 
+	            	{
+						patchDataMap[parentId+'#'+metaType+'#'+fileName] = zipFile.files[fileName].asBinary();
+					}
+				}
+			}
+			else
+			{
+				for(var fileName in zipFile.files)
+				{
+					if(fileName != undefined && fileName.charAt(fileName.length - 1) != '/' && fileName != 'package.xml' && fileName != 'undefined') 
+	            	{
+	            		childSplitter(zipFile.files[fileName].asText(),metaType,parentId,fileName);
+					}
+				}
+			}
+		}
+		
+		function childSplitter(fullXml,metaType,parentId,fileName)
+		{
+			if(fullXml != undefined)
+			{
+				var fullName = '';
+				if(metaType != 'CustomLabel')
+				{
+					fullName = fileName.slice(fileName.indexOf("/")+1,fileName.lastIndexOf('.'))+".";
+				}
+				var x2js = new X2JS();
+				var tgtmap = {};
+				var srcjson = x2js.xml_str2json(fullXml);
+				if(srcjson != null)
+				{
+					var srcitems;
+					if(metaType == 'CustomLabel')
+					{
+						var srcMetaItem = srcjson.CustomLabels;
+						srcitems = srcMetaItem.labels;
+					}
+					else if(metaType == 'CustomField')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.fields;
+					}
+					else if(metaType == 'ListView')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.listViews;
+					}
+					else if(metaType == 'CompactLayout')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.compactLayouts;
+					}
+					else if(metaType == 'WebLink')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.webLinks;
+					}
+					else if(metaType == 'RecordType')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.recordTypes;
+					}
+					else if(metaType == 'FieldSet')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.fieldSets;
+					}
+					else if(metaType == 'ValidationRule')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.validationRules;
+					}
+					else if(metaType == 'AssignmentRule')
+					{
+						var srcMetaItem = srcjson.AssignmentRules;
+						srcitems = srcMetaItem.assignmentRule;
+					}
+					else if(metaType == 'AutoResponseRule')
+					{
+						var srcMetaItem = srcjson.AutoResponseRules;
+						srcitems = srcMetaItem.autoResponseRule;
+					}
+					else if(metaType == 'WorkflowTask')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.tasks;
+					}
+					else if(metaType == 'WorkflowOutboundMessage')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.outboundMessages;
+					}
+					else if(metaType == 'WorkflowFieldUpdate')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.fieldUpdates;
+					}
+					else if(metaType == 'WorkflowAlert')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.alerts;
+					}
+					else if( metaType == 'WorkflowRule')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.rules;
+					}
+					else if(metaType == 'SharingCriteriaRule')
+					{
+						var srcMetaItem = srcjson.SharingRules;
+						srcitems = srcMetaItem.sharingCriteriaRules;
+					}
+					else if(metaType == 'SharingOwnerRule')
+					{
+						var srcMetaItem = srcjson.SharingRules;
+						srcitems = srcMetaItem.sharingOwnerRules;
+					}
+					else if(metaType == 'BusinessProcess')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.businessProcesses;
+					}
+					else if(metaType == 'SharingReason')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.sharingReasons;
+					}
+					else if(metaType == 'EscalationRule')
+					{
+						var srcMetaItem = srcjson.EscalationRules;
+						srcitems = srcMetaItem.escalationRule;
+					}
+					else if(metaType == 'MatchingRule')
+					{
+						var srcMetaItem = srcjson.MatchingRules;
+						srcitems = srcMetaItem.matchingRules;
+					}
+					else if(metaType == 'ManagedTopic')
+					{
+						var srcMetaItem = srcjson.ManagedTopics;
+						srcitems = srcMetaItem.ManagedTopic;
+					}
+					
+					if(srcitems != undefined)
+					{
+						if(srcitems.fullName == undefined)
+					    {			    	
+					    	$.each(srcitems, function( i, v )
+						    {
+						    	tgtmap[fullName+''+v.fullName] = JSON.stringify(v);
+						    });  
+					    }
+					    else
+					    {
+						    tgtmap[fullName+''+srcitems.fullName] = JSON.stringify(srcitems);
+					    }
+				    }
+				    
+				    if(metadataTypeHeaderMap[metaType] != undefined && metadataTypePreTagMap[metaType]  != undefined && metadataTypePostTagMap[metaType]  != undefined && metadataTypeFooterMap[metaType] != undefined)
+				    {
+					    for(var itemName in tgtmap)
+					    {
+					    	tempXml = '';
+
+				    		//header
+				    		tempXml = metadataTypeHeaderMap[metaType];
+				    		//body
+				    		tempXml += metadataTypePreTagMap[metaType]+''+x2js.json2xml_str($.parseJSON(tgtmap[itemName]))+''+metadataTypePostTagMap[metaType];
+				    		//footer
+				    		tempXml += metadataTypeFooterMap[metaType];
+					    	
+							
+							if(tempXml != '')
+							{
+								patchDataMap[parentId+'#'+metaType+'#'+itemName] = tempXml;
+							}
+						}
+				    }
+				}
+			}
+		}
+		
+		function profileJoin(profileXmlList)
+		{
+			var x2js = new X2JS();
+			var fullProfile = '';
+			var fullProfileObj = new Object();
+			for(var index in profileXmlList)
+			{
+				if(index < profileXmlList.length)
+				{
+					var xml = profileXmlList[index];
+					var orignal = x2js.xml_str2json(xml);
+					if(orignal.Profile != undefined)
+					{
+						if(fullProfileObj.Profile == undefined)
+						{
+							fullProfileObj.Profile = orignal.Profile;
+						}
+						else if(fullProfileObj.Profile != undefined)
+						{
+							srcjson = orignal.Profile;
+							var profile = fullProfileObj.Profile;
+							if(srcjson._xmlns != undefined)
+							{
+								profile._xmlns = srcjson._xmlns;
+							}
+							if(srcjson.applicationVisibilities != undefined)
+							{
+								profile.applicationVisibilities = srcjson.applicationVisibilities;
+							}
+							if(srcjson.classAccesses != undefined)
+							{
+								profile.classAccesses = srcjson.classAccesses;
+							}
+							if(srcjson.custom != undefined)
+							{
+								profile.custom = srcjson.custom;
+							}
+							if(srcjson.customPermissions != undefined)
+							{
+								profile.customPermissions = srcjson.customPermissions;
+							}
+							if(srcjson.description != undefined)
+							{
+								profile.description = srcjson.description;
+							}
+							if(srcjson.externalDataSourceAccesses != undefined)
+							{
+								profile.externalDataSourceAccesses = srcjson.externalDataSourceAccesses;
+							}
+							if(srcjson.fieldLevelSecurities != undefined)
+							{
+								profile.fieldLevelSecurities = srcjson.fieldLevelSecurities;
+							}
+							if(srcjson.fieldPermissions != undefined)
+							{
+								profile.fieldPermissions = srcjson.fieldPermissions;
+							}
+							if(srcjson.fullName != undefined)
+							{
+								profile.fullName = srcjson.fullName;
+							}
+							if(srcjson.layoutAssignments != undefined)
+							{
+								profile.layoutAssignments = srcjson.layoutAssignments;
+							}
+							if(srcjson.loginHours != undefined)
+							{
+								profile.loginHours = srcjson.loginHours;
+							}
+							if(srcjson.loginIpRanges != undefined)
+							{
+								profile.loginIpRanges = srcjson.loginIpRanges;
+							}
+							if(srcjson.objectPermissions != undefined)
+							{
+								profile.objectPermissions = srcjson.objectPermissions;
+							}
+							if(srcjson.pageAccesses != undefined)
+							{
+								profile.pageAccesses = srcjson.pageAccesses;
+							}
+							if(srcjson.recordTypeVisibilities != undefined)
+							{
+								profile.recordTypeVisibilities = srcjson.recordTypeVisibilities;
+							}
+							if(srcjson.tabVisibilities != undefined)
+							{
+								profile.tabVisibilities = srcjson.tabVisibilities;
+							}
+							if(srcjson.userLicense != undefined)
+							{
+								profile.userLicense = srcjson.userLicense;
+							}
+							if(srcjson.userPermissions != undefined)
+							{
+								profile.userPermissions = srcjson.userPermissions;
+							}
+							fullProfileObj.Profile = profile;
+						}	
+					}
+				}
+			}
+			fullXML = x2js.json2xml_str(fullProfileObj);
+			return fullXML;
+		}
+		
+		function permissionSetJoin(permissionSetXmlList)
+		{
+			var x2js = new X2JS();
+			var fullProfile = '';
+			var fullProfileObj = new Object();
+			for(var index in permissionSetXmlList)
+			{
+				if(index < permissionSetXmlList.length)
+				{
+					var xml = permissionSetXmlList[index];
+					var orignal = x2js.xml_str2json(xml);
+					if(orignal.PermissionSet != undefined)
+					{
+						if(fullProfileObj.PermissionSet == undefined)
+						{
+							fullProfileObj.PermissionSet = orignal.PermissionSet;
+						}
+						else if(fullProfileObj.PermissionSet != undefined)
+						{
+							srcjson = orignal.PermissionSet;
+							var permissionSet = fullProfileObj.PermissionSet;
+							if(srcjson._xmlns != undefined)
+							{
+								permissionSet._xmlns = srcjson._xmlns;
+							}
+							if(srcjson.applicationVisibilities != undefined)
+							{
+								permissionSet.applicationVisibilities = srcjson.applicationVisibilities;
+							}
+							if(srcjson.classAccesses != undefined)
+							{
+								permissionSet.classAccesses = srcjson.classAccesses;
+							}
+							if(srcjson.customPermissions != undefined)
+							{
+								permissionSet.customPermissions = srcjson.customPermissions;
+							}
+							if(srcjson.description != undefined)
+							{
+								permissionSet.description = srcjson.description;
+							}
+							if(srcjson.externalDataSourceAccesses != undefined)
+							{
+								permissionSet.externalDataSourceAccesses = srcjson.externalDataSourceAccesses;
+							}
+							if(srcjson.fieldLevelSecurities != undefined)
+							{
+								permissionSet.fieldLevelSecurities = srcjson.fieldLevelSecurities;
+							}
+							if(srcjson.fieldPermissions != undefined)
+							{
+								permissionSet.fieldPermissions = srcjson.fieldPermissions;
+							}
+							if(srcjson.label != undefined)
+							{
+								permissionSet.label = srcjson.label;
+							}
+							if(srcjson.objectPermissions != undefined)
+							{
+								permissionSet.objectPermissions = srcjson.objectPermissions;
+							}
+							if(srcjson.pageAccesses != undefined)
+							{
+								permissionSet.pageAccesses = srcjson.pageAccesses;
+							}
+							if(srcjson.recordTypeVisibilities != undefined)
+							{
+								permissionSet.recordTypeVisibilities = srcjson.recordTypeVisibilities;
+							}
+							if(srcjson.tabSettings != undefined)
+							{
+								permissionSet.tabSettings = srcjson.tabSettings;
+							}
+							if(srcjson.userLicense != undefined)
+							{
+								permissionSet.userLicense = srcjson.userLicense;
+							}
+							if(srcjson.userPermissions != undefined)
+							{
+								permissionSet.userPermissions = srcjson.userPermissions;
+							}
+							fullProfileObj.PermissionSet = permissionSet;
+						}	
+					}
+				}
+			}
+			fullXML = x2js.json2xml_str(fullProfileObj);
+			return fullXML;
+		}
+		
+		function packageXmlCreator(metaItesList)
+		{
+			var xml = '<?xml version="1.0" encoding="UTF-8"?><Package xmlns="http://soap.sforce.com/2006/04/metadata">';
+			for(var index in metaItesList)
+			{
+				if(index < metaItesList.length)
+				{
+					var metaItems = metaItesList[index];
+					var packageXmlLi = metaItems.items;
+					xml = xml + '<types>';
+					for(var index2 in packageXmlLi)
+					{
+						if(index2 < packageXmlLi.length)
+						{
+							xml = xml + '<members>';
+							xml = xml + packageXmlLi[index2].itemName;
+							xml = xml + '</members>';
+						}
+					}
+					xml = xml + '<name>'+metaItems.metaType+'</name></types>';
+				}
+			}
+			xml = xml + '<version>33.0</version></Package>';
+			return xml;
+		}
+		
+		function destructiveXmlCreator(packageXmlMap)
+		{
+			var xml = '<?xml version="1.0" encoding="UTF-8"?><Package xmlns="http://soap.sforce.com/2006/04/metadata">';
+			var isFound = false;
+			for(var mType in packageXmlMap)
+			{
+				if(!isFound)
+					isFound = true;
+				var packageXmlLi = [];
+				packageXmlLi = packageXmlMap[mType];
+				xml = xml + '<types>';
+				for(var index in packageXmlLi)
+				{
+					if(index < packageXmlLi.length)
+					{
+						xml = xml + '<members>';
+						xml = xml + packageXmlLi[index];
+						xml = xml + '</members>';
+					}
+				}
+				xml = xml + '<name>'+mType+'</name></types>';
+			}
+			xml = xml + '<version>33.0</version></Package>';
+			if(!isFound)
+			{
+				return '';
+			}
+			return xml;
+		}
+		
+		function disableBoth()
+		{
+			var toDisableItems = document.getElementsByClassName('disableitem');
+			for (var i = 0; i < toDisableItems.length; i++) 
+			{
+				if(toDisableItems[i].type == 'button' || toDisableItems[i].type == 'select-one' || toDisableItems[i].type == 'text')
+				{
+					toDisableItems[i].disabled = true;
+				}
+			}
+		}
+		
+		function enableBoth()
+		{
+			var toDisableItems = document.getElementsByClassName('disableitem');
+			for (var i = 0; i < toDisableItems.length; i++) 
+			{
+				if(toDisableItems[i].type == 'button' || toDisableItems[i].type == 'select-one' || toDisableItems[i].type == 'text')
+				{
+					toDisableItems[i].disabled = false;
+				}
+			}
+		}
+		
+		function succ(input) 
+		{
+			var alphabet = 'abcdefghijklmnopqrstuvwxyz',
+		    length = alphabet.length,
+		    result = input,
+		    i = input.length;
+		
+			while(i >= 0) 
+			{
+			    var last = input.charAt(--i),
+			        next = '',
+			        carry = false;
+			
+			    if (isNaN(last)) 
+			    {
+			        index = alphabet.indexOf(last.toLowerCase());
+			
+			        if (index === -1) 
+			        {
+			            next = last;
+			            carry = true;
+			        }
+			        else 
+			        {
+			            var isUpperCase = last === last.toUpperCase();
+			            next = alphabet.charAt((index + 1) % length);
+			            if (isUpperCase) 
+			            {
+			                next = next.toUpperCase();
+			            }
+			
+			            carry = index + 1 >= length;
+			            if (carry && i === 0) 
+			            {
+			                var added = isUpperCase ? 'A' : 'a';
+			                result = added + next + result.slice(1);
+			                break;
+			            }
+			        }
+			    }
+			    else 
+			    {
+			        next = +last + 1;
+			        if(next > 9) 
+			        {
+			            next = 0;
+			            carry = true
+			        }
+			
+			        if (carry && i === 0) 
+			        {
+			            result = '1' + next + result.slice(1);
+			            break;
+			        }
+			    }
+			
+			    result = result.slice(0, i) + next + result.slice(i + 1);
+			    if (!carry) 
+			    {
+			        break;
+			    }
+		  	}
+		  	return result;
+		}
+	</script>
+</apex:page>

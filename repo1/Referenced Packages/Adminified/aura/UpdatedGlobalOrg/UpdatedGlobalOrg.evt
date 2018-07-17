@@ -1,0 +1,12 @@
+<aura:event type="APPLICATION" description="Update connected organization in all modules." >
+    <aura:attribute name="globalOrg" type="Object" description="holds all connected organization."/>
+    <aura:attribute name="isRefreshOrg" type="Boolean" description="Check connected organization list is refresh or not."/>
+    <aura:attribute name="userName" type="String" description="Hold the user name of connected organization."/>
+    <aura:attribute name="orgId" type="String" description="Hold the organization id of connected organization."/>
+    <aura:attribute name="instanceType" type="String" description="Hold the instance type of connected organization."/>
+    <aura:attribute name="id" type="String"/>
+    <aura:attribute name="index" type="Integer" description="Maintain indexing for calling this event from which component. "/>
+    <aura:attribute name="moduleName" type="String" description="Hold module name."/>
+    <aura:attribute name="randomNumber" type="Integer" description="Unique no for identifying this event calling from which module information blocks."/>
+    <aura:attribute name="action" type="String" description="hold the action name. E.g Add, Delete etc."/>
+</aura:event>

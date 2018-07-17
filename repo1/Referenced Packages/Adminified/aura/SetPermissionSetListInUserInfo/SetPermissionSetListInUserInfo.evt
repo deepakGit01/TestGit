@@ -1,0 +1,3 @@
+<aura:event type="APPLICATION" Description="Showing particular user permission set in permission set section of user information block.">
+
+</aura:event>

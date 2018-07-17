@@ -1,0 +1,859 @@
+<apex:page controller="Flosum.MergeCommitController">
+	<apex:includeScript value="{!URLFOR($Resource.Flosum__jszipmaster, 'jszip-master/dist/jszip.js')}"/>
+	<script src="{!$Resource.xmltojson}"></script>
+	<script src="{!$Resource.X2JS}"></script>
+	<style>
+		.pagination { 
+			padding: 1%; 
+		} 
+		div .pagination { 
+			text-align: center; 
+		} 
+		td .dataCell label { 
+			font-weight: normal; 
+		} 
+		span.paginationEle { 
+			margin-left: 4px; 
+		} 
+		.pagination input { 
+			margin-left: 4px; 
+		} 
+	</style>
+	<c:Wait />	
+	<apex:pagemessages id="msg"/>
+	<apex:form rendered="{!If(branchName != null,true,false)}" id="fullform">
+		<apex:actionfunction name="insertMergeAttachment" action="{!insertMergeAttachment}" rerender="msg" oncomplete="handleMergeDml();">
+			<apex:param assignTo="{!jsonStr}" value="" name="newstr"/>
+		</apex:actionfunction>
+		<apex:actionfunction name="branchMerge" action="{!branchMerge}" rerender="msg" oncomplete="hide();">
+		</apex:actionfunction>
+		
+		<apex:actionfunction name="CallFirst" action="{!oneSectionFirst}" rerender="msg,form1,form2" oncomplete="hide();">
+			<apex:param assignTo="{!section}" value="" name="newstr"/>
+		</apex:actionfunction>
+		<apex:actionfunction name="CallPrevious" action="{!oneSectionPrev}" rerender="msg,form1,form2" oncomplete="hide();">
+			<apex:param assignTo="{!section}" value="" name="newstr"/>
+		</apex:actionfunction>
+		<apex:actionfunction name="CallNext" action="{!oneSectionNext}" rerender="msg,form1,form2" oncomplete="hide();">
+			<apex:param assignTo="{!section}" value="" name="newstr"/>
+		</apex:actionfunction>
+		<apex:actionfunction name="CallLast" action="{!oneSectionLast}" rerender="msg,form1,form2" oncomplete="hide();">
+			<apex:param assignTo="{!section}" value="" name="newstr"/>
+		</apex:actionfunction>
+		
+		<apex:sectionHeader title="Merge"/>
+		<apex:pageblock >
+			<apex:pageblockSection columns="1">
+				<apex:pageblocksectionItem >
+					<apex:outputLabel value="Branch Name"/>
+					<apex:outputText value="{!branchName}"/>
+				</apex:pageblocksectionItem>
+				<apex:pageblocksectionItem >
+					<apex:outputLabel value="Commit Name"/>
+					<apex:inputText maxlength="255" value="{!commitName}"/>
+				</apex:pageblocksectionItem>
+				<apex:pageblocksectionItem >
+					<apex:outputLabel value="Commit Description"/>
+					<apex:inputTextarea html-maxlength="1000" value="{!commitDescription}"/>
+				</apex:pageblocksectionItem>
+			</apex:pageblockSection>
+			<apex:pageBlockButtons >
+				<apex:commandButton value="Commit" action="{!branchZipCreator}" reRender="msg" onClick="show();" onComplete="mergeDetailRetriever('{!logAttId}','{!logId}');"/>
+            </apex:pageBlockButtons>
+		</apex:pageblock>
+		<apex:outputPanel id="form1">
+			<apex:pageblock title="Conflict components">
+				<apex:pageblocktable value="{!conflictCompList}" var="item" rendered="{!if(conflictCompList.size > 0,true,false)}">
+					<apex:column headervalue="Select">
+						<apex:inputCheckbox value="{!item.check}" styleclass="sli"/>
+					</apex:column>
+		        	<apex:column value="{!item.comp.Flosum__Component_Type__c}" />
+		        	<apex:column value="{!item.comp.Flosum__Component_Name__c}" />
+		        	<apex:column value="{!item.comp.Flosum__Comments__c}" />
+		        	<apex:column value="{!item.comp.Flosum__Last_Modified_By__c}" />
+		        	<apex:column >
+		        		<apex:commandLink target="_blank" action="{!compareComponent}" value="View Comparison">
+		        			<apex:param assignTo="{!branchComponentId}" value="{!item.branchCompId}" name="newstr"/>
+		        			<apex:param assignTo="{!repositoryComponentId}" value="{!item.repCompId}" name="newstr2"/>
+		        		</apex:commandLink>
+		        	</apex:column>
+				</apex:pageblocktable>
+				<apex:outputPanel rendered="{!if(conflictCompList.size > 0,true,false)}" layout="block" styleClass="pagination">
+						<apex:commandbutton value="First" onClick="show();CallFirst('conflict'); return false;" reRender="none" disabled="{!IsConflictPrev}"/>
+						<apex:commandbutton value="Previous" onClick="show();CallPrevious('conflict'); return false;" disabled="{!IsConflictPrev}" reRender="none"/>
+						<apex:commandbutton value="Next" onClick="show();CallNext('conflict'); return false;" disabled="{!IsConflictNext}" reRender="none"/>
+						<apex:commandbutton value="Last" onClick="show();CallLast('conflict'); return false;" disabled="{!IsConflictNext}" reRender="none"/>
+				</apex:outputPanel>
+				<apex:outputText value="No records to display." rendered="{!if(conflictCompList.size == 0,true,false)}"/>
+			</apex:pageblock>
+			
+			<apex:pageblock title="Safe to commit components">
+				<apex:pageblocktable value="{!newCompList}" var="item" rendered="{!if(newCompList.size > 0,true,false)}">
+		        	<apex:column value="{!item.Flosum__Component_Type__c}" />
+		        	<apex:column value="{!item.Flosum__Component_Name__c}" />
+		        	<apex:column value="{!item.Flosum__Comments__c}" />
+		        	<apex:column value="{!item.Flosum__Last_Modified_By__c}" />
+				</apex:pageblocktable>
+				<apex:outputPanel rendered="{!if(newCompList.size > 0,true,false)}" layout="block" styleClass="pagination">
+						<apex:commandbutton value="First" onClick="show();CallFirst('safe'); return false;" disabled="{!IsSafeToMergePrev}" reRender="none"/>
+						<apex:commandbutton value="Previous" onClick="show();CallPrevious('safe'); return false;" disabled="{!IsSafeToMergePrev}" reRender="none"/>
+						<apex:commandbutton value="Next" onClick="show();CallNext('safe'); return false;" disabled="{!IsSafeToMergeNext}" reRender="none"/>
+						<apex:commandbutton value="Last" onClick="show();CallLast('safe'); return false;" disabled="{!IsSafeToMergeNext}" reRender="none"/>
+				</apex:outputPanel>
+				<apex:outputText value="No records to display." rendered="{!if(newCompList.size == 0,true,false)}"/>
+			</apex:pageblock>
+			
+			<apex:pageblock title="Components will not be merged">
+				<apex:pageblocktable value="{!notMergeCompList}" var="item" rendered="{!if(notMergeCompList.size > 0,true,false)}">
+		        	<apex:column value="{!item.comp.Flosum__Component_Type__c}" />
+		        	<apex:column value="{!item.comp.Flosum__Component_Name__c}" />
+		        	<apex:column headerValue="Reason">
+			        		<apex:outputText value="{!'Same as Version '+TEXT(item.version)+' in Repository'}"/>
+			        	</apex:column>
+		        	<apex:column value="{!item.comp.Flosum__Comments__c}" />
+		        	<apex:column value="{!item.comp.Flosum__Last_Modified_By__c}" />
+				</apex:pageblocktable>
+				<apex:outputPanel rendered="{!if(notMergeCompList.size > 0,true,false)}" layout="block" styleClass="pagination">
+						<apex:commandbutton value="First" onClick="show();CallFirst('not'); return false;" disabled="{!IsNotToMergePrev}" reRender="none"/>
+						<apex:commandbutton value="Previous" onClick="show();CallPrevious('not'); return false;" disabled="{!IsNotToMergePrev}" reRender="none"/>
+						<apex:commandbutton value="Next" onClick="show();CallNext('not'); return false;" disabled="{!IsNotToMergeNext}" reRender="none"/>
+						<apex:commandbutton value="Last" onClick="show();CallLast('not'); return false;" disabled="{!IsNotToMergeNext}" reRender="none"/>
+				</apex:outputPanel>
+				<apex:outputText value="No records to display." rendered="{!if(notMergeCompList.size == 0,true,false)}"/>
+			</apex:pageblock>
+		</apex:outputPanel>
+		<apex:actionfunction action="{!showMessage}" reRender="msg" name="showMessage" onComplete="hide();">
+			<apex:param assignTo="{!message}" value="" name="newstr"/>
+		</apex:actionfunction>
+		<apex:actionfunction action="{!notFoundMessage}" reRender="msg" name="notFoundMessage" onComplete="hide();">
+			<apex:param assignTo="{!message}" value="" name="newstr"/>
+		</apex:actionfunction>
+	</apex:form>
+	<script>
+	Visualforce.remoting.timeout = 120000;
+	var dataMap = {};
+	var Mergewrap;
+	var MergeBase64Str =[];
+	
+	var attList = [];
+	var xmlName = 'package.xml';
+	var apiVersion = '33.0';
+	
+	var mmap = new Object();
+    mmap['CustomField'] = true;
+    mmap['CustomLabel'] = true;
+    mmap['CompactLayout'] = true;
+    mmap['WebLink'] = true;
+    mmap['RecordType'] = true;
+    mmap['ListView'] = true;
+    mmap['FieldSet'] = true;
+    mmap['AssignmentRule'] = true;
+    mmap['AutoResponseRule'] = true;
+    mmap['ValidationRule'] = true;
+    mmap['WorkflowTask'] = true;
+	mmap['WorkflowOutboundMessage'] = true;
+	mmap['WorkflowFieldUpdate'] = true;
+	mmap['WorkflowAlert'] = true;
+	mmap['WorkflowRule'] = true;
+	
+	mmap['SharingOwnerRule'] = true;
+	mmap['SharingCriteriaRule'] = true;
+	mmap['BusinessProcess'] = true;
+	mmap['SharingReason'] = true;
+	mmap['EscalationRule'] = true;
+	mmap['MatchingRule'] = true;
+	mmap['ManagedTopic'] = true;
+	
+	var folderMap = new Object();
+	folderMap['DocumentFolder'] = 'Document';
+	folderMap['DashboardFolder'] = 'Dashboard';
+	folderMap['ReportFolder'] = 'Report';
+	folderMap['EmailFolder'] = 'EmailTemplate';
+	
+	function mergeDetailRetriever(logAttId,logId)
+	{
+		dataMap = {};
+		attList = [];
+		MergeBase64Str =[];
+		Mergewrap = new Object();
+		if(logAttId != undefined && logAttId != null && logAttId != '' && logAttId.length == 18  && logId != undefined && logId != null && logId != '' && logId.length == 18)
+		{
+			Visualforce.remoting.Manager.invokeAction(
+		        '{!$RemoteAction.MergeCommitController.getMergeDetail}',
+		        logAttId,
+		        handleMergeDetail
+		    );
+		}
+		else
+		{
+			hide();
+		}
+	}
+	
+	function handleMergeDetail(r,e)
+	{
+	    if(e.status && r) 
+	    {
+	    	//console.log(r);
+	    	Mergewrap = r;
+	    	if(r.attIdList.length > 0)
+	    	{
+	    		attList = JSON.parse(JSON.stringify(r.attIdList));
+	    		getMergeAttachments();
+	    	}
+	    }
+	    else
+	    {
+	    	showMessage(e.message);
+	    }
+	}
+	
+	function getMergeAttachments()
+	{
+		if(attList.length > 0)
+		{
+			var attSet = attList[0];
+				Visualforce.remoting.Manager.invokeAction(
+		        '{!$RemoteAction.MergeCommitController.getMergeAttachments}',
+		        JSON.stringify(attSet),
+		        handleMergeAttachments
+		    ); 
+		    attList.shift(0);
+		}
+	}
+	
+	function handleMergeAttachments(r,e)
+	{
+	    if(e.status && r) 
+	    {
+	    	for(var index in r)
+	    	{
+		    	var compName = r[index].parentId;
+	    		var componentType = r[index].compType;
+	    		var zip = new JSZip(r[index].base64, {base64:true});
+	    		
+	    		for(var fileName in zip.files)
+	    		{
+					if(fileName != undefined && fileName.charAt(fileName.length - 1) != '/' && fileName != 'package.xml' && fileName != 'undefined') 
+	            	{
+	            		if(mmap[componentType] == undefined)
+    					{
+	            			dataMap[componentType+"#"+fileName] = zip.files[fileName].asBinary();
+	            		}
+	            		else
+	            		{
+	            			dataMap[componentType+"#"+compName] = zip.files[fileName].asText();
+						}
+	            	}
+	    		}
+    		}
+    		if(attList.length > 0)
+			{
+				getMergeAttachments();
+			}
+			else
+			{
+				//console.log(dataMap);
+				//console.log('att attachents collected succesfully');
+				if(Mergewrap.compList != undefined && Mergewrap.compList.length > 0)
+				{
+					var mainZip = new JSZip();
+					var packageXmlMap = {};
+
+					
+					for(var index in Mergewrap.compList)
+					{
+						if(index < Mergewrap.compList.length)
+						{
+							var comp = Mergewrap.compList[index];
+							var fileName = comp.compFileName;
+							var compType = comp.compType;
+							var compName = comp.compName;
+							var key;
+							
+							
+							if(mmap[compType] == undefined)
+							{
+								key = compType+"#"+fileName;
+							}
+							else
+							{
+								key = compType+"#"+compName;
+							}
+							
+							if(dataMap[key]!= undefined )
+							{
+								//creating package.xml data
+								var packageXmlLi = [];
+								if(packageXmlMap[compType] != undefined)
+								{
+									packageXmlLi = packageXmlMap[compType];
+								}
+								packageXmlLi.push(compName);
+								packageXmlMap[compType] = packageXmlLi;
+								
+								
+								if(mainZip.files[fileName] != undefined)
+								{
+									//console.log('filename allready found in zip');
+									if(mmap[compType]!= undefined)
+									{
+										var oldXML = mainZip.files[fileName].asText();
+										var tempName = ""+compName;
+										if(tempName.lastIndexOf('.') > -1)
+										{
+											var tempName = tempName.slice(tempName.lastIndexOf('.')+1,tempName.length)
+										}
+										
+										var customXML = getChildPartXml(dataMap[key],fileName,tempName,oldXML,compType);
+										mainZip.file(fileName,customXML);
+									}
+									else
+									{
+										console.log(compType+' have duplicate file Name');
+									}
+								}
+								else
+								{
+									mainZip.file(fileName,dataMap[key],{binary:true});
+									if(dataMap[key+"-meta.xml"] != undefined)
+									{
+										mainZip.file(fileName+"-meta.xml",dataMap[key+"-meta.xml"],{binary:true});
+									}
+								}
+								
+								
+								if(JSON.stringify(mainZip).length > 2000000)
+								{
+									var isEmpty = true;
+									for(var fileName in mainZip.files)
+									{
+										if(fileName != undefined && fileName != 'package.xml' && fileName.charAt(fileName.length - 1) != '/' && isEmpty) 
+						               	{
+						               		isEmpty = false;
+											break;
+						               	}
+									}
+									if(!isEmpty)
+									{
+										var xmlData = packageXmlCreator(packageXmlMap);
+										mainZip.file(xmlName,xmlData);
+										var strBase64 = mainZip.generate({base64:true,compression:"DEFLATE"});
+										MergeBase64Str.push(strBase64);
+										packageXmlMap = {}; 
+										mainZip = new JSZip();
+									}
+								}
+							}
+							else
+							{
+								//console.log('item not found---'+key);
+							}
+						}
+					}
+					var isEmpty = true;
+
+					for(var fileName in mainZip.files)
+					{
+						if(fileName != undefined && fileName != 'package.xml' && fileName.charAt(fileName.length - 1) != '/' && isEmpty) 
+		               	{
+		               		isEmpty = false;
+							break;
+		               	}
+					}
+					if(!isEmpty)
+					{
+						var xmlData = packageXmlCreator(packageXmlMap);
+						mainZip.file(xmlName,xmlData);
+						
+						var strBase64 = mainZip.generate({base64:true,compression:"DEFLATE"});
+						MergeBase64Str.push(strBase64);
+					}
+				}
+				if(MergeBase64Str.length > 0)
+				{
+					saveAttachment();
+				}
+				else
+				{
+					//console.log('no zip file found');
+				}
+			}
+	    }
+	    else
+	    {
+	    	showMessage(e.message);
+	    }
+	}
+	
+	function packageXmlCreator(packageXmlMap)
+	{
+		var xml = '<?xml version="1.0" encoding="UTF-8"?><Package xmlns="http://soap.sforce.com/2006/04/metadata">';
+		for(var mType in packageXmlMap)
+		{
+			var packageXmlLi = [];
+			packageXmlLi = packageXmlMap[mType];
+			xml = xml + '<types>';
+			for(var index in packageXmlLi)
+			{
+				if(index < packageXmlLi.length)
+				{
+					xml = xml + '<members>';
+					xml = xml + packageXmlLi[index];
+					xml = xml + '</members>';
+				}
+			}
+			xml = xml + '<name>'+mType+'</name></types>';
+		}
+		xml = xml + '<version>'+apiVersion+'</version></Package>';
+		return xml;
+	}
+	
+	function getChildPartXml(newXml,fileName,itemName,oldXml,metaType)
+   	{
+   		var x2js = new X2JS();
+		var tgtmap = {};
+		var srcjson = x2js.xml_str2json(newXml);
+		if(srcjson != null)
+		{
+			var srcitems;
+			if(metaType == 'CustomLabel')
+			{
+				var srcMetaItem = srcjson.CustomLabels;
+				srcitems = srcMetaItem.labels;
+			}
+			else if(metaType == 'CustomField')
+			{
+				var srcMetaItem = srcjson.CustomObject;
+				srcitems = srcMetaItem.fields;
+			}
+			else if(metaType == 'ListView')
+			{
+				var srcMetaItem = srcjson.CustomObject;
+				srcitems = srcMetaItem.listViews;
+			}
+			else if(metaType == 'CompactLayout')
+			{
+				var srcMetaItem = srcjson.CustomObject;
+				srcitems = srcMetaItem.compactLayouts;
+			}
+			else if(metaType == 'WebLink')
+			{
+				var srcMetaItem = srcjson.CustomObject;
+				srcitems = srcMetaItem.webLinks;
+			}
+			else if(metaType == 'RecordType')
+			{
+				var srcMetaItem = srcjson.CustomObject;
+				srcitems = srcMetaItem.recordTypes;
+			}
+			else if(metaType == 'FieldSet')
+			{
+				var srcMetaItem = srcjson.CustomObject;
+				srcitems = srcMetaItem.fieldSets;
+			}
+			else if(metaType == 'ValidationRule')
+			{
+				var srcMetaItem = srcjson.CustomObject;
+				srcitems = srcMetaItem.validationRules;
+			}
+			else if(metaType == 'AssignmentRule')
+			{
+				var srcMetaItem = srcjson.AssignmentRules;
+				srcitems = srcMetaItem.assignmentRule;
+			}
+			else if(metaType == 'AutoResponseRule')
+			{
+				var srcMetaItem = srcjson.AutoResponseRules;
+				srcitems = srcMetaItem.autoResponseRule;
+			}
+			else if(metaType == 'WorkflowTask')
+			{
+				var srcMetaItem = srcjson.Workflow;
+				srcitems = srcMetaItem.tasks;
+			}
+			else if(metaType == 'WorkflowOutboundMessage')
+			{
+				var srcMetaItem = srcjson.Workflow;
+				srcitems = srcMetaItem.outboundMessages;
+			}
+			else if(metaType == 'WorkflowFieldUpdate')
+			{
+				var srcMetaItem = srcjson.Workflow;
+				srcitems = srcMetaItem.fieldUpdates;
+			}
+			else if(metaType == 'WorkflowAlert')
+			{
+				var srcMetaItem = srcjson.Workflow;
+				srcitems = srcMetaItem.alerts;
+			}
+			else if( metaType == 'WorkflowRule')
+			{
+				var srcMetaItem = srcjson.Workflow;
+				srcitems = srcMetaItem.rules;
+			}
+			////
+			else if(metaType == 'SharingCriteriaRule')
+			{
+				var srcMetaItem = srcjson.SharingRules;
+				srcitems = srcMetaItem.sharingCriteriaRules;
+			}
+			else if(metaType == 'SharingOwnerRule')
+			{
+				var srcMetaItem = srcjson.SharingRules;
+				srcitems = srcMetaItem.sharingOwnerRules;
+			}
+			else if(metaType == 'BusinessProcess')
+			{
+				var srcMetaItem = srcjson.CustomObject;
+				srcitems = srcMetaItem.businessProcesses;
+			}
+			else if(metaType == 'SharingReason')
+			{
+				var srcMetaItem = srcjson.CustomObject;
+				srcitems = srcMetaItem.sharingReasons;
+			}
+			else if(metaType == 'EscalationRule')
+			{
+				var srcMetaItem = srcjson.EscalationRules;
+				srcitems = srcMetaItem.escalationRule;
+			}
+			else if(metaType == 'MatchingRule')    
+			{
+				var srcMetaItem = srcjson.MatchingRules;
+				srcitems = srcMetaItem.matchingRules;
+			}
+			else if(metaType == 'ManagedTopic')
+			{
+				var srcMetaItem = srcjson.ManagedTopics;
+				srcitems = srcMetaItem.ManagedTopic;
+			}
+			////
+			if(srcitems != undefined)
+			{
+				if(srcitems.fullName == undefined)
+			    {			    	
+			    	$.each(srcitems, function( i, v )
+				    {
+				    	tgtmap[v.fullName] = JSON.stringify(v);
+				    });  
+			    }
+			    else
+			    {
+				    tgtmap[srcitems.fullName] = JSON.stringify(srcitems);
+			    }
+		    }
+		}
+
+		if(tgtmap[itemName] != undefined)
+		{
+			tempJsn = x2js.xml_str2json(oldXml);
+			if(tempJsn != null)
+			{
+				var obje;
+				var templi;
+				var preMap = {};
+				if(metaType == 'CustomLabel')
+				{
+					obje = srcjson.CustomLabels;
+					templi = srcMetaItem.labels;
+				}
+				else if(metaType == 'CustomField')
+				{
+					obje = tempJsn.CustomObject;
+					templi = obje.fields;
+				}
+				else if(metaType == 'ListView')
+				{
+					obje = tempJsn.CustomObject;
+					templi = obje.listViews;
+				}
+				else if(metaType == 'CompactLayout')
+				{
+					obje = tempJsn.CustomObject;
+					templi = obje.compactLayouts;
+				}
+				else if(metaType == 'WebLink')
+				{
+					obje = tempJsn.CustomObject;
+					templi = obje.webLinks;
+				}
+				else if(metaType == 'RecordType')
+				{
+					obje = tempJsn.CustomObject;
+					templi = obje.recordTypes;
+				}
+				else if(metaType == 'FieldSet')
+				{
+					obje = tempJsn.CustomObject;
+					templi = obje.fieldSets;
+				}
+				else if(metaType == 'ValidationRule')
+				{
+					obje = tempJsn.CustomObject;
+					templi = obje.validationRules;
+				}
+				else if(metaType == 'AssignmentRule')
+				{
+					obje = tempJsn.AssignmentRules;
+					templi = obje.assignmentRule;
+				}
+				else if(metaType == 'AutoResponseRule')
+				{
+					obje = tempJsn.AutoResponseRules;
+					templi = obje.autoResponseRule;
+				}
+				else if(metaType == 'WorkflowTask')
+				{
+					obje = tempJsn.Workflow;
+					templi = obje.tasks;
+				}
+				else if(metaType == 'WorkflowOutboundMessage')
+				{
+					obje = tempJsn.Workflow;
+					templi = obje.outboundMessages;
+				}
+				else if(metaType == 'WorkflowFieldUpdate')
+				{
+					obje = tempJsn.Workflow;
+					templi = obje.fieldUpdates;
+				}
+				else if(metaType == 'WorkflowAlert')
+				{
+					obje = tempJsn.Workflow;
+					templi = obje.alerts;
+				}
+				else if(metaType == 'WorkflowRule')
+				{
+					obje = tempJsn.Workflow;
+					templi = obje.rules;
+				}
+				////
+				else if(metaType == 'SharingCriteriaRule')
+				{
+					obje = tempJsn.SharingRules;
+					templi = obje.sharingCriteriaRules;
+				}
+				else if(metaType == 'SharingOwnerRule')
+				{
+					obje = tempJsn.SharingRules;
+					templi = obje.sharingOwnerRules;
+				}
+				else if(metaType == 'BusinessProcess')
+				{
+					obje = tempJsn.CustomObject;
+					templi = obje.businessProcesses;
+				}
+				else if(metaType == 'SharingReason')
+				{
+					obje = tempJsn.CustomObject;
+					templi = obje.sharingReasons;
+				}
+				else if(metaType == 'EscalationRule')
+				{
+					obje = tempJsn.EscalationRules;
+					templi = obje.escalationRule;
+				}
+				else if(metaType == 'MatchingRule')    
+				{
+					obje = tempJsn.MatchingRules;
+					templi = obje.matchingRules;
+				}
+				else if(metaType == 'ManagedTopic')
+				{
+					obje = tempJsn.ManagedTopics;
+					templi = obje.ManagedTopic;
+				}
+				
+				////
+				
+				if(templi != undefined)
+				{
+					if(templi.fullName == undefined)
+				    {			    	
+				    	$.each(templi, function( i, v )
+					    {
+					    	preMap[v.fullName] = JSON.stringify(v);
+					    });  
+				    }
+				    else
+				    {
+					    preMap[templi.fullName] = JSON.stringify(templi);
+				    }
+			    }
+				preMap[itemName] = tgtmap[itemName];
+				updatedJsn = '[';
+				for(var name in preMap)
+				{
+					if(updatedJsn == '[')
+					{
+						updatedJsn += preMap[name];
+					}
+					else
+					{
+						updatedJsn+=','+preMap[name];
+					}
+				}
+				updatedJsn+=']';
+				if(metaType == 'CustomLabel')
+				{
+					obje.labels = JSON.parse(updatedJsn);
+					tempJsn.CustomLabels = obje;
+				}
+				else if(metaType == 'CustomField')
+				{
+					obje.fields = JSON.parse(updatedJsn);
+					tempJsn.CustomObject = obje;
+				}
+				else if(metaType == 'ListView')
+				{
+					obje.listViews = JSON.parse(updatedJsn);
+					tempJsn.CustomObject = obje;
+				}
+				else if(metaType == 'CompactLayout')
+				{
+					obje.compactLayouts = JSON.parse(updatedJsn);
+					tempJsn.CustomObject = obje;
+				}
+				else if(metaType == 'WebLink')
+				{
+					obje.webLinks = JSON.parse(updatedJsn);
+					tempJsn.CustomObject = obje;
+				}
+				else if(metaType == 'RecordType')
+				{
+					obje.recordTypes = JSON.parse(updatedJsn);
+					tempJsn.CustomObject = obje;
+				}
+				else if(metaType == 'FieldSet')
+				{
+					obje.fieldSets = JSON.parse(updatedJsn);
+					tempJsn.CustomObject = obje;
+				}
+				else if(metaType == 'ValidationRule')
+				{	
+					obje.validationRules = JSON.parse(updatedJsn);
+					tempJsn.CustomObject = obje;
+				}
+				else if(metaType == 'AssignmentRule')
+				{		
+					obje.assignmentRule = JSON.parse(updatedJsn);
+					tempJsn.AssignmentRules = obje;
+				}
+				else if(metaType == 'AutoResponseRule')
+				{
+					obje.autoResponseRule = JSON.parse(updatedJsn);
+					tempJsn.AutoResponseRules = obje;
+				}
+				else if(metaType == 'WorkflowTask')
+				{
+					obje.tasks = JSON.parse(updatedJsn);
+					tempJsn.Workflow = obje;
+				}
+				else if(metaType == 'WorkflowOutboundMessage')
+				{
+					obje.outboundMessages = JSON.parse(updatedJsn);
+					tempJsn.Workflow = obje;
+				}
+				else if(metaType == 'WorkflowFieldUpdate')
+				{
+					obje.fieldUpdates = JSON.parse(updatedJsn);
+					tempJsn.Workflow = obje;
+				}
+				else if(metaType == 'WorkflowAlert')
+				{
+					obje.alerts = JSON.parse(updatedJsn);
+					tempJsn.Workflow = obje;
+				}
+				else if(metaType == 'WorkflowRule')
+				{
+					obje.rules = JSON.parse(updatedJsn);
+					tempJsn.Workflow = obje;
+				}
+				////
+				else if(metaType == 'SharingCriteriaRule')
+				{
+					obje.sharingCriteriaRules = JSON.parse(updatedJsn);
+					tempJsn.SharingRules = obje;
+				}
+				else if(metaType == 'SharingOwnerRule')
+				{
+					obje.sharingOwnerRules = JSON.parse(updatedJsn);
+					tempJsn.SharingRules = obje;
+				}
+				else if(metaType == 'BusinessProcess')
+				{
+					obje.businessProcesses = JSON.parse(updatedJsn);
+					tempJsn.CustomObject = obje;
+				}
+				else if(metaType == 'SharingReason')
+				{
+					obje.sharingReasons = JSON.parse(updatedJsn);
+					tempJsn.CustomObject = obje;
+				}
+				else if(metaType == 'EscalationRule')
+				{
+					obje.escalationRule = JSON.parse(updatedJsn);
+					tempJsn.EscalationRules = obje;
+				}
+				else if(metaType == 'MatchingRule')    
+				{
+					obje.matchingRules = JSON.parse(updatedJsn);
+					tempJsn.MatchingRules = obje;
+				}
+				else if(metaType == 'ManagedTopic')
+				{
+					obje.ManagedTopic = JSON.parse(updatedJsn);
+					tempJsn.ManagedTopics = obje;
+				}
+				////
+				oldXml = x2js.json2xml_str($.parseJSON(JSON.stringify(tempJsn)));
+				oldXml = '<?xml version="1.0" encoding="UTF-8"?>'+oldXml;
+			}
+		}
+		return oldXml;
+   	}
+	
+	function saveAttachment()
+	{
+		if(MergeBase64Str.length > 0)
+		{
+			var str = MergeBase64Str[0];
+			insertMergeAttachment(str);
+			MergeBase64Str.remove(str);
+		}
+		
+	}
+	
+	function handleMergeDml()
+	{
+		if(MergeBase64Str.length > 0)
+		{
+			saveAttachment();
+		}
+		else
+		{
+			//console.log('all attachment saved succesfully');
+			branchMerge();
+		}
+	}
+	
+	function checkItemAll(ele) {
+		var changeClass = ele.getAttribute('styleclass');
+		var checkboxes = document.getElementsByClassName(changeClass);
+	     if (ele.checked) {
+	         for (var i = 0; i < checkboxes.length; i++) {
+	             if (checkboxes[i].type == 'checkbox') {
+	                 checkboxes[i].checked = true;
+	             }
+	         }
+	     } else {
+	         for (var i = 0; i < checkboxes.length; i++) {
+	             if (checkboxes[i].type == 'checkbox') {
+	                 checkboxes[i].checked = false;
+	             }
+	         }
+	     }
+	}
+	</script>
+</apex:page>

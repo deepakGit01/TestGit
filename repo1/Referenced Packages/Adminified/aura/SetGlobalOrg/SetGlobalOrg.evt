@@ -1,0 +1,4 @@
+<aura:event type="APPLICATION" description="Set connected organization in all modules." >
+    <aura:attribute name="globalOrg" type="Object" description="Holds all connected organization."/>
+    <aura:attribute name="isRefreshOrg" type="Boolean" description="Check connected organization list is refresh or not."/>
+</aura:event>

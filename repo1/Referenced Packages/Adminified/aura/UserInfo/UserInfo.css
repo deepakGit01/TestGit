@@ -1,0 +1,54 @@
+.THIS .Displaynone {
+    display:none;
+}
+
+.THIS .Displayblock {
+    display:block;
+}
+
+.THIS .SumoSelect{
+  width: 100%;  
+}
+.THIS .SumoSelect > .CaptionCont{
+    background-color: white;
+color: #16325c;
+border: 1px solid #d8dde6;
+border-radius: 0.25rem;
+width: 100%;
+}
+.THIS .SumoSelect > .CaptionCont > label {
+    position: absolute;
+    top: -1px;
+    right: -1px;
+}
+.THIS .SumoSelect > .CaptionCont > span.placeholder {
+      color: #54698d;
+      font-weight: 400;
+      font-size: 0.75rem; 
+        font-style: normal;
+}
+.THIS .SumoSelect:focus > .CaptionCont{
+      outline: 0;
+      border-color: #1589ee;
+      background-color: white;
+      box-shadow: 0 0 3px #0070D2;
+}
+
+.THIS .SumoSelect:hover > .CaptionCont {
+     box-shadow:none; 
+    border-color: none;
+}
+.THIS .SumoSelect:focus > .CaptionCont{
+      outline: 0;
+      border-color: #1589ee;
+      background-color: white;
+      box-shadow: 0 0 3px #0070D2;
+}
+
+.THIS .toggle-section-panel{
+    display:none;
+}
+
+.THIS .hide-row{
+    display:none;
+}

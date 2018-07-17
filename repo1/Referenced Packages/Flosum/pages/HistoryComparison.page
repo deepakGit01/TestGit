@@ -1,0 +1,103 @@
+<apex:page controller="Flosum.HistoryComparisonController" sidebar="false" doctype="html-5.0" standardStylesheets="false">
+	<apex:includeScript value="{!URLFOR($Resource.Flosum__jszipmaster, 'jszip-master/dist/jszip.js')}"/>
+	<apex:stylesheet value="{!$Resource.Flosum__DiffCSS}"/>
+	<script src="{!$Resource.DiffJS}"></script>
+	<c:Wait />
+	<apex:pagemessages id="msg"/>
+    <apex:form id="form" rendered="{!if(source != null && target != null,true,false)}">
+	    <apex:actionfunction name="startCompare" onComplete="diffUsingJS(0,'Version :'+'{!source.Flosum__Version__c}','Version :'+'{!target.Flosum__Version__c}'); hide();" reRender="none" rendered="{!if(fromMerge == 'fromMerge',false,true)}" / >
+        <apex:actionfunction name="startCompare" onComplete="diffUsingJS(0,'{!source.Component__r.RecordType.Name}'+' Component','{!target.Component__r.RecordType.Name}'+' Component'); hide();" reRender="none" rendered="{!if(fromMerge == 'fromMerge',true,false)}"/ >
+        <apex:pageBlock title="{!source.Component__r.Flosum__Component_Name__c}">
+            <apex:pageBlockbuttons > 
+            	<apex:commandbutton value="Back" action="{!back}" reRender="msg" rendered="{!if(fromMerge == 'fromMerge',false,true)}"/>
+            </apex:pageBlockbuttons> 
+            <apex:pageBlockSection columns="1">
+                <textarea  id="baseText" style="display:none" cols="50">
+                </textarea>
+                <input type="text" id="contextSize" value="10000" style="display:none"/>
+                <textarea id="newText" style="display:none" cols="50" >
+                </textarea>
+                <apex:pageBlockSectionItem >
+                    <apex:outputpanel id="compareBlock">
+                        <div id="diffoutput">
+                        </div> 
+                    </apex:outputpanel>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        <apex:actionfunction action="{!showMessage}" reRender="msg" name="showMessage" onComplete="hide();">
+			<apex:param assignTo="{!message}" value="" name="newstr"/>
+		</apex:actionfunction>
+    </apex:form>
+    <script>
+    	var sourceId = ""+'{!sourceAttId}';
+    	var targetId = ""+'{!targetAttId}';
+    	var sourceFilename = ""+'{!sourceFileName}';
+    	var targetFilename = ""+'{!targetFileName}';
+    	
+    	if(sourceId.length == 18 && targetId.length == 18)
+    	{
+    		show();
+    		
+    		Visualforce.remoting.Manager.invokeAction(
+				        '{!$RemoteAction.HistoryComparisonController.getBase64}',
+				        sourceId,
+				        handeleGetData
+				    );
+    	}
+    	
+    	function handeleGetData(r,e)
+		{
+		    if(e.status && r) 
+		    {
+		    	if(r != '')
+		    	{
+		    		var zip = new JSZip(r,{base64:true});
+	                if(zip.files[sourceFilename] != undefined)
+	                {
+	                    document.getElementById('baseText').value = zip.files[sourceFilename].asText();
+	                }
+	                else
+	                {
+	                	document.getElementById('baseText').value = "";
+	                }
+	                Visualforce.remoting.Manager.invokeAction(
+				        '{!$RemoteAction.HistoryComparisonController.getBase64}',
+				        targetId,
+				        handeleGetData2
+				    );
+		    	}
+		    }
+		    else
+		    {
+		    	console.log(e.message);
+		    	//showMessage(e.message);
+		    }
+        }
+        
+        function handeleGetData2(r,e)
+		{
+		    if(e.status && r) 
+		    {
+		    	if(r != '')
+		    	{
+		    		var zip = new JSZip(r,{base64:true});
+	                if(zip.files[targetFilename] != undefined)
+	                {
+	                    document.getElementById('newText').value = zip.files[targetFilename].asText();
+	                }
+	                else
+	                {
+	                	document.getElementById('newText').value = "";
+	                }
+	                startCompare();
+		    	}
+		    }
+		    else
+		    {
+		    	console.log(e.message);
+		    	//showMessage(e.message);
+		    }
+        }
+    </script>
+</apex:page>

@@ -1,0 +1,4 @@
+<aura:event type="COMPONENT" Description="After setting show effect in particular module." >
+    <aura:attribute name="structure" type="Object"/>
+    <aura:attribute name="moduleName" type="Object"/>
+</aura:event>

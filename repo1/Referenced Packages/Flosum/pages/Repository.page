@@ -1,0 +1,93 @@
+<apex:page controller="Flosum.RepositoryController">
+	<style>
+		.pagination { 
+			padding: 1%; 
+		} 
+		div .pagination { 
+			text-align: center; 
+		} 
+		td .dataCell label { 
+			font-weight: normal; 
+		} 
+		span.paginationEle { 
+			margin-left: 4px; 
+		} 
+		.pagination input { 
+			margin-left: 4px; 
+		} 
+	</style>
+	<c:Wait />	
+	<apex:form >
+		<apex:sectionHeader title="Repository" />
+		<apex:pagemessages id="msg"/>
+		<br/>
+		<apex:pageblock title="Master Branch">
+			<apex:outputLabel value="Component Type :"/>&nbsp;&nbsp;&nbsp;
+			<apex:selectList value="{!selectedMetadataType}" multiselect="false" size="1">
+	            <apex:selectOptions value="{!paginationMetaTypes}"/>
+	            <apex:actionSupport event="onchange" action="{!fillMetadataItems}"  reRender="tb,msg" oncomplete="hide();" onsubmit="show();"/>
+	        </apex:selectList>&nbsp;&nbsp;&nbsp;
+	        <apex:inputText value="{!searchText}"/>&nbsp;&nbsp;&nbsp;
+	        <apex:commandButton action="{!componentSearch}" value="Search" reRender="searchLi,msg"/>
+			<apex:pageblocksection id="searchLi" columns="1"> 
+				<apex:pageblockTable value="{!searchList}" var="item" rendered="{!if(searchList.size > 0,true,false)}" >
+					<apex:column value="{!item.Flosum__Component_Link__c}"/> 
+            		<apex:column value="{!item.Flosum__Component_Type__c}"/>
+            		<apex:column value="{!item.Flosum__Version__c}"/>
+				</apex:pageblockTable>
+				<apex:outputText value="No records to display." rendered="{!if(searchList.size == 0,true,false)}"/>
+			</apex:pageblocksection>     
+	        <apex:pageblockSection columns="1" id="tb">
+				<apex:pageBlocktable value="{!componentList}" var="item" rendered="{!if(componentList.size>0,true,false)}">
+		        	<apex:column value="{!item.Flosum__Component_Link__c}"/>
+					<apex:column value="{!item.Flosum__Component_Type__c}"/>
+					<apex:column value="{!item.Flosum__Comments__c}"/>
+					<apex:column value="{!item.LastModifiedDate}"/>
+					<apex:column headerValue="Last Modified By" value="{!item.LastModifiedBy.Name}"/>
+					<apex:column value="{!item.Flosum__Version__c}"/>
+		        </apex:pageBlocktable>
+		        <apex:outputPanel rendered="{!if(componentList.size > 0,true,false)}" layout="block" styleClass="pagination">
+						<apex:commandbutton value="First" action="{!FirstPage}" reRender="tb,msg" disabled="{!prev}" onClick="show();" onComplete="hide();"/>
+						<apex:commandbutton value="Previous" action="{!previous}" reRender="tb,msg" disabled="{!prev}" onClick="show();" onComplete="hide();"/>
+						<apex:outputText value="{!paginationStr}" styleClass="paginationEle"/>
+						<apex:commandbutton value="Next" action="{!next}" reRender="tb,msg" disabled="{!nxt}" onClick="show();" onComplete="hide();"/>
+						<apex:commandbutton value="Last" action="{!LastPage}" reRender="tb,msg" disabled="{!nxt}" onClick="show();" onComplete="hide();"/>
+				</apex:outputPanel>
+			</apex:pageblockSection>
+		</apex:pageblock>
+<!-- 		<apex:pageblock title="Commits" id="buildBlk"> -->
+<!-- 			<apex:pageblockSection columns="1" rendered="{!if(buildList.size > 0,true,false) }"> -->
+<!-- 				<apex:pageblockTable value="{!buildList}" var="item" >  -->
+<!-- 	          		<apex:column headerValue="{!$ObjectType.Commit__c.fields.Name.Label}"> -->
+<!-- 	          			<apex:commandLink action="/{!item.Id}" value="{!item.Name}" id="theCommandLink"/> -->
+<!-- 	          		</apex:column> -->
+<!-- 	          		<apex:column value="{!item.Branch__c}"/> -->
+<!-- 	          		<apex:column value="{!item.Description__c}"/> -->
+<!-- 	          		<apex:column headerValue="Committed Date" value="{!item.LastModifiedDate}"/> -->
+<!-- 	          		<apex:column headerValue="Committed By" value="{!item.LastModifiedBy.Name}"/> -->
+<!-- 				</apex:pageblockTable> -->
+<!-- 				<apex:outputPanel rendered="{!if(buildList.size > 0,true,false)}" layout="block" styleClass="pagination"> -->
+<!-- 						<apex:commandbutton value="First" action="{!buildFirst}" disabled="{!BuildPrev}" reRender="buildBlk,msg" onClick="show();" onComplete="hide();"/> -->
+<!-- 						<apex:commandbutton value="Previous" action="{!buildPrevious}" disabled="{!BuildPrev}" reRender="buildBlk,msg" onClick="show();" onComplete="hide();"/> -->
+<!-- 						<apex:outputText value="{!BuildPaginationStr}" styleClass="paginationEle"/> -->
+<!-- 						<apex:commandbutton value="Next" action="{!buildNext}" disabled="{!BuildNxt}" reRender="buildBlk,msg" onClick="show();" onComplete="hide();"/> -->
+<!-- 						<apex:commandbutton value="Last" action="{!buildLast}" disabled="{!BuildNxt}" reRender="buildBlk,msg" onClick="show();" onComplete="hide();"/> -->
+<!-- 				</apex:outputPanel> -->
+<!-- 			</apex:pageblockSection> -->
+<!-- 		</apex:pageblock> -->
+		
+		
+<!-- 		<apex:pageblock rendered="{!if(branchList.size > 0,true,false) }" title="Branches"> -->
+<!-- 			<apex:pageblockTable value="{!branchList}" var="item" >  -->
+<!--           		<apex:column headerValue="{!$ObjectType.Branch__c.fields.Branch_Name__c.Label}"> -->
+<!--           			<apex:commandLink action="/{!item.Id}" value="{!item.Branch_Name__c}" id="theCommandLink"/> -->
+<!--           		</apex:column> -->
+<!--           		<apex:column value="{!item.Name}"/> -->
+<!--           		<apex:column value="{!item.LastModifiedDate}"/> -->
+<!-- 			</apex:pageblockTable> -->
+<!-- 			<apex:pageBlockButtons location="top"> -->
+<!--                 <apex:commandButton action="{!newBranch}" value="New Branch"/> -->
+<!--             </apex:pageBlockButtons> -->
+<!-- 		</apex:pageblock> -->
+	</apex:form>
+</apex:page>

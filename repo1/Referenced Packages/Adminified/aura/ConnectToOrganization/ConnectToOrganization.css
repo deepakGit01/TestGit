@@ -1,0 +1,21 @@
+.THIS .Displaynone{
+   Display:none;
+}
+.THIS .Display-Block{
+    display:block;
+}
+
+.THIS .alert-info {
+color: #31708f;
+background-color: #d9edf7;
+border-color: #bce8f1;
+}
+.THIS .alert {
+padding: 15px;
+margin-bottom: 20px;
+border: 1px solid transparent;
+border-radius: 4px;
+}
+.THIS .slds-icon-utility-warning .slds-icon{
+    fill:#31708f
+}

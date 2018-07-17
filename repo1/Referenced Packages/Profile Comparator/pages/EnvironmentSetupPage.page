@@ -1,0 +1,282 @@
+<apex:page controller="Comparator.EnvironmentSetupController" tabStyle="Environments__tab" sidebar="false">
+    <apex:includeScript value="{!$Resource.Comparator__jQuery2_1_1}"/>
+    <apex:includeScript value="{!$Resource.Comparator__jQuery_template}"/> 
+    <style>
+        .customPopup {
+            background-color: transparent;
+            padding: 10px;
+            position: fixed;
+            z-index: 9997;
+            width: 100%;
+            top: 45%;
+            left: 0;
+        }
+        
+        .popupBackground{
+            background-color: black;
+            opacity: 0.20;
+            filter: alpha(opacity = 20);
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 9996;
+        }
+        
+        .editPopup {
+            background-color: #F9F6F4;
+            position: fixed;
+            z-index: 9997;
+            width: 460px;
+        	height: 260px;
+        }
+        
+        .header {
+        	background-color: #933;
+        	font-weight: bold;
+        	text-align: Left;
+        	color: white;
+        	padding: 7px;
+        	font-size: 14px;
+        	margin-top: 10px;
+        }
+        
+        .Row {
+        	text-align: Left;
+        	padding: 7px;
+        	font-size: 14px;
+        }
+        
+        .EvenRow {
+        	background-color: #E9E0DB;
+        }
+        
+        .OddRow {
+        	background-color: #F9F6F4;
+        }
+        
+        .button {
+        	font-size:12px; 
+        	font-weight:bold;
+        	color:#933;
+        	margin-bottom:12px; 
+        	padding:3px; 
+        	border:2px solid #933;
+        	border-radius: 3px;
+        	background:transparent;
+        }
+        
+        .PaginationButton {
+        	background:transparent;
+            border:0px;
+            font-size:100%;
+            color:#933;
+        }
+        
+        #PaginationFirst:hover, #PaginationPrevious:hover, #PaginationNext:hover, #PaginationLast:hover {
+        	border:1px solid #933;
+        	background:RED;
+        }
+    </style>
+    
+    <script>
+        j$ = jQuery.noConflict();
+
+        function showLoadingIndicator() {
+            j$('[id$="loading-message"]').css('position','fixed');
+            j$('[id$="loading-message"]').css('width','100%');
+            j$('[id$="loading-message"]').css('height','100%');
+            j$('[id$="loading-message"]').css('z-index','10001');
+            j$('[id$="loading-message"]').show();
+        }
+        
+        function hideLoadingIndicator() {
+            j$('[id$="loading-message"]').hide();
+        }
+    </script>
+    
+    <apex:pageMessage rendered="{!!hasPermission}" severity="ERROR" title="Invalid Previliges. Please contact your Manager or Administrator"></apex:pageMessage>
+    
+    <apex:form id="EnvironmentsForm" rendered="{!hasPermission}">
+        
+        <apex:pageMessages id="pageMsgId"/>
+        <div id="loading-message" title="Loading..." style="display:none"> 
+            <div class="popupBackground"></div>
+            <div class="customPopup" align="center" style="top:45%;">
+                <img src="{!$Resource.ajaxLoadingTrans}" align="center" style="top:45%;z-index:9999;"/>                
+            </div>
+        </div>
+
+        <apex:sectionHeader title="Environments" subtitle="Manage Environments"></apex:sectionHeader>
+        
+        <apex:pageBlock id="ListViewBlock">
+            <input id="NewEnvironmentButton" type="button" value="New Environment" class="button" onClick="showPopup('', '', '', '', '');"/>
+            <apex:dataTable id="Environments" columns="6" value="{!envWrapperList}" var="env" width="100%" align="center" headerClass="header" rowClasses="EvenRow,OddRow">
+                <apex:column id="ActionColumn" headerValue="Action" styleClass="Row" style="">
+                    <div style="display:inline-block;">
+                    	<div style="display:inline-block;">
+                            <apex:commandLink value="Edit" onClick="showPopup('{!env.csId}', '{!JSENCODE(env.Name)}', '{!JSENCODE(env.UserName)}', '{!JSENCODE(env.Password)}', '{!JSENCODE(env.Token)}', '{!JSENCODE(env.Domain)}');" reRender="pageMsgId"/>
+                        </div>
+                        <div style="display:inline-block;">
+                            &nbsp;|&nbsp;
+                        </div>
+                        <div style="display:inline-block;">
+                            <apex:commandLink value="Delete" onClick="deleteEnv('{!env.csId}', '{!JSENCODE(env.Name)}', '{!JSENCODE(env.UserName)}', '{!JSENCODE(env.Password)}', '{!JSENCODE(env.Token)}', '{!JSENCODE(env.Domain)}');" reRender="pageMsgId"/>
+                        </div>
+                    </div>
+                </apex:column>
+                <apex:column id="NameColumn" value="{!env.Name}" headerValue="Name" styleClass="Row" style="font-weight:bold;"/>
+                <apex:column id="UserNameColumn" value="{!env.UserName}" headerValue="User Name" styleClass="Row"/>
+
+                <!--
+                Commented due to the security reasons
+                <apex:column id="PasswordColumn" value="{!env.Password}" headerValue="Password" styleClass="Row"/>
+                <apex:column id="TokenColumn" value="{!env.Token}" headerValue="Security Token" styleClass="Row"/>
+                -->
+
+                <apex:column id="DomainColumn" value="{!env.Domain}" headerValue="Domain" styleClass="Row"/>
+            </apex:dataTable>
+            <div style="text-align:center; margin-top:10px;">
+                <apex:commandButton action="{!first}" disabled="{!!hasPrevious}" reRender="pageMsgId,ListViewBlock" onclick="showLoadingIndicator();" oncomplete="hideLoadingIndicator();" value="◄◄" style="background:transparent;border:0px;font-size:100%;color:#933;" id="PaginationFirst"></apex:commandButton> 
+                <apex:commandButton action="{!previous}" disabled="{!!hasPrevious}" reRender="pageMsgId,ListViewBlock" onclick="showLoadingIndicator();" oncomplete="hideLoadingIndicator();" value="◄ Previous" style="background:transparent;border:0px;font-size:100%;color:#933;" id="PaginationPrevious"></apex:commandButton> 
+                <apex:commandButton action="{!next}" disabled="{!!hasNext}" reRender="pageMsgId,ListViewBlock" onclick="showLoadingIndicator();" oncomplete="hideLoadingIndicator();" value="Next ►" style="background:transparent;border:0px;font-size:100%;color:#933;" id="PaginationNext"></apex:commandButton> 
+                <apex:commandButton action="{!last}" disabled="{!!hasNext}" reRender="pageMsgId,ListViewBlock" onclick="showLoadingIndicator();" oncomplete="hideLoadingIndicator();" value="►►" style="background:transparent;border:0px;font-size:100%;color:#933;" id="PaginationLast"></apex:commandButton>
+            </div >
+        </apex:pageBlock>
+        
+        <div id="PopupDiv"/>
+        
+        <apex:actionFunction name="upsertE" action="{!upsertEnvironment}" reRender="pageMsgId,ListViewBlock" oncomplete="hidePopup(); hideLoadingIndicator();">
+        	<apex:param name="wrapperJsonStringUpsert" assignTo="{!wrapperJson}" value=""/>
+        </apex:actionFunction>
+        
+        <apex:actionFunction name="deleteE" action="{!deleteEnvironment}" reRender="pageMsgId,ListViewBlock" oncomplete="hidePopup(); hideLoadingIndicator();">
+        	<apex:param name="wrapperJsonStringDelete" assignTo="{!wrapperJson}" value=""/>
+        </apex:actionFunction>
+        
+    </apex:form>
+    
+    <script>
+    	function showPopup(CSId, NameColumnVal, UserNameColumnVal, PasswordColumnVal, TokenColumnVal, DomainColumnVal) {
+        	var rowContent = {};
+            rowContent.CSId = CSId;
+            rowContent.name = NameColumnVal;
+            rowContent.username = UserNameColumnVal;
+            rowContent.password = PasswordColumnVal;
+            rowContent.token = TokenColumnVal;
+            rowContent.domain = DomainColumnVal;
+            
+            j$("#PopupTemplate").tmpl(rowContent).appendTo("#PopupDiv");
+        }
+    
+    	function hidePopup() {
+            j$('#PopupDiv').html("");
+        }
+    
+    	function deleteEnv(CSId, NameColumnVal, UserNameColumnVal, PasswordColumnVal, TokenColumnVal, DomainColumnVal) {
+            try {
+                if(confirm('Are you sure you want delete environment ' + NameColumnVal) == true) {
+                    var rowContent = {};
+                    rowContent.name = NameColumnVal;
+                    rowContent.username = UserNameColumnVal;
+                    rowContent.password = PasswordColumnVal;
+                    rowContent.token = TokenColumnVal;
+                    rowContent.domain = DomainColumnVal;
+                    
+                    var wrapperJsonString = JSON.stringify(rowContent);
+                    deleteE(wrapperJsonString);
+                } 
+                
+            } catch(error) {
+
+            }
+        }
+    
+    	function upsertEnv(csId) {
+            try {
+                var name = j$('[id$="NameInput"]').val();
+                var userName = j$('[id$="UserNameInput"]').val();
+                var password = j$('[id$="PasswordInput"]').val();
+                var token = j$('[id$="TokenInput"]').val();
+                var domain = j$('[id$="DomainInput"]').val().toLowerCase();
+
+                if(domain.trim() != 'login' && domain.trim() != 'test') {
+                    hideLoadingIndicator();
+                    alert('Domain can either be "login" or "test"');
+                    return;                
+                }
+                
+                // [29-12-2015] UPDATE: Token is not a required field   
+                if(name == undefined || userName == undefined || password == undefined || domain == undefined) {
+                    hideLoadingIndicator();
+                    alert('All fields except security token are mandatory');
+                    return;                
+                }
+                
+                if(name.trim().length == 0 || userName.trim().length == 0 || password.trim().length == 0 || domain.trim().length == 0) {
+                    hideLoadingIndicator();
+                    alert('All fields except security token are mandatory');
+                    return;
+                }
+
+                var wrapperJson = {};
+                wrapperJson.CSId = csId;
+                wrapperJson.name = name;
+                wrapperJson.username = userName;
+                wrapperJson.password = password;
+                wrapperJson.token = token;
+                wrapperJson.domain = domain;
+
+                var wrapperJsonString = JSON.stringify(wrapperJson);
+                upsertE(wrapperJsonString);
+                
+            } catch(error) {
+            	hideLoadingIndicator();
+            }
+        }
+    </script>
+    
+    <script id="PopupTemplate" type="text/x-jquery-tmpl">
+        <div id="Template" style="font-size:14px;"> 
+            <div class="popupBackground"></div>
+            <div class="editPopup" align="center" style="left:40%; top:35%; z-index:10000; border-radius:3px; border:1px dotted #aaa;">
+                <div style="width:100%; display:inline-block;"> 
+                	<div style="width:79%; background:#933; color:white; font-weight:bold; padding-top:7px; padding-bottom:7px; display:inline-block;"> Environment </div> 
+                    <div style="width:20%; background:#933; color:white; font-weight:bold; padding-top:7px; padding-bottom:7px; display:inline-block;" onclick="hidePopup();"> X </div> 
+                </div>
+                <br/><br/>
+                <div style="width:100%; display:inline-block;"> 
+                    <div style="width:25%;display:inline-block;" align="right"> Name: </div>
+                    <div style="width:74%;display:inline-block;"><span style="border:1px solid RED;"/><input id="NameInput" type="text" style="width:90%; border:0px; font-size:14px; padding-left:2px;" value="${name}"></input></div>
+                </div>
+                <br/><br/>
+                <div style="width:100%; display:inline-block;"> 
+                    <div style="width:25%;display:inline-block;" align="right"> User Name: </div>
+                    <div style="width:74%;display:inline-block;"><span style="border:1px solid RED;"/><input id="UserNameInput" type="text" style="width:90%; border:0px; font-size:14px; padding-left:2px;" value="${username}"></input></div>
+                </div>
+                <br/><br/>
+                <div style="width:100%; display:inline-block;"> 
+                    <div style="width:25%;display:inline-block;" align="right"> Password: </div>
+                    <div style="width:74%;display:inline-block;"><span style="border:1px solid RED;"/><input id="PasswordInput" type="password" style="width:90%; border:0px; font-size:14px; padding-left:2px;" value="${password}"></input></div>
+                </div>
+                <br/><br/>
+                <div style="width:100%; display:inline-block;"> 
+                    <div style="width:25%;display:inline-block;" align="right"> Security Token: </div>
+                    <div style="width:74%;display:inline-block;"><input id="TokenInput" type="password" style="width:90%; border:0px; font-size:14px; padding-left:2px;" value="${token}"></input></div>
+                </div>
+                <br/><br/>
+                <div style="width:100%; display:inline-block;"> 
+                    <div style="width:25%;display:inline-block;" align="right"> Domain: </div>
+                    <div style="width:74%;display:inline-block;"><span style="border:1px solid RED;"/><input id="DomainInput" type="text" style="width:90%; border:0px; font-size:14px; padding-left:2px;" value="${domain}"></input></div>
+                </div>
+                <br/><br/>
+                <div style="width:100%; display:inline-block; margin-top: 7px;">
+                    <input type="button" style="padding: 5px; background: #933; color: white; border: 0px; width: 50px;" value="Save" onclick="showLoadingIndicator(); upsertEnv('${CSId}');"/>
+                    <input type="button" style="padding: 5px; background: #933; color: white; border: 0px; width: 50px;" value="Cancel" onclick="hidePopup();"/>
+                </div>
+            </div>
+        </div>
+    </script>
+
+</apex:page>

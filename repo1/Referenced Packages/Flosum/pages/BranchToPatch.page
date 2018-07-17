@@ -1,0 +1,29 @@
+<apex:page standardController="Flosum__Branch__c" extensions="Flosum.BranchToPatchExtension" sidebar="false">
+	<c:Wait />
+	<apex:form >
+		<apex:pagemessages id="msg"/>
+		<apex:pageblock title="Transfer To Patch" id="toPatch">
+            <apex:pageBlockSection columns="1" id="transfertopatch">
+            	<apex:pageBlockSectionItem >
+            		<apex:outputLabel value="{!$ObjectType.Flosum__Branch__c.fields.Flosum__Branch_Name__c.Label}" />
+            		<apex:outputField value="{!branch.Flosum__Branch_Name__c}"/>
+            	</apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Patch" />
+                    <apex:selectList size="1" value="{!selectedPatch}">
+                        <apex:selectOptions value="{!patchOptions}"/>
+                        <apex:actionSupport event="onchange"  action="{!listDuplicate}" reRender="toPatch,msg" oncomplete="hide();" onsubmit="show();"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!If(selectedPatch == null || selectedPatch == '',true,false)}">
+                    <apex:outputLabel value="Patch Name" />
+                    <apex:inputText value="{!patchName}"/>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Transfer To Patch" action="{!transferToPatch}" rendered="{!If(IsExist,false,true)}" oncomplete="hide();" rerender="msg" onclick="show();"/>
+            </apex:pageBlockButtons>
+        </apex:pageblock>
+	</apex:form>
+	<apex:relatedList subject="{!Flosum__Branch__c}" list="Components__r" id="relatedList"/>
+</apex:page>

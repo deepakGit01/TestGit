@@ -1,0 +1,164 @@
+<aura:component controller="stivadmn.settingmoduleclass">
+    <ltng:require styles="/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.css,/resource/stivadmn__AdminifiedStaticResource/smoothness/jquery-ui.css" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js,/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.js,/resource/stivadmn__AdminifiedStaticResource/jquery.blockUI.js" afterScriptsLoaded="{!c.documentReady}" />
+    
+    <aura:attribute name="userObjStruct" type="Object" Description="Holds json forma data for creating a user setting structure."/>
+    <aura:attribute name="profileObjStruct" type="Object" Description="Holds json forma data for creating a profile setting structure."/>
+    <aura:attribute name="permissionsetObjStruct" type="Object" Description="Holds json forma data for a permission set user setting structure."/>
+    <aura:attribute name="whichSettingTab" type="String" default="Manage Organization" Description="Hold default setting tab name after select a setting module."/>
+    <aura:attribute name="SettingDiv" type="Aura.Component[]" Description="Craete settings structure for a particular module."/>  
+    <aura:attribute name="moduleName" type="String" Description="Holds the setting module name"/>  
+    <aura:attribute name="viewSetupAuditTrail" type="Aura.Component[]" access="GLOBAL" Description="User fotr create viewSetupAuditTrailCmp component."/>
+    <aura:attribute name="isSettingOpen" type="String" default="ManageOrgSetting" access="GLOBAL"/>
+    
+    <aura:registerEvent name="nextPrevPagingEvent" type="stivadmn:nextPrevPagingEvent" Description=""/>
+    <aura:registerEvent name="SaveNewSetting" type="stivadmn:SaveNewSetting" Description="show change setting effect on particular module."/>
+    <aura:registerEvent name="SaveUserSettingDataEvent" type="stivadmn:saveUserSettingDataEvent"/>
+    <aura:registerEvent name="SaveProfileSettingDataEvent" type="stivadmn:saveProfileSettingDataEvent"/>
+    <aura:registerEvent name="SavePermissionSettingDataEvent" type="stivadmn:savePermissionSettingDataEvent"/>
+    <aura:registerEvent name="GetModuleTemplate" type="stivadmn:GetModuleTemplate" Description="Get setting data for creating a structure of particular module."/>
+    <aura:registerEvent name="DisabledSreenButtonEvent" type="stivadmn:DisabledSreenButtonEvent" Description="Disable all input when performing some action."/>
+    
+    <aura:handler event="stivadmn:SetModuleTemplate" action="{!c.setModuleTemplate}" Description="Set setting data for creating a structure of particular module."/>
+    <aura:handler name='openViewAuditTrailEvent' event="stivadmn:openViewAuditTrailEvent" action="{!c.viewSetUpAuditTrail}"/>
+    
+    <div class="slds SettingModuleDiv">
+        <div class="slds-text-body--small">
+            <div class="slds-tabs--default" >
+                <div id="tab-default-4" class="slds-tabs__content slds-show" role="tabpanel">
+                    <div class="slds-page-header" role="banner">
+                        <div class="slds-grid">
+                            <div class="slds-media">
+                                <div class="slds-media__figure">
+                                    <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/custom-sprite/svg/symbols.svg#custom67" category="custom" size="medium" name="custom67" class="slds-icon icon__svg slds-icon-standard-relationship"/>
+                                </div>
+                                <div class="slds-media__body">
+                                    <div class="slds-col slds-has-flexi-truncate">
+                                        <p class="slds-text-heading--label">SETTINGS</p>
+                                        <p class="slds-truncate" title="{!v.whichSettingTab}">{!v.whichSettingTab} </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-no-flex slds-align-bottom ">
+                                <aura:if isTrue="{!v.whichSettingTab == 'Manage Organization'}">
+                                    <div class="addOrgBtn"><button  aura:id="addOrg" onclick="{!c.addOrg}" class="slds-button slds-button--brand slds-button--small compare-btn" > Add New Organization </button></div>                                                 
+                                </aura:if>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="centerRegion">
+                        <div class="homePageBodyContainer">
+                            <div class="homePageLeftNav">
+                                <div class="anchorBar uiTabset--base uiTabset--default uiTabset analyticsHomeLeftNav">
+                                    <div role="application tablist">
+                                        <ul class="tabs__nav tab_Setting_module">
+                                            <li class="{!v.isSettingOpen=='ManageOrgSetting'?'navOption tabs__item uiTabItem setting_module_li tab-li active':'navOption tabs__item uiTabItem setting_module_li tab-li'}"><a class="tabHeader" aria-selected="true" href="javascript:void(0);" tabindex="0" role="tab"  title="Manage Organization" aria-controls="manageOrganization" ><span class="slds-media__figure"><stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/standard-sprite/svg/symbols.svg#environment_hub" category="custom" size="small" name="hierarchy" class="slds-icon icon__svg slds-icon-standard-relationship"/></span><span>Manage Organization</span> </a></li>                                                                                                                                    
+                                            <li class="{!v.isSettingOpen=='userSetting'?'navOption tabs__item uiTabItem setting_module_li tab-li active':'navOption tabs__item uiTabItem setting_module_li tab-li'}"><a class="tabHeader" aria-selected="false" href="javascript:void(0);" tabindex="-1" role="tab"  title="User" aria-controls="userSetting" ><span class="slds-media__figure"><stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/standard-sprite/svg/symbols.svg#user" category="standard " size="small" name="user" class="slds-icon icon__svg slds-icon-standard-relationship"/></span><span>User</span> </a></li>
+                                            <li class="{!v.isSettingOpen=='profileSetting'?'navOption tabs__item uiTabItem setting_module_li tab-li active':'navOption tabs__item uiTabItem setting_module_li tab-li'}"><a class="tabHeader" aria-selected="false" href="javascript:void(0);" tabindex="-1" role="tab"  title="Profile" aria-controls="profileSetting"  ><span class="profileSettingIcon"></span><span style="padding-left:.75rem;">Profile</span></a></li>
+                                            <li class="{!v.isSettingOpen=='permissionSetting'?'navOption tabs__item uiTabItem setting_module_li tab-li active':'navOption tabs__item uiTabItem setting_module_li tab-li'}"><a class="tabHeader" aria-selected="false" href="javascript:void(0);" tabindex="-1" role="tab"  title="Permissions Set" aria-controls="permissionsSetting" ><span class="slds-media__figure"><stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/standard-sprite/svg/symbols.svg#apps_admin" category="standard " size="small" name="apps_admin" class="slds-icon icon__svg slds-icon-standard-relationship"/></span><span>Permissions Set</span> </a></li>
+                                            <li class="{!v.isSettingOpen=='ConnectedAppSetting'?'navOption tabs__item uiTabItem setting_module_li tab-li active':'navOption tabs__item uiTabItem setting_module_li tab-li'}"><a class="tabHeader" aria-selected="false" href="javascript:void(0);" tabindex="-1" role="tab"  title="Connected App" aria-controls="connectedAppSetting" ><span class="slds-media__figure"><stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/standard-sprite/svg/symbols.svg#connected_apps" category="standard " size="small" name="connected_apps" class="slds-icon icon__svg slds-icon-standard-relationship"/></span><span>Connected App</span> </a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="listViewContainer " >
+                               <div  class="listViewContent">
+                                    <div id="settingScroll" class="uiScroller scroller-wrapper settingHight scroll-bidirectional native slds-scrollable--y" >
+                                        <div id="manageOrganization" class="{!v.isSettingOpen=='ManageOrgSetting'?'slds-tabs__content slds-show ':'slds-tabs__content slds-hide'}" role="tabpanel">
+                                            <stivadmn:ManageOrganization aura:id="ManageOrganization"/>                                            
+                                        </div> 
+                                        <div id="userSetting" class="{!v.isSettingOpen=='userSetting'?'slds-tabs__content slds-show User-loader GlobalUserSetting ':'slds-tabs__content slds-hide User-loader GlobalUserSetting'}" role="tabpanel" >
+                                           <div>{!v.SettingDiv}</div>
+                                            <div class="slds-modal__footer User_footer" style="display:none;">
+                                                <span class="slds-p-horizontal--medium">
+                                                    <button class="slds-button slds-button--brand save-btn save-btn-User" type="button" onclick="{!c.saveUserSetting}">Save</button></span>
+                                            </div>
+                                        </div>
+                                        <div id="profileSetting" class="{!v.isSettingOpen=='profileSetting'?'slds-tabs__content slds-show Profile-loader GlobalProfileSetting ':'slds-tabs__content slds-hide Profile-loader GlobalProfileSetting'}" role="tabpanel">
+                                            <div>{!v.SettingDiv}</div>
+                                            <div class="slds-modal__footer Profile_footer" style="display:none;">
+                                                <span class="slds-p-horizontal--medium">
+                                                    <button class="slds-button slds-button--brand save-btn save-btn-Profile" type="button" onclick="{!c.saveProfileSetting}">Save</button></span>
+                                            </div>
+                                        </div>
+                                        <div id="permissionsSetting" class="{!v.isSettingOpen=='permissionSetting'?'slds-tabs__content slds-show PermissionSet-loader GlobalPermissionSetSetting':'slds-tabs__content slds-hide PermissionSet-loader GlobalPermissionSetSetting'}" role="tabpanel">
+                                            <div>{!v.SettingDiv}</div>
+                                            <div class="slds-modal__footer PermissionSet_footer" style="display:none;">
+                                                <span class="slds-p-horizontal--medium">
+                                                    <button class="slds-button slds-button--brand save-btn save-btn-PermissionSet" type="button" onclick="{!c.savePermissionSetSetting}">Save</button></span>
+                                            </div>
+                                        </div> 
+                                         <div id="connectedAppSetting" class="{!v.isSettingOpen=='ConnectedAppSetting'?'slds-tabs__content slds-show':'slds-tabs__content slds-hide'}" role="tabpanel">                                           
+                                         	 <stivadmn:ConnectedAppSettingModule aura:id="ConnectedAppSettingModule"/>                                                                                                                                        
+                                        </div>  
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div aura:id="orgnizationDiv">
+        </div>
+    </div>
+    <div class="viewSetupAuditTrail" style="display:none" id='viewSetupAuditTrail'>
+        <div class="slds-modal slds-fade-in-open slds-modal--large custom-modal" aria-hidden="false" role="dialog">
+            <div class="slds-modal__container">
+                <div class="slds-page-header">
+                    <div class="slds-grid">
+                        <div class="slds-col slds-has-flexi-truncate">
+                            <div class="slds-media slds-no-space slds-grow">
+                                <div class="slds-media__figure">
+                                    <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#setup" category="utility" size="medium" name="setup" class="slds-icon icon__svg slds-icon-standard-relationship"/>
+                                </div>
+                                <div class="slds-media__body">
+                                    <h1 class="slds-page-header__title slds-m-right--small slds-align-middle slds-truncate" title="this should match the Record Title">View Setup Audit Trail</h1>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="slds-button slds-button--icon-inverse slds-modal__close close-login-history-btn" onclick="{!c.closeViewSetupAuditTrail}">
+                        <stivadmn:adminifiedIcons class="slds-button__icon slds-button__icon--large" svgPath="/resource/stivadmn__SLDS0120/assets/icons/action-sprite/svg/symbols.svg#close" /> 
+                        <span class="slds-assistive-text">Close</span> </button>
+                </div>
+                <div class="slds-modal__content slds-p-around--medium Field_Dpendencies_model-close-cls topScroll" style="overflow: auto;">
+                    <div class='loaderForViewSAT' align='center' style='display:block;'>
+                        <div class=" slds-container--center slds-spinner--small dataLoader "  style="display: inline;"><img src="/resource/stivadmn__SLDS0120/assets/images/spinners/slds_spinner_brand.gif" alt="Loading..." style="max-width: 32px; height: 32px;"/> Loading. Please wait...</div>
+                    </div>
+                    <div class="viewSetupAuditTrailArea">
+                        {!v.viewSetupAuditTrail}
+                    </div>
+                </div>
+                <div class="slds-popover__header slds-modal__footer">
+                    <button class="slds-button slds-button--brand slds-button--small slds-m-right--x-small slds-float--right prevButton" onclick="{!c.previous}" >Next</button> 
+                    <button class="slds-button slds-button--brand slds-button--small slds-m-right--x-small slds-float--right nextButton" onclick="{!c.next}" >Previous</button>
+                </div>
+            </div>
+            
+        </div>
+        <div class="slds-backdrop slds-backdrop--open"></div>
+    </div> 
+    
+    
+    <div id='success-box' style="display:none">
+        <div aria-hidden="false" role="dialog" class="slds-modal slds-modal--prompt slds-fade-in-open">
+            <div class="slds-modal__container slds-modal--prompt">
+                <div class="slds-modal__header slds-theme--success slds-theme--alert-texture">
+                    <h2 class="slds-text-heading--medium">Success</h2>
+                    <button class="slds-button slds-button--icon-inverse slds-modal__close">
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                </div>
+                <div class="slds-modal__content">
+                    <div>
+                        <p class="Datamessage"></p>
+                    </div>
+                </div>
+                <div class="slds-modal__footer slds-theme--default">
+                    <button class="slds-button slds-button--neutral" >Ok</button>      
+                </div>
+            </div>
+        </div>
+        <div class="slds-modal-backdrop slds-modal-backdrop--open"></div>
+    </div> 
+</aura:component>

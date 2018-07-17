@@ -1,0 +1,2 @@
+<aura:event type="APPLICATION" Description="Assign user on particular permission set.">
+</aura:event>

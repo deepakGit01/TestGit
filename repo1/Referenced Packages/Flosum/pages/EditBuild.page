@@ -1,0 +1,3 @@
+<apex:page standardController="Flosum__Build__c">
+<h1>You can't edit a Build record.</h1>
+</apex:page>

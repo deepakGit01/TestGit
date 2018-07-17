@@ -1,0 +1,4 @@
+<aura:event type="APPLICATION" description="Send searchable data to specific module." >
+    <aura:attribute name="template" type="Object" description="Holds the searchable data for a particualr module."/>
+    <aura:attribute name="moduleName" type="String" description="Hold module name. E.g. User, Profile and PermissionSet."/>
+</aura:event>

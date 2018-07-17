@@ -1,0 +1,119 @@
+<apex:page controller="Flosum.ComponentComparisonDetailController" sidebar="false" doctype="html-5.0" standardStylesheets="false">
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<apex:includeScript value="{!URLFOR($Resource.Flosum__jszipmaster, 'jszip-master/dist/jszip.js')}"/>
+
+<apex:includeScript value="{!URLFOR($Resource.Flosum__jquery)}"/>
+<apex:includeScript value="{!URLFOR($Resource.Flosum__uisetup, '/js/bootstrap.min.js')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.Flosum__uisetup, '/css/bootstrap-theme.min.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.Flosum__uisetup, '/css/bootstrap.min.css')}"/>
+
+<apex:stylesheet value="{!$Resource.Flosum__DiffCSS}"/>
+
+<c:Wait />
+
+    <apex:form id="form">
+    <apex:pagemessages id="msg"/>
+    <apex:actionfunction name="startCompare" onComplete="compare(0,'{!JSENCODE(SnapshotName)}','{!JSENCODE(SnapshotTargetName)}'); return false;" rerender="none"/ >
+        <apex:pageBlock title="{!JSENCODE($CurrentPage.parameters.recordType)} Comparison" rendered="{!if(SnapshotName != null && SnapshotTargetName != null,true,false)}">
+            <apex:pageBlockbuttons > 
+            	<apex:commandbutton value="Back" rendered="{!if(back == 'true' || back == 'comp' || back == 'history',true,false)}" action="{!backToCompare}" />
+                <apex:commandbutton value="Previous" disabled="{!if(index < 1,true,false)}" action="{!previous}" onComplete="compare(0,'{!JSENCODE(SnapshotName)}','{!JSENCODE(SnapshotTargetName)}'); return false;" rerender="form" rendered="{!if(back == 'history',false,true)}"/ >
+                <apex:commandbutton value="Next" disabled="{!if(index+1 <metaItemList.size,false,true)}" action="{!next}" onComplete="compare(0,'{!JSENCODE(SnapshotName)}','{!JSENCODE(SnapshotTargetName)}'); return false;" rerender="form" rendered="{!if(back == 'history',false,true)}"/ >
+            </apex:pageBlockbuttons> 
+            <apex:pageBlockSection columns="1">
+                <label id="itemName" style="display:none">{!sourceApexItemName}</label> 
+                <input type="hidden" id="target_apex" value="{!sourceApexItem}"/>
+                <input type="hidden" id="source_apex" value="{!targetApexItem}"/>
+                    <textarea  id="baseText" style="display:none" cols="50">
+                    </textarea>
+                    <input type="text" id="contextSize" value="10000" style="display:none"/>
+                    <textarea id="newText" style="display:none" cols="50" >
+                    </textarea>
+                <apex:pageBlockSectionItem >
+                    <apex:outputpanel id="compareBlock">
+                        <div id="diffoutput">
+                        </div> 
+                    </apex:outputpanel>
+                    
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        <apex:actionfunction action="{!showMessage}" reRender="msg" name="showMessage" onComplete="hide();">
+			<apex:param assignTo="{!message}" value="" name="newstr"/> 
+		</apex:actionfunction>
+    </apex:form>
+    
+<script src="{!$Resource.DiffJS}"></script>
+<script>
+    Visualforce.remoting.timeout = 120000;
+    sourceSnapshot = '{!JSENCODE($CurrentPage.parameters.source)}';
+    targetSnapshot = '{!JSENCODE($CurrentPage.parameters.target)}';
+    metadataType = '{!JSENCODE($CurrentPage.parameters.recordType)}';
+    metadataItems = '{!JSENCODE($CurrentPage.parameters.metadataItems)}'.split(',');
+    
+    if(sourceSnapshot != undefined && targetSnapshot != undefined && metadataType != undefined) 
+    {
+    	show();
+        getZipIds();
+    }
+    
+    function getZipIds()
+    {
+        sourcedata = [];
+        targetdata = [];
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.ComponentComparisonDetailController.getZipIds}',
+            sourceSnapshot,
+            metadataType,
+            handleZipIds
+        );
+    }
+    
+    function getSourceAttachments() 
+    {
+    	if(sourceAttachmentIds.length > 0)
+    	{
+    		var tempIds = sourceAttachmentIds[0];
+	        Visualforce.remoting.Manager.invokeAction(
+	            '{!$RemoteAction.ComponentComparisonDetailController.getComponentsZip}',
+	            JSON.stringify(tempIds),
+	            handleSourceAttachments
+	        );
+	        sourceAttachmentIds.remove(tempIds);
+        }
+    }
+    
+    
+    
+    /**********
+    * Target  *
+    **********/
+    
+    function getZipIdsTarget()
+    {
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.ComponentComparisonDetailController.getZipIds}',
+            targetSnapshot,
+            metadataType,
+            handleZipIdsTarget
+        );
+    }
+    
+    function getTargetAttachments(o,count) 
+    {
+        if(targetAttachmentIds.length > 0)
+    	{
+    		var tempIds = targetAttachmentIds[0];
+	        Visualforce.remoting.Manager.invokeAction(
+	            '{!$RemoteAction.ComponentComparisonDetailController.getComponentsZip}',
+	            JSON.stringify(tempIds),
+	            handleTargetAttachments
+	        );
+	        targetAttachmentIds.remove(tempIds);
+        }
+    }
+    
+    
+</script>
+</apex:page>

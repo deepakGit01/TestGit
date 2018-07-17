@@ -1,0 +1,4 @@
+<aura:event type="COMPONENT" Description="Set and view permission set name of particular user in user information section(Permission Set section).">
+	<aura:attribute name="permissionSetList" type="List"/>
+    <aura:attribute name="index" type="Integer"/>    
+</aura:event>

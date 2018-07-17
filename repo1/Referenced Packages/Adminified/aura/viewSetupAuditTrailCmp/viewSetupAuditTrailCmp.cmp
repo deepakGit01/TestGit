@@ -1,0 +1,196 @@
+<aura:component controller="stivadmn.SettingModuleController" >
+    <ltng:require styles="/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.css,/resource/stivadmn__AdminifiedStaticResource/smoothness/jquery-ui.css" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js,/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.js,/resource/stivadmn__AdminifiedStaticResource/jquery.blockUI.js,/resource/stivadmn__AdminifiedStaticResource/jquery.aljs-init.min.js,/resource/stivadmn__AdminifiedStaticResource/moment.js,/resource/stivadmn__AdminifiedStaticResource/jquery.aljs-datepicker.js" afterScriptsLoaded="{!c.documentReady}" />
+    <aura:attribute name="orgId" type="String" access="GLOBAL" Description="Holds orgId for getting view Setup Audit Trail record for particular organization."/>
+    <aura:attribute name="allOrg" type="List" access="GLOBAL" Description="Holds all connected organization details in json format."/>
+    <aura:attribute name="filterActionList" type="List" access="GLOBAL" Description="Holds all Audit Action."/>
+    <aura:attribute name="filterUserList" type="List" access="GLOBAL" Description="Holds all Audit User."/>
+    <aura:attribute name="filterSectionList" type="List" access="GLOBAL" Description="Holds all Audit Section."/>
+    <aura:attribute name="getInputid" type="String" access="GLOBAL" Description="Holds all Audit Section."/>
+    <aura:attribute name="ListOfContact" type="SetupAuditTrail[]"/> 
+    <aura:attribute name="offset" type="Integer" default="0"/> 
+    <aura:attribute name="searchFlg" type="Boolean" default="false"/>
+    <aura:attribute name="getAlldataFlg" type="Boolean" default="true"/>
+    <aura:attribute name="getWithSearch" type="Boolean" default="true"/>
+    <aura:attribute name="firstSearch" type="Boolean" default="false"/>
+    <aura:attribute name="pageNo" type="Integer" default="0"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="fromDate" type="Date" default=""/>
+    <aura:attribute name="toDate" type="Date" default=""/>
+ 
+    <aura:handler event="stivadmn:nextPrevPagingEvent" action="{!c.setPagination}" Description=""/>
+    <aura:handler event="stivadmn:downloadCsvEvent" action="{!c.downloadCsv}" Description=""/>
+    <aura:registerEvent name="DisabledSreenButtonEvent" type="stivadmn:DisabledSreenButtonEvent" Description="Disable all input when performing some action."/>
+    
+    <div class="slds-notify slds-notify--alert slds-theme--alert-texture alert-search" style="display:none" role="alert">
+        <span class="slds-assistive-text">Info</span>
+        <h2><div class="search-response">Please select from date and then search.</div></h2>
+    </div>
+    <div class="slds-notify slds-notify--alert slds-theme--alert-texture slds-theme--error viewSetupAuditTrailAllError" style="display:none" role="alert">
+        <span class="slds-assistive-text">Error</span>
+        <button class="slds-button slds-notify__close slds-button--icon-inverse" title="Close" onclick="{!c.close}">
+            <stivadmn:adminifiedIcons class="slds-button__icon" svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#close" />
+            <span class="slds-assistive-text">Close</span>
+        </button>
+        <div class="slds-notify__content slds-grid">
+            <div class="slds-col slds-align-middle">
+                <h2><div class="showViewSetupAuditTrailAllError"></div></h2>
+            </div>
+        </div>
+    </div>
+    <div class="slds-notify slds-notify--alert slds-theme--alert-texture slds-theme--error viewSetupAuditTrailError" style="display:none" role="alert">
+        <span class="slds-assistive-text">Error</span>
+        <div class="slds-notify__content slds-grid">
+            <div class="slds-col slds-align-middle">
+                <h2><div ><span class="uncommittedWorkPending"></span> <button type="button" class="slds-button slds-button--small slds-button--neutral button-small" onclick="{!c.showAgainViewSetupAuditTrailData}">Try again</button></div></h2>
+            </div>
+        </div>
+    </div>
+    <div class="centerRegion">
+        <div class="homePageBodyContainer" style="min-height:300px">
+            <div class="anchorBar uiTabset--base uiTabset--default uiTabset analyticsHomeLeftNav leftFilter" data-aura-rendered-by="183:0">
+                <div role="application tablist" >
+                    <div class="slds-picklist slds-dropdown-trigger slds-dropdown-trigger--click  userFilterDiv" id="" >
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right ">
+                                <input type="search" id="text-input-01" class="slds-lookup__search-input slds-input holdUsername" placeholder="Search And Select User" aria-owns="option-list-01" role="combobox" aria-activedescendant="" aria-expanded="true" readonly="" onchange="{!c.changeUser}" onkeypress="{!c.searchUser}" onkeyup="{!c.searchUser}"/>
+                                <button id="userFilterDiv" class="slds-button slds-input__icon slds-text-color--default" aria-expanded="true" tabindex="-1" title="Search And Select User" onclick="{!c.openUser}" >
+                                    <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#down" class="slds-icon slds-icon--selected slds-icon--x-small slds-icon-text-default slds-m-right--x-small slds-shrink-none"  />
+                                </button>
+                            </div>
+                            <div class="slds-dropdown slds-dropdown--left slds-dropdown--length-5" role="listbox" style="width:100%;">
+                            <ul id="option-list-01" class="slds-dropdown__list" role="presentation">
+                                <aura:iteration items="{!v.filterUserList}" var="user">
+                                    <li role="presentation" onclick="{!c.actionClick}">
+                                        <span class="slds-lookup__item-action slds-lookup__item-action--label parent-spans" role="option" tabindex="0" id="">
+                                            <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#check" class="slds-icon slds-icon--selected slds-icon--x-small slds-icon-text-default slds-m-right--x-small slds-shrink-none" />
+                                            <span class="slds-truncate username userAction">{!user}</span>
+                                        </span>
+                                    </li>
+                                </aura:iteration>
+                            </ul>
+                        </div>
+                        </div>
+                        
+                    </div>
+                    <div class="slds-picklist slds-dropdown-trigger slds-dropdown-trigger--click actionFilterDiv">
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right ">
+                                <input type="search" id="text-input-02" class="slds-lookup__search-input slds-input" placeholder="Search And Select Action" aria-owns="option-list-02" role="combobox" aria-activedescendant="" aria-expanded="true" readonly="" onchange="{!c.changeAction}" onkeypress="{!c.searchAction}" onkeyup="{!c.searchAction}"/>
+                                <button id="actionFilterDiv" class="slds-button slds-input__icon slds-text-color--default" aria-expanded="true" tabindex="-1" title="Search And Select Action" onclick="{!c.openUser}">
+                                    <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#down" class="slds-icon slds-icon--selected slds-icon--x-small slds-icon-text-default slds-m-right--x-small slds-shrink-none"  />
+                                </button>
+                            </div>
+                            <div class="slds-dropdown slds-dropdown--left slds-dropdown--length-5" role="listbox" style="width:100%;">
+                            <ul id="option-list-02" class="slds-dropdown__list" role="presentation">
+                                <aura:iteration items="{!v.filterActionList}" var="Action">
+                                    <li role="presentation" onclick="{!c.actionClick}">
+                                        <span class="slds-lookup__item-action slds-lookup__item-action--label parent-spans" role="option" tabindex="0" id="">
+                                            <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#check" class="slds-icon slds-icon--selected slds-icon--x-small slds-icon-text-default slds-m-right--x-small slds-shrink-none" />
+                                            <span class="slds-truncate action userAction">{!Action}</span>
+                                        </span>
+                                    </li>
+                                </aura:iteration>
+                            </ul>
+                        </div>
+                        </div>
+                        
+                    </div>
+                    <div class="calendar" >
+                        <div class="pagecontainer">
+                            <div class="slds-form--stacked">
+                                <!--  DATEPICKER CODE -->
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control" style="width:198px;">
+                                        <ui:inputDate aura:id="fromdate" label="Select From Date" required="true" format="MM/dd/yyyy" class="field " value="{!v.fromDate}" displayDatePicker="true"/>      
+   									</div>
+                                </div>
+                                
+                                <!-- / DATEPICKER CODE -->
+                            </div>              
+                        </div>
+                    </div>
+                    <div class="calendar" >
+                        <div class="pagecontainer">
+                            <div class="slds-form--stacked">
+                                <!--  DATEPICKER CODE -->
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control" style="width:198px;">
+                                       <ui:inputDate aura:id="todate" label="Select To Date" format="MM/dd/yyyy" class="field" value="{!v.toDate}" displayDatePicker="true"/>      
+   								    </div>
+                                </div>
+                                <!-- / DATEPICKER CODE -->
+                            </div>              
+                        </div>
+                    </div>
+                    <div class="" >
+                        <button onclick="{!c.getFilterData}" class="slds-button slds-button--brand slds-button--small search-btn" > Search </button>
+                    </div>
+                </div>
+            </div>
+            <div class="listViewContent customeViewContent" >
+                <div class="uiScroller scroller-wrapper settingHight scroll-bidirectional native slds-scrollable--y" id="settingScroll"  >
+                    <div Class="section-class" >
+                        <!-- Table -->
+                        
+                        <table class="slds-table slds-table--bordered slds-table--fixed-layout manage-org ">
+                            <thead>                
+                                <tr class="slds-text-heading--label toggle-orgsection">
+                                    <th  scope="col" class="slds-text-heading--label" style="display: none">
+                                        <span class="slds-truncate">View Setup Audit Trail Id</span>                    
+                                    </th>
+                                    
+                                    <th  scope="col" class="slds-text-heading--label">
+                                        <span class="slds-truncate">Date</span>                    
+                                    </th>
+                                    
+                                    <th scope="col" class="slds-text-heading--label">
+                                        <span class="slds-truncate">User</span>
+                                    </th>
+                                    
+                                    <th scope="col" class="slds-text-heading--label">
+                                        <span class="slds-truncate">Action</span>
+                                    </th>
+                                    <th scope="col" class="slds-text-heading--label">
+                                        <span class="slds-truncate">Section</span>
+                                    </th>
+                                    <th scope="col" class="slds-text-heading--label">
+                                        <span class="slds-truncate">Description</span>
+                                    </th>
+                                </tr>            
+                            </thead>
+                            <tbody class="managetbody setupAuditTrailTable">   
+                                <tr class="loaderTr-viewSAT " style='display:none'><td colspan="5"><div class=" slds-container--center slds-spinner--small dataLoader " ><img src="/resource/stivadmn__slds0120/assets/images/spinners/slds_spinner_brand.gif" alt="Loading..." /> Loading. Please wait...</div></td></tr>
+                                <tr class="noRecordsFound " style='display:none;'><td colspan="5" style="text-align: center;"><div class="slds-container--center">
+                                    <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#warning" category="utility" size="x-small" name="warning" class="slds-icon slds-icon-text-warning slds-icon--x-small"/>   
+                                    <b> No records available.</b></div></td></tr>
+                                <aura:iteration items="{!v.allOrg}" var="org">
+                                    <tr class="slds-hint-parent slds-is-sortable recordsRow">  
+                                        <td   style="display: none" >
+                                            <span class="slds-truncate org-id">{!org.id}</span>
+                                        </td>                    
+                                        <td >
+                                            <span class="slds-truncate org-createdDate">{!org.CreatedDate}</span>
+                                        </td>                                        
+                                        <td >
+                                            <span class="slds-truncate org-userName">{!org.CreatedBy.Username}</span>
+                                        </td> 
+                                        <td >
+                                            <span class="slds-truncate org-action">{!org.Action}</span>
+                                        </td>
+                                        <td >
+                                            <span class="slds-truncate org-section">{!org.Section}</span>
+                                        </td> 
+                                        <td >
+                                            <span class="slds-truncate org-display">{!org.Display}</span>
+                                        </td>
+                                    </tr>     
+                                </aura:iteration>  
+                            </tbody>  
+                        </table>       
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</aura:component>

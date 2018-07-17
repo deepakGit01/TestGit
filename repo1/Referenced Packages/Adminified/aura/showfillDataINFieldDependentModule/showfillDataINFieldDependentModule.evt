@@ -1,0 +1,6 @@
+<aura:event type="APPLICATION" Description="Showing object dependent data in FieldDependentModule." >
+    <aura:attribute name="objName" type="String" access="GLOBAL"/>
+	<aura:attribute name="objNameMap" type="Object" access="GLOBAL"/>
+    <aura:attribute name="orgNameArrayData" type="Object" access="GLOBAL"/>
+    <aura:attribute name="objList" type="Object" access="GLOBAL"/>
+</aura:event>

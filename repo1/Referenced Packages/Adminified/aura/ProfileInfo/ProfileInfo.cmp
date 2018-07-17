@@ -1,0 +1,121 @@
+<aura:component implements="force:appHostable" controller="stivadmn.ProfileModuleController" >
+    <span><ltng:require styles="/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.css,/resource/stivadmn__AdminifiedStaticResource/smoothness/jquery-ui.css,/resource/stivadmn__AdminifiedStaticResource/multiselectstyle.css" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js,/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.js,/resource/stivadmn__AdminifiedStaticResource/jquery.blockUI.js,/resource/stivadmn__AdminifiedStaticResource/multiselect.min.js" afterScriptsLoaded="{!c.documentReadyProfile}" /></span>
+    <!-- All UserModule attribute -->
+    <aura:attribute name="profileTemplate" type="Object" Description="Holds data, in json format, which is used while creating structure for profileInfo component. E.g. profile Details section and it's standard fields."/>
+    <aura:attribute name="globalOrg" type="Object" Description="Holds all connected organization details."/>
+    <aura:attribute name="profileCommonId" type="String" Description="Uniquely manage the whole profile info component structure."/>
+    <aura:attribute name="profileTemplateData" type="Object" access="GLOBAL"/>
+    <aura:attribute name="appdata" type="Object"/>
+    <aura:attribute name="orgId" type="String" Description="Hold the organization id for fetching the profile information."/>
+    <aura:attribute name="userName" type="String"/>
+    <aura:attribute name="strOrgId" type="String" Description="Hold the organization id for fetching the profile information."/>
+    <aura:attribute name="strOrgName" type="String" Description="Hold the organization name for fetching the profile information."/>
+    <aura:attribute name="randomNumber" type="Integer" Description="Unique number for identifying the particular profile information block."/>
+    <aura:attribute name="strProfileId" type="String" Description="Hold the organization id for fetching the profile information."/>
+    <aura:attribute name="strProfileName" type="String" Description="Hold the organization name for fetching the profile information."/>
+    <aura:attribute name="profileInfo" type="Object" Description="Store profile information of particular profile."/>
+    <aura:attribute name="index" type="Integer" default="0" Description="Maintain profile information block indexing."/>
+    <aura:attribute name="isDeletable" type="Boolean" default="true" Description="Check profile information block has deleted or not."/>
+    <aura:attribute name="objList" type="List" Description="Holds object list on the basics of organization and profile."/>
+    <aura:attribute name="allProfiles" type="Object" default="{}" Description="Store the all profile of particular organization."/>
+    <aura:attribute name="endPoint" type="String" />
+    <aura:attribute name="fieldLevel" type="Object" />
+    <aura:attribute name="viewCreateData" type="Object" access="GLOBAL" Description="Store field level permission data which is getting from server."/>
+    <aura:attribute name="profileMap" type="Object" access="GLOBAL" Description="Holds the all selected profiles id."/>
+    <aura:attribute name="objNameMap" type="Object" access="GLOBAL" Description="Holds all connected organization details."/>
+    <aura:attribute name="profileInstanceData" type="String" Description="Hold organizations and profile name if the have already selected in other user block."/>
+    <aura:attribute name="orgNameSpace" type="String" default="" Description="Hold the name space of selected organization for fetching data."/>
+    <aura:attribute name="objectNameList" type="List"/>
+    <aura:attribute name="objectPermissions" type="Object"/>
+    
+    <!-- Register Event -->
+    <aura:registerEvent name="GetGlobalOrg" type="stivadmn:GetGlobalOrg" Description="Get all connected organizaion."/>
+    <aura:registerEvent name="GetOrgProfiles" type="stivadmn:GetOrgProfiles" Description="Get all profile of particular organization."/>
+    <aura:registerEvent name="handleError" type="stivadmn:handleError" Description="Handle error which is getting from server."/>    
+    <aura:registerEvent name="deleteProfileCmpEvent" type="stivadmn:deleteProfileCmpEvent" Description="Delete profile information block."/>
+    <aura:registerEvent name="differenceRow" type="stivadmn:differenceRow" Description="Showing difference in multiple organizations profile fields. E.g user license etc."/>    
+    <aura:registerEvent name="getAllObjectFromObject" type="stivadmn:getAllObjectFromObject" Description="Get all objects of an particular profile from server."/> 
+    <aura:registerEvent name="setObjectInProfileObj" type="stivadmn:setObjectInProfileObj" Description="Set all object in object section of particular profile information block."/>  
+    <aura:registerEvent name="rowHeightEvent" type="stivadmn:rowHeightEvent" Description="Maintain the standard fields row height."/> 
+    <aura:registerEvent name="renderIconShapProfileEvent" type="stivadmn:renderIconShapProfileEvent" Description="Identify the block."/>
+    <aura:registerEvent name="SetInstanceDataListProfile" type="stivadmn:SetInstanceDataListProfile" Description="Set organizations and profile name in list if they have already selected multiple time in other profile information block for comparison."/> 
+    <aura:registerEvent name="ResetInstanceDataListProfile" type="stivadmn:ResetInstanceDataListProfile" Description="Reset organizations and profile name in list if they have already selected multiple time in other profile information block for comparison."/>
+    <aura:registerEvent name="AdjustInfoBlock" type="stivadmn:AdjustInfoBlock" Description="Before and after adding or deleting profile information component, maintain the size of profile information blocks(component). E.g. ProfileInfo component."/>
+    <aura:registerEvent name="DisabledSreenButtonEvent" type="stivadmn:DisabledSreenButtonEvent" Description="Disable all input when performing some action."/>
+    <aura:registerEvent name="CreateObjectFieldStatus" type="stivadmn:CreateObjectFieldStatus" Description="Showing object fields status of particular profile."/>
+    <aura:registerEvent name="CreateFieldLevelAccessible" type="stivadmn:CreateFieldLevelAccessible" Description="Create structure for object field level accessibility component"/>
+    <aura:registerEvent name="showFieldDependencies" type="stivadmn:showFieldDependencies" Description="Create structure for object dependency component"/>
+    
+    <!--Handle Events -->
+    <aura:handler event="stivadmn:SetGlobalOrg" action="{!c.setGlobalOrg}" Description="Set all connected organizaion in globalOrg attribute."/> 
+    <aura:handler event="stivadmn:UpdatedGlobalOrg" action="{!c.updatedGlobalOrg}" Description="After delete and add organization, update globalOrg attribute."/>
+    <aura:handler name="ProfileModuleEvent" event="stivadmn:ProfileModuleEvent" action="{!c.getTemplateData}" Description="Get profile json formate data for creating profile information blocks."/>
+    <aura:handler name="GetOrgProfiles" event="stivadmn:GetOrgProfiles" action="{!c.getOrgProfilesData}" Description="Get all profile of particular organization."/>
+    <aura:handler event="stivadmn:ProfileInfoEvent" action="{!c.getProfileDetail}" Description="Passing profile detail for getting the profile information."/>
+    <aura:handler name="ProfileAfterEditEvent" event="stivadmn:ProfileAfterEditEvent" action="{!c.afterProfileEdit}" Description="Create profile module structure after edit in profile edit component."/>
+    
+    <aura:handler event="stivadmn:SetAllObjEvt" action="{!c.getObjList}" Description="Set object of particular profile in profile module."/>
+    <div id="{!'comp'+v.randomNumber}" class="slds-size--3-of-4 profileColSize slds-col-rule--right" style="background:#f4f6f9; display:none">   
+        <div class="slds-col-rule--bottom profileBorderBottom borderBottom">
+            
+            <div class="{!'slds-col slds-size--1-of-3 loader-'+v.randomNumber}" style="background:#f4f6f9">
+            <div class="profilesectionWp sectionWp" style="height: 171px;">
+                <div class="sectionHeader">
+                    <div class="c-padding">
+                        <aura:if isTrue="{!v.isDeletable}">
+                            <div class="custom-close ">
+                                <button  class="slds-button slds-button--icon-bare remove-block del" onclick="{!c.deleteProfileCmp}" title="Remove block"> <span class="slds-icon__container slds-icon--close">
+                                    <stivadmn:adminifiedIcons class="slds-button__icon slds-icon--" svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#close" />
+                                    <span class="slds-assistive-text"> </span> </span> </button>
+                            </div>
+                        </aura:if>
+                        <form class="slds-form--stacked">
+                            
+                            <div class="slds-form-element">
+                                <div class="ui-widget">
+                                    <div class="custom-input">
+                                        <span class="custom-combobox">
+                                            <select class="{!'selOrg select-org select-org'+v.randomNumber}" ></select>
+                                        </span>
+                                        <button aria-haspopup="true" class="slds-button slds-button--icon-border-filled slds-button--icon-small custom-add" onclick="{!c.addOrganization}" title="Add Organization"><span class="slds-icon__container slds-icon-utility-add">
+                                            <stivadmn:adminifiedIcons class="slds-button__icon slds-icon--x-small" svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#add" />
+                                            <span class="slds-assistive-text"> </span> </span> </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control cute-loader">
+                                    <input  placeholder="Enter three character of profile" class="slds-input slds-input--small profileAuto tags" type="text" id="{!'profile_'+v.randomNumber}" onkeyup="{!c.resetVal}"/>
+                                </div>
+                            </div>
+                            
+                            <div class="slds-form-element object-div">
+                                <div class="slds-form-element__control" >
+                                    <select  id="{!'profile_id___object_'+v.randomNumber}" class="object-cls obj-combobox SlectBox" multiple="multiple" placeholder="Object" disabled="disabled">      
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div  style="margin-top: 0.5rem; " class="{!'btn-visible slds-form-element btn-'+v.randomNumber}">
+                                <button type="button" class="slds-button slds-button--small slds-button--neutral edit-profile-cls button-small" onclick="{!c.editProfile}">Edit</button>
+                                <button type="button" class="slds-button slds-button--small slds-button--neutral search-object-cls button-small " style="display:none" id="{!'search_object_'+v.randomNumber}" onclick="{!c.getObjectDetails}">Search</button>
+                                <button type="button" class="slds-button slds-button--small slds-button--neutral loader-object-search button-small" style="display:none"></button>
+                                <span id="{!'profile-namespace-'+v.randomNumber}" style="display:none;"></span>
+                                <span id="{!'iconShap'+v.randomNumber}" class="spanLegend" style="display:none"></span>
+                                <span style="float:right">
+                                    <span id="{!'iconShapApproval'+v.randomNumber}" class="legendApproval" title="True"></span>&nbsp;
+                                    <span id="{!'iconShapReject'+v.randomNumber}" class="legendReject" title="False"></span>
+                                </span>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            </div>
+        </div>
+        <div class="profileCmpAppend srollbarNone profilescroll dataScroll slds-col-rule--top"></div> 
+    </div>
+    <div style="clear:both"></div>
+    <div aura:id="editProfile"></div>
+    <div aura:id="orgnizationDiv"></div>
+</aura:component>

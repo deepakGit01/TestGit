@@ -1,0 +1,125 @@
+<aura:component controller="stivadmn.ConnectToOrgController">
+    <ltng:require scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js" afterScriptsLoaded="{!c.document}" />
+    <!--Define Attributes-->
+    <aura:attribute name="login_url" type="String" /> 
+    <aura:attribute name="verification_code" type="String" />    
+    <aura:attribute name="selected_type" type="String" />  
+    <aura:attribute name="user_name" type="String" /> 
+    <aura:attribute name="randomNumber" type="Integer" Description="Unique number for identifying this component call from which information block of particular module. E.g. User module , profile module."/>
+    <aura:attribute name="index" type="Integer" Description="Maintain connect to organization component indexing."/>
+    <aura:attribute name="msgdetail" type="String"/>
+    <aura:attribute name="insType" type="String" Description="Hold the organization type."/>
+    <aura:attribute name="orgData" type="List" Description="Holds the connected organizations detail list."/>
+    <aura:attribute name="moduleName" type="String" Description="Hold the module name for identifying this component call from which module. E.g. user Module, Profile Module."/>
+    
+    <!--Register Events-->
+    <aura:registerEvent name="OrgCmpEvent" type="stivadmn:OrgCmpEvent" Description="Set organization details in all module."/>
+    <aura:registerEvent name="OrgCmpEvent1" type="stivadmn:OrgCmpEvent1" Description="Create organization details table in manage organization component."/>
+    <aura:registerEvent name="handleError" type="stivadmn:handleError" Description="Handle error which is getting from server."/>
+    <aura:registerEvent name="DisabledSreenButtonEvent" type="stivadmn:DisabledSreenButtonEvent" Description="Disable all input when performing some action."/>
+    
+    
+    
+    <div class="model-append-remove hideOrg org_Div_section" style="display:none">
+        <div class="custom-slds">
+            <div class="slds-size--1-of-2 container-div ">    
+                <div  class="">
+                    <div aria-hidden="true" role="dialog" class="slds-modal  slds-fade-in-open ">
+                        <div class="slds-modal__container">
+                            <div class="slds-modal__header" style="padding-bottom:0.5rem;">
+                                <section class="slds-float--center">
+                                    <div class="slds-float--left">
+                                        <div class="slds-media" >
+                                            <div class="slds-media__figure"> <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/standard-sprite/svg/symbols.svg#environment_hub" category="custom" size="medium" name="hierarchy" class="slds-icon icon__svg slds-icon-standard-relationship"/></div>
+                                            <div align="left" class="slds-media__body">
+                                                <h1 class="modelMainHeaderClass" style=""><b>Connect to Organization</b></h1>
+                                                <h2 class="modulesubHdrClass" style="">Organization</h2>
+                                            </div>
+                                        </div> 
+                                    </div>
+                                    <div class="slds-float--right">
+                                        <button class="slds-button slds-button--icon-inverse slds-modal__close close-model-Org close-model-Org-icon">
+                                            <stivadmn:adminifiedIcons class="slds-button__icon slds-button__icon--large" svgPath="/resource/stivadmn__slds0120/assets/icons/action-sprite/svg/symbols.svg#close" /> 
+                                            <span class="slds-assistive-text">Close</span> </button>
+                                    </div>
+                                </section>
+                            </div>            
+                            <div class="slds-modal__content">
+                                <div class="notification-div Displaynone" style="display:none;padding-bottom: 0.5rem;">
+                                    <div class="slds-notify slds-notify--alert slds-theme--alert-texture slds-theme--error"  role="alert"> <span class="slds-assistive-text">Error</span>
+                                        <button class="slds-button slds-notify__close slds-button--icon-inverse btn-alertMsgDataerror" title="Close" >
+                                            <stivadmn:adminifiedIcons class="slds-button__icon" svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#close" />
+                                            <span class="slds-assistive-text">Close</span> </button>
+                                        <div class="slds-notify__content slds-grid">
+                                            <div class="slds-col slds-align-middle">
+                                                <h2>
+                                                    <div class="showErrorConnectOrg"></div>
+                                                </h2>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="alert alert-info" role="alert"> <strong>Note</strong>: Copy link address and paste into another browser. </div>
+                                <div class="slds-spinner--small slds loader-div slds-container--center" align="center"> <img src="/resource/stivadmn__slds0120/assets/images/spinners/slds_spinner_brand.gif" alt="Loading..." /></div>
+                                <form class="slds-form--stacked">
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label">Organization</label>
+                                        <div class="slds-form-element__control">                                            
+                                            <ui:inputSelect class="slds-select org_type_select" aura:id="org_type_select" change="{!c.onChange}" /> 
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label " >Login Url</label>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-button-group" role="group">
+                                                <input  class="slds-input slds-input--small login-url selection-color loginurl-txt" readonly="true" type="text"  />
+                                                <button class="slds-button copy_btn slds-button--small slds-button--brand slds-button--small copy-btn" onclick = "{!c.copyUrl}">Copy</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label" >Verification Code</label>
+                                        <div class="slds-form-element__control">
+                                            <input  class="slds-input slds-input--small auth-code varicls" type="text" placeholder="Verification Code..." />
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="slds-modal__footer ">
+                                <button class="slds-button slds-button--neutral close-model cancel-btn close-model-Org" onclick = "{!c.closeModel}" >Cancel</button>
+                                <span class="slds-p-horizontal--medium">
+                                    <button class="slds-button slds-button--brand auth-button" onclick = "{!c.saveOrgInfo}" >Authorize</button>
+                                </span>                                
+                            </div>                         
+                        </div>
+                    </div>
+                    <div class="slds-modal-backdrop slds-modal-backdrop--open"></div>
+                </div>
+                
+                <!--success alert-->     
+                
+                <div class='org-success-box' style="display:none">
+                    <div aria-hidden="false" role="dialog" class="slds-modal slds-modal--prompt slds-fade-in-open">
+                        <div class="slds-modal__container slds-modal--prompt">
+                            <div class="slds-modal__header slds-theme--success slds-theme--alert-texture">
+                                <h2 class="slds-text-heading--medium">Success</h2>
+                                <button class="slds-button slds-button--icon-inverse slds-modal__close">
+                                    <span class="slds-assistive-text">Close</span>
+                                </button>
+                            </div>
+                            <div class="slds-modal__content">
+                                <div>
+                                    <p><b><span class="org-name-cls"></span></b> Organization added successfully.</p>
+                                </div>
+                            </div>
+                            <div class="slds-modal__footer slds-theme--default">
+                                <button class="slds-button slds-button--neutral" >Ok</button>      
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-modal-backdrop slds-modal-backdrop--open"></div>
+                </div> 
+            </div>
+        </div>
+    </div>
+</aura:component>

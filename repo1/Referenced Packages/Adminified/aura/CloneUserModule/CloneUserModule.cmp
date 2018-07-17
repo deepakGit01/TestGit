@@ -1,0 +1,143 @@
+<aura:component controller="stivadmn.UserModuleController" >
+    <ltng:require scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js" afterScriptsLoaded="{!c.documentReady}" />
+    <!--Attributes -->
+    <aura:handler name="init" value="{!this}" action="{!c.cloneInit}"/>
+    <aura:attribute name="userData" type="Object" Description="Holds the user information in json format."/>
+    <aura:attribute name="cloneUserId" type="string" Description="Hold cloned user id."/>
+    <aura:attribute name="cloneOrgId" type="string" Description="Hold organization id of cloned user."/>
+    <aura:attribute name="randomNumber" type="Integer" Description="Unique number for identifying the particular user to be clone."/>
+    <aura:attribute name="strUserName" type="String" Description="Hold the user name."/>
+    <aura:attribute name="strProfileName" type="String" Description="Hold the profile name."/>
+    <aura:attribute name="index" type="Integer" Description="Maintain user information block indexing."/>
+    
+    
+    <!--Register Events-->
+    <aura:registerEvent name="AfterCloneUserEvent" type="stivadmn:AfterCloneUserEvent" Description="Holds Cloned user details."/>
+    <aura:registerEvent name="DisabledSreenButtonEvent" type="stivadmn:DisabledSreenButtonEvent" Description="Disable all input when performing some action."/>
+    
+    
+    <div class="{!'slds-modal-backdrop slds-modal-backdrop--open clone-user-layer-'+v.randomNumber}" style="display:none"></div>
+    <div class="{!'slds clone_section slds-is-fixed clone-user-'+v.randomNumber}" style="display:none;">
+        <div class="custom-slds"> 
+            <div class="layer clone-loader" style="display:none"><div class="slds-form-element__control slds-text-align--center" align="center" ><span class="slds-avatar slds-avatar--large"><img src="/resource/stivadmn__slds0120/assets/images/spinners/slds_spinner_brand.gif" alt="Loading data" /></span></div></div>
+            <div class="slds-popover" role="dialog">
+                <div class="slds-popover__content">
+                    <div class="slds-popover__header" style="background-color: #f4f6f9;border-bottom: 2px solid #d8dde6;">
+                        <section class="slds-clearfix">
+                            <div class="slds-float--left">
+                                <div class="slds-media" >
+                                    <div class="slds-media__figure"><stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/action-sprite/svg/symbols.svg#join_group" category="action" size="small" name="join-group" class="slds-icon icon__svg slds-icon-action-join-group slds-p-around_none"/></div>
+                                    <div class="slds-media__body">
+                                        <div class="slds-grid">
+                                            <h1 class="slds-text-heading--medium slds-m-right--small slds-truncate slds-align-middle">Clone: <span class="clone-user-name">{!v.strUserName}</span></h1>
+                                        </div>
+                                        <p class="slds-text-heading--label"><span class="clone-profile">{!v.strProfileName}</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-float--right">
+                                <button  class="slds-button slds-button--icon-bare" onclick='{!c.close}' type="button">
+                                    <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#close" category="utility" size="x-small" name="close" class="slds-button__icon"/>
+                                    <span class="slds-assistive-text">close</span>
+                                </button>
+                            </div>
+                        </section>
+                    </div>
+                    <div class="slds-popover__body">
+                        <div class="slds-notify slds-notify--alert slds-theme--alert-texture alert-clone" style="display:none" role="alert">
+                            <span class="slds-assistive-text">Info</span>
+                            <h2><div class="clone-response"></div></h2>
+                        </div> 
+                        
+                        <div class="clone-form" id="cloneform">
+                            <form role="form" class="slds-form--stacked slds-grid slds-wrap" >
+                                <table class="slds-table slds-table--bordered slds-max-medium-table--stacked slds-table--bordered " style=" border-left: 1px solid #D8DDE6;  border-right: 1px solid #D8DDE6;">
+                                    <tr class="" style="">
+                                        <td width="40%" scope="col" class="textlowercase slds-text-align--right slds-col-rule--right"><span class="slds-truncate thead-val">First Name<span class="mandatory">*</span></span> </td>
+                                        <td width="60%" class="slds-col-rule--right"><input class="slds-input slds-input--small size-cls clone-sndsvr" id="FirstName" type="text" value="" /></td>
+                                    </tr>
+                                    <tr class="" style="">
+                                        <td width="40%" scope="col" class="textlowercase slds-text-align--right slds-col-rule--right"><span class="slds-truncate thead-val">Last Name<span class="mandatory">*</span></span> </td>
+                                        <td width="60%" class="slds-col-rule--right"><input class="slds-input slds-input--small size-cls clone-sndsvr" id="LastName" type="text" value=""/></td>
+                                    </tr>
+                                    <tr class="" style="">
+                                        <td width="40%" scope="col" class="textlowercase slds-text-align--right slds-col-rule--right"><span class="slds-truncate thead-val">User Name<span class="mandatory">*</span></span> </td>
+                                        <td width="60%" class="slds-col-rule--right"><input class="slds-input slds-input--small size-cls clone-sndsvr" id="Username" type="text" value=""/></td>
+                                    </tr>
+                                    <tr class="" style="">
+                                        <td width="40%" scope="col" class="textlowercase slds-text-align--right slds-col-rule--right"><span class="slds-truncate thead-val">E-Mail<span class="mandatory">*</span></span> </td>
+                                        <td width="60%" class="slds-col-rule--right"><input class="slds-input slds-input--small size-cls clone-sndsvr" id="Email" type="text" value=""/></td>
+                                    </tr>
+                                    <tr class="" style="">
+                                        <td width="40%" scope="col" class="textlowercase slds-text-align--right slds-col-rule--right"><span class="slds-truncate thead-val">Nick Name<span class="mandatory">*</span></span> </td>
+                                        <td width="60%" class="slds-col-rule--right"><input class="slds-input slds-input--small size-cls clone-sndsvr" id="CommunityNickname" type="text" value=""/></td>
+                                    </tr>
+                                    <tr class="" style="">
+                                        <td width="40%" scope="col" class="textlowercase slds-text-align--right slds-col-rule--right"><span class="slds-truncate thead-val">Alias<span class="mandatory">*</span></span> </td>
+                                        <td width="60%" class="slds-col-rule--right"><input class="slds-input slds-input--small size-cls clone-sndsvr" id="Alias" type="text" value=""/></td>
+                                    </tr>          
+                                </table>
+                            </form>
+                            
+                        </div>
+                        
+                    </div>
+                    <div class="slds-popover__header slds-modal__footer">
+                        <button type="button" class="slds-button slds-button--neutral" onclick='{!c.close}'>Close</button> &nbsp;&nbsp;
+                        <button type="button" class="slds-button slds-button--brand clone-btn" onclick='{!c.confirm}'>Clone</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!--Confirm alert-->  
+        
+        <div class='confirm-box-clone confirm-box header-color-cls' style="display:none">
+            <div aria-hidden="false" role="dialog" class="slds-modal slds-modal--prompt slds-fade-in-open">
+                <div class="slds-modal__container slds-modal--prompt">
+                    <div class="slds-modal__header slds-theme--error slds-theme--alert-texture">
+                        <h2 class="slds-text-heading--medium">Confirm</h2>
+                        <button  class="slds-button slds-button--icon-inverse slds-modal__close" onclick="{!c.cancel}" type="button">
+                            <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#close" category="utility" size="x-small" name="close" class="slds-button__icon"/>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                    </div>
+                    <div class="slds-modal__content">
+                        <div>
+                            <p>Are you sure want to clone <b><span class="clone-user-name">{!v.strUserName}</span></b>?</p>
+                        </div>
+                    </div>
+                    <div class="slds-modal__footer slds-theme--default">
+                        <button type="button" class="slds-button slds-button--neutral" onclick="{!c.cancel}">Cancel</button>&nbsp;&nbsp;
+                        <button type="button" class="slds-button slds-button--brand" onclick="{!c.clone}">Confirm</button>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-modal-backdrop slds-modal-backdrop--open"></div>
+        </div>   
+        
+        <!--success alert-->     
+        
+        <div class='clone-success-box confirm-box' style="display:none">
+            <div aria-hidden="false" role="dialog" class="slds-modal slds-modal--prompt slds-fade-in-open">
+                <div class="slds-modal__container slds-modal--prompt">
+                    <div class="slds-modal__header slds-theme--success slds-theme--alert-texture">
+                        <h2 class="slds-text-heading--medium">Success</h2>
+                        <button type="button" class="slds-button slds-button--icon-inverse slds-modal__close">
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                    </div>
+                    <div class="slds-modal__content">
+                        <div>
+                            <p><b><span class="clone-user-name"></span></b> Cloned Successfully.</p>
+                        </div>
+                    </div>
+                    <div class="slds-modal__footer slds-theme--default">
+                        <button type="button" class="slds-button slds-button--neutral" onclick="{!c.okClone}">OK</button>      
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</aura:component>

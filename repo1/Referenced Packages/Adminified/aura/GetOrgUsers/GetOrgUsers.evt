@@ -1,0 +1,5 @@
+<aura:event type="COMPONENT" Description="Getting all user of particular organization." >
+    <aura:attribute name="OrgId" type="String"/>
+    <aura:attribute name="randomNumber"  type="Integer"/>
+    <aura:attribute name="index"  type="Integer"/>
+</aura:event>

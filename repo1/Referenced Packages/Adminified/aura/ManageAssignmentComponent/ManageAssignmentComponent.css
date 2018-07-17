@@ -1,0 +1,45 @@
+.THIS.Displaynone {      
+    display:none;
+}
+.THIS.Displayblock {      
+    Display:block;
+}
+.THIS .showdivmsg1{
+  height: 100px;
+ }
+.THIS .signeddiv {
+       height: 295px;
+}
+.THIS .padding-bottom-20{
+ padding-bottom:20px   
+}
+.THIS .hide-row{
+     display:none;
+}
+
+.THIS .unsigneddiv {
+       height: 295px;
+}
+
+.THIS .slds-text-heading--small {
+    font-weight: 500;
+}
+.THIS .center-div {
+    margin: auto;
+    width: 300px;
+    padding: 5px;
+}
+
+.THIS #userHead {
+    font-size: 12px;
+}
+.THIS .assigned-user-table th, .THIS .assigned-user-table td, .THIS .unsigned-model-table th, .THIS .unsigned-model-table td{
+    border: 1px solid #cfd0d2;
+}
+.THIS .slds-table tr > th:first-child, .THIS .slds-table tr > td:first-child {
+    padding-left: .50rem;
+}
+.THIS .hover-permission-class{
+background-color: #f4f6f9;
+    box-shadow: #d8dde6 0 -1px 0 inset;
+}

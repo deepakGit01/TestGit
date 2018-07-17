@@ -1,0 +1,77 @@
+<apex:page controller="Flosum.CreateMultiMetaSnapshotController" sidebar="false" action="{!snapshotAction}" doctype="html-5.0">
+
+<c:Wait />
+<apex:form id="meta">
+<apex:pagemessages id="msg"/>
+<apex:pageBlock title="Organization ({!orgname})" rendered="{!orgname != null}">
+    <apex:pageBlockButtons >
+        <apex:commandButton value="Save Snapshot" onClick="checkValidation();" action="{!listMetadataItems}" onComplete="hide();" reRender="msg,sname"/>
+    </apex:pageBlockButtons>
+    <apex:pageBlockSection columns="1"> 
+        <apex:pageBlockSectionItem id="sname">
+            <apex:outputLabel value="Snapshot Name {!IF(snapshotName != null, snapshotName,'')}"/>
+            <apex:inputText value="{!snapshotName}" />
+                
+        </apex:pageBlockSectionItem>
+        <apex:pageBlockSectionItem >
+            <apex:outputLabel value="Last Modified In Days"/>
+            <apex:input value="{!filterDate}" type="number" id="afterDateToFilter" html-min="0" required="true" html-max="3650" styleClass="lastModifiedDays"/>
+        </apex:pageBlockSectionItem>
+        <apex:pageBlockSectionItem > 
+            <apex:pageblockTable value="{!metatypesList}" var="item">
+                <apex:column width="40px">
+                     <apex:facet name="header"><input type="checkbox" onclick="checkAll(this);">&nbsp;</input></apex:facet>
+                    <apex:inputCheckbox value="{!item.selected}" styleclass="sel"/>
+                </apex:column>
+                <apex:column headervalue="MetadataTypes"><apex:outputLabel value="{!item.metatype}" /></apex:column>
+            </apex:pageblockTable> 
+        </apex:pageBlockSectionItem>
+    </apex:pageBlockSection>
+</apex:pageBlock>
+</apex:form>
+
+<script>
+function checkAll(ele) {
+     var checkboxes = document.getElementsByClassName('sel');
+     if (ele.checked) {
+         for (var i = 0; i < checkboxes.length; i++) {
+             if (checkboxes[i].type == 'checkbox') {
+                 checkboxes[i].checked = true;
+             }
+         }
+     } else {
+         for (var i = 0; i < checkboxes.length; i++) {
+             if (checkboxes[i].type == 'checkbox') {
+                 checkboxes[i].checked = false;
+             }
+         }
+     }
+ }
+ 
+ function checkValidation()
+ {
+    console.log('checkValidation()');
+    show();
+    var lastDays = document.getElementsByClassName('lastModifiedDays');
+    if(lastDays.length > 0)
+    {
+        if(lastDays[0].value != undefined && lastDays[0].value != null && lastDays[0].value != '')
+        {
+            if(lastDays[0].value > 3650 || lastDays[0].value < 0)
+            {
+                hide();
+            }else{
+                var strVal = String(lastDays[0].value);
+                var numberChk = strVal.indexOf(".");
+                if(numberChk != -1)
+                    hide();
+            }
+        }
+        else
+        {
+            hide();
+        }
+    }
+ }
+</script>
+</apex:page>

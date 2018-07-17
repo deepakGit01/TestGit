@@ -1,0 +1,9 @@
+<aura:event type="COMPONENT" Description="Holds editable user detail.">
+    <aura:attribute name="orgId" type="String"/>
+    <aura:attribute name="userId" type="String"/>
+    <aura:attribute name="uniqueNumber" type="integer"/>
+    <aura:attribute name="flag" type="boolean"/>
+    <aura:attribute name="index" type="Integer" />
+    <aura:attribute name="userName" type="String" />
+    
+</aura:event>

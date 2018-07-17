@@ -1,0 +1,129 @@
+<aura:component controller="stivadmn.PermissionSetModuleController">
+    <ltng:require styles="/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.css,/resource/stivadmn__AdminifiedStaticResource/smoothness/jquery-ui.css" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js,/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.js,/resource/stivadmn__AdminifiedStaticResource/jquery.blockUI.js" afterScriptsLoaded="{!c.documentReady}" />
+    
+    <!--Define Attributes-->
+    <aura:attribute name="permissionSetTemplate" type="Object" access="GLOBAL" Description="Holds data, in json format, which is used while creating structure for permission set module. E.g. Permission Set Details section and it's standard fields."/>
+    <aura:attribute name="permissionSetTemplateDataSetting" type="Object" access="GLOBAL" Description="Holds data, in json format, which is used while creating structure for permission set setting component. E.g. Permission Set Details section and it's standard fields."/>
+    <aura:attribute name="permissionSetBody" type="Aura.Component[]" access="GLOBAL" Description="Create structure for showing information of permission set and compare them regarding to Permission Set Details section and it's standard fields etc."/>
+    <aura:attribute name="index" type="Integer" default="-1" Description="Maintain indexing of permission set information blocks."/>
+    <aura:attribute name="permissionSetStruct" type="Object" />
+    <aura:attribute name="assignUserList" type="List" Description="Holds permission assign user list."/>
+    <aura:attribute name="adminifiedPermissionSetSettingDiv" type="Aura.Component[]" Description="Create permission set settings structure for managing the standard fields and showing them. E.g in Permission Set Details section, show and hide its standard fields and whole Permission Set Details section."/>
+    <aura:attribute name="permissionInstanceList" type="List" Description="Maintain same organization and permission set list which have not selected multiple time in other permission set information block for comparison."/>
+    <aura:attribute name="objList" type="List" Description="Holds object list on the basics of organization and permission set."/>
+    <aura:attribute name="permissionSetCommonId" type="String" default="permissionset_id___" Description="Uniquely manage the whole permission set module structure."/>
+    
+    <!--Register Events--> 
+    <aura:registerEvent name="AdjustInfoBlock" type="stivadmn:AdjustInfoBlock" Description="Before and after adding or deleting permission set information component, maintain the size of permission set information blocks(component). E.g. PermissionsSetInfo component."/>
+    <aura:registerEvent name="QuickSearch" type="stivadmn:QuickSearch" Description="Search standard fields in permission set information section and generate searchable data. E.g. search User License in Permission Set Details section."/>
+    <aura:registerEvent name="rowHeightEvent" type="stivadmn:rowHeightEvent" Description="Maintain the standard fields row height."/>
+    <aura:registerEvent name="SetModuleTemplate" type="stivadmn:SetModuleTemplate" Description="Send json format data for creating permission set standard fields details and permission set information section in permission set information block. E.g. User License and Permission Set Details saction."/>
+    <aura:registerEvent name="PermissionSetInfoEvent" type="stivadmn:PermissionSetInfoEvent" Description="Passing permission set detail for getting the permission set information."/>
+    <aura:registerEvent name="differenceRow" type="stivadmn:differenceRow" Description="Show difference in multiple organizations permission set fields. E.g user license,API name etc."/>
+    <aura:registerEvent name="DisabledSreenButtonEvent" type="stivadmn:DisabledSreenButtonEvent" Description="Disable all input when performing some action."/>
+    <aura:registerEvent name="SetObjPermissionSet" type="stivadmn:SetObjPermissionSet" Description="Set object of particular permission set in permission set module."/>
+    <aura:registerEvent name="SetAssignUserPermissionSet" type="stivadmn:SetAssignUserPermissionSet" Description="Assign user on particular permission set."/>
+    <aura:registerEvent name="getAssignUserListBridge" type="stivadmn:getAssignUserListBridge" Description="Get assign user on particular permission set."/>
+    <aura:registerEvent name="getAllObjectFromObjectPermissionSetBridges" type="stivadmn:getAllObjectFromObjectPermissionSetBridges" Description="Get all object list of particular permission set."/>
+    <aura:registerEvent name="SaveNewSetting" type="stivadmn:SaveNewSetting" Description="Save permission set setting."/>
+    <aura:registerEvent name="handleError" type="stivadmn:handleError" Description="Handle error which is getting from server."/>
+    <!--Handle Events-->
+    <aura:handler event="stivadmn:GetSettingTemplateData" action="{!c.getModuleTemplate}" Description="Get permission set setting data in json format for creating a permission set setting structure."/>
+    <aura:handler event="stivadmn:GetQuickSearchTemplate" action="{!c.getQuickSearchTemplate}" Description="Searching the permission set standard fields. E.g user license,API name etc."/>
+    <aura:handler name="SettingPermissionAfterSaveEvent"  event="stivadmn:SettingPermissionAfterSaveEvent" action="{!c.settingAfterSave}" Description="Set permission set setting data after change in permission set setting."/>
+    <aura:handler name="deletePermissionSetCmpEvent"  event="stivadmn:deletePermissionSetCmpEvent" action="{!c.deletePermissionSetCmp}" Description="Delete permission set information blocks. E.g. PermissionsSetInfo component."/>
+    <aura:handler name="setAssignUserList"  event="stivadmn:setAssignUserList" action="{!c.setAssignUserInList}" Description="Set assign user in Assign user section of permission set info component."/>
+    <aura:handler name="setObjectInPermissionSetObj"  event="stivadmn:setObjectInPermissionSetObj" action="{!c.setObjInListPermissionSet}" Description="Set objects in permision set module object list."/>
+    <aura:handler name="SetInstanceDataListPermission"  event="stivadmn:SetInstanceDataListPermission" action="{!c.setInInstanceListPermission}" Description="Set organizations and permission set list if they have already selected multiple time in other permission set information block for comparison."/>
+    <aura:handler name="ResetInstanceDataListPermission"  event="stivadmn:ResetInstanceDataListPermission" action="{!c.resetInstanceListPermission}" Description="Reset organizations and permission set list if they have already selected multiple time in other permission set information block for comparison."/>
+    <aura:handler name="getAssignUserList" event="stivadmn:getAssignUserList" action="{!c.getUserListPermissionSet}" Description="Get assign user list of particular permission set."/>
+    <aura:handler name="getAllObjectFromObjectPermissionSet" event="stivadmn:getAllObjectFromObjectPermissionSet" action="{!c.getObjListPermissionSetModule}" Description="Get object list of particular permission set."/>
+    <aura:handler name="getAssignUserListBridge" event="stivadmn:getAssignUserListBridge" action="{!c.getUserListPermissionSet}" Description="Assign user list of particular permission set in Assign user section."/>
+    <aura:handler name="getAllObjectFromObjectPermissionSetBridges" event="stivadmn:getAllObjectFromObjectPermissionSetBridges" action="{!c.getObjListPermissionSetModule}" Description="Get all object of particular permission set in object section."/>
+    <div id="permissiontest"></div>
+    <div class="slds-grid permission-set-section" style="display:none" id="permission-set-info-section">
+        <div class="slds-size--1-of-4 slds-col-rule--right">
+            <div class="slds-col-rule--bottom">
+                <div class="permissionsetsectionWp sectionWp">
+                    <div class="sectionHeader c-padding  element-permission-set" style="">
+                        <section class="slds-clearfix">
+                            <div class="slds-float--left">
+                                <div class="slds-media">
+                                    <div class="slds-media__figure">
+                                        <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/standard-sprite/svg/symbols.svg#apps_admin" category="standard " size="medium" name="apps_admin" class="slds-icon icon__svg slds-icon-standard-relationship"/>
+                                    </div>
+                                    <div class="slds-media__body">
+                                        <div class="slds-col slds-has-flexi-truncate">
+                                            <p class="slds-text-heading--label">COMPARE</p>
+                                            <p class="slds-truncate" >Permission Sets</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-float--right">
+                                <button type="button" onclick="{!c.settingLocal}" aria-haspopup="true" class="slds-button slds-button--icon-border-filled slds-button--icon-small local-setting-cls" title="Settings">
+                                    <stivadmn:adminifiedIcons class="slds-button__icon" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#settings" />
+                                    <span class="slds-assistive-text">Settings</span></button>
+                            </div>
+                        </section>   
+                        <form class="slds-form--stacked">
+                            <div  style="margin-top: 0.5rem;"  class="slds-form-element">
+                                <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--left"> 
+                                    <stivadmn:adminifiedIcons class="slds-input__icon" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#search" />
+                                    <input id="permissionset_search" class="slds-input slds-input--small search-fields" type="text" aria-autocomplete="list" role="combobox" aria-expanded="true" aria-activedescendant="" placeholder="Search" onkeyup="{!c.searchField}"/>
+                                </div>
+                            </div>
+                            <div class="slds-form-element">
+                                <label for="showHidePermissionSet" class="slds-checkbox" style="display:inline-block">
+                                    <input id="showHidePermissionSet" defaultchecked="true" name="checkbox" type="checkbox" onclick="{!c.hideDiffrences}" />
+                                    <span class="slds-checkbox--faux"></span><span class="slds-form-element__label">Show differences</span></label>
+                                
+                                <label for="showOnlyPerDiff" class="slds-checkbox" style="display:inline-block">
+                                    <input id="showOnlyPerDiff" defaultchecked="true" name="checkbox" type="checkbox" onclick="{!c.showOnlyDiffrences}" />
+                                    <span class="slds-checkbox--faux"></span><span class="slds-form-element__label">Show only differences</span></label>
+                                
+                            </div>
+                        </form>   
+                    </div> 
+                </div>
+            </div>
+            <div id="PermissionSetSectionDiv" class="srollbarNone permissionsetscroll dataScroll scr2"> </div>
+        </div>
+        {!v.permissionSetBody}
+        <div class="addMorePermissionSetBtn"><button  aura:id="addcomponent" onclick="{!c.addComponent}" class="slds-button slds-button--brand slds-button--small compare-btn" ><stivadmn:adminifiedIcons class="slds-button__icon slds-button__icon--left" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#add" /> Add to Compare</button></div>
+        <div aura:id="setting-div"></div>
+    </div>
+    <div class="perm_setting_cls" >
+        <div  class="model-append-remove localPermissionSetSetting" style="Display:none;" >
+            <div aria-hidden="true" role="dialog" class="slds-modal slds-fade-in-open model-close">
+                <div class="slds-modal__container">
+                    <div class="slds-modal__header" style="padding-bottom:0.5rem;">
+                        <section class="slds-float--center">
+                            <div class="slds-float--left">
+                                <div class="slds-media" >
+                                    <div class="slds-media__figure"> <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/custom-sprite/svg/symbols.svg#custom67" category="custom" size="medium" name="custom67" class="slds-icon icon__svg slds-icon-standard-relationship"/></div>
+                                    <div align="left" class="slds-media__body">
+                                        <h1 class="modelMainHeaderClass" style=""><b>Setting</b></h1>
+                                        <h2 class="modulesubHdrClass">Permission Set</h2>
+                                    </div>
+                                </div> 
+                            </div>
+                            <div class="slds-float--right">
+                                <button class="slds-button slds-button--icon-inverse slds-modal__close close-model-PermissionSet close-model-PermissionSet-icon" onclick="{!c.cancelPermissionSet}">
+                                    <stivadmn:adminifiedIcons class="slds-button__icon slds-button__icon--large" svgPath="/resource/stivadmn__SLDS0120/assets/icons/action-sprite/svg/symbols.svg#close" /> 
+                                    <span class="slds-assistive-text">Close</span> </button>
+                            </div>
+                        </section>
+                    </div>
+                    {!v.adminifiedPermissionSetSettingDiv}
+                    <div class="slds-modal__footer ">
+                        <button class="slds-button slds-button--neutral close-model-PermissionSet" onclick="{!c.cancelPermissionSet}">Cancel</button>
+                        <span class="slds-p-horizontal--medium">
+                            <button class="slds-button slds-button--brand save-btn save-btn-PermissionSet" onclick="{!c.savePermissionSet}">Save</button></span>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-modal-backdrop slds-modal-backdrop--open"></div>
+        </div>
+    </div>
+</aura:component>

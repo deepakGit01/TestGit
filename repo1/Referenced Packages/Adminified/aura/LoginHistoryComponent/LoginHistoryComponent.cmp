@@ -1,0 +1,53 @@
+<aura:component controller="stivadmn.UserModuleController">
+     <ltng:require styles="/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.css,/resource/stivadmn__AdminifiedStaticResource/smoothness/jquery-ui.css" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js,/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.js,/resource/stivadmn__AdminifiedStaticResource/jquery.blockUI.js" afterScriptsLoaded="{!c.documentReady}" />
+    <aura:attribute name="userId" type="String" access="GLOBAL" Description="Hold user id for getting a login history."/>
+    <aura:attribute name="orgId" type="String" access="GLOBAL" Description="Hold organization id for getting a login history."/>
+    <aura:attribute name="userName" type="String" access="GLOBAL" Description="Hold user name for showing on login history component."/>
+    <aura:attribute name="apiUserName" type="String" access="GLOBAL"/>
+    <aura:attribute name="loginHistoryInfo" type="Object" access="GLOBAL" Description="Store user login history information in json format."/>
+    <aura:handler event="stivadmn:showLoginHistoryDataEvent" action="{!c.showLoginHistoryData}" Description="Showing a user login history information."/>
+    
+    <!--Field Depend-->
+    <div id="LoginHistoryComponent">
+        <div class="LoginHistoryComponentBody section-class" style="display:none">
+            <div class="slds-notify slds-notify--alert slds-theme--alert-texture slds-theme--error loginHistoryError" style="display:none" role="alert">
+               <span class="slds-assistive-text">Error</span>
+                <button class="slds-button slds-notify__close slds-button--icon-inverse" title="Close" onclick="{!c.close}">
+                    <stivadmn:adminifiedIcons class="slds-button__icon" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#close" />
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <div class="slds-notify__content slds-grid">
+                    <div class="slds-col slds-align-middle">
+                        <h2><div class="showloginHistoryError"></div></h2>
+                    </div>
+                </div>
+          </div>
+            <div class="slds-notify slds-notify--alert slds-theme--alert-texture slds-theme--error loginHistoryErrorForTimeout" style="display:none" role="alert">
+               <span class="slds-assistive-text">Error</span>
+               
+                <div class="slds-notify__content slds-grid">
+                    <div class="slds-col slds-align-middle">
+                        <h2><div class="showloginHistoryErrorForTimeout">Server is taking to long to respond, please. <button type="button" class="slds-button slds-button--small slds-button--neutral button-small" onclick="{!c.showAgainLoginHstryData}">Try again</button></div></h2>
+                    	
+                    </div>
+                </div>
+          </div>
+            <table id="table-loginHistory" class=" slds-table slds-table--bordered custom-border" style="display:none">
+                <thead >
+                    <tr class="slds-text-heading--label" >
+                        <th class="slds-cell-shrink custom-heading "><b>Login Time</b></th>
+                        <th class="slds-cell-shrink custom-heading "><b>Source Ip</b></th>
+                        <th class="slds-cell-shrink custom-heading "><b>Login Type</b></th>
+                        <th class="slds-cell-shrink custom-heading "><b>Status</b></th>
+                        <th class="slds-cell-shrink custom-heading "><b>Application</b></th>
+                        <th class="slds-cell-shrink custom-heading "><b>Browser</b></th>
+                        <th class="slds-cell-shrink custom-heading "><b>Country Iso</b></th>
+                        <th class="slds-cell-shrink custom-heading "><b>Login Url</b></th>
+                     </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</aura:component>

@@ -1,0 +1,706 @@
+.THIS .slds-text-body--small{
+    line-height: 1.5;
+}
+.THIS .box {
+    background: #fff;
+    border-radius: .20rem;
+    position: relative
+}
+.THIS .box-containt {
+    padding: 0.75rem;
+}
+
+.THIS .icon__svg--default {
+    background-color: #546991;
+}
+.THIS .slds-picklist__label {
+    width: 100%
+}
+.THIS .fotter {
+    background: #eef1f6;
+    border-top: 1px solid #d8dde6;
+    padding: 0.75rem;
+    border-bottom-left-radius: .20rem;
+    border-bottom-right-radius: .20rem;
+    -moz-border-radius-bottomright: .20rem;
+    -moz-border-radius-bottomleft: .20rem;
+    -webkit-border-bottom-right-radius: .20rem;
+    -webkit-border-bottom-left-radius: .20rem;
+}
+.THIS .box-heading {
+    margin-left: 0.75rem;
+}
+.THIS html {
+}
+.THIS .header {
+    background: #eef1f6;
+    border-bottom: 1px solid #d8dde6;
+    border-top:none;
+}
+.THIS .c-padding {
+    padding: 0.75rem;
+    padding-bottom:0.50rem;
+    position:relative;
+}
+.THIS .sectionHeader{
+    background: #f4f6f9;
+}
+.THIS .slds-button-group .slds-button:last-child {
+    border-radius: 0px 0.20rem 0.20rem 0px;
+}
+.THIS .slds-button-group .slds-button:first-child {
+    border-radius: 0.20rem 0px 0px 0.20rem;
+}
+.THIS .slds-col-rule--right {
+    border-right: 1px solid #D8DDE6;
+}
+.THIS .slds-col-rule--top {
+    border-top: 1px solid #D8DDE6;
+}
+.THIS .slds-col-rule--left {
+    border-left: 1px solid #D8DDE6;
+}
+.THIS .slds-col-rule--bottom {
+    border-bottom: 1px solid #D8DDE6;
+}
+.THIS .slds-table th  .slds-table td {
+    padding: 0.5rem 0.75rem;
+}
+.THIS .textUppercase {
+    text-transform: uppercase;
+    color: #0070d2;
+}
+.THIS .textlowercase {
+    text-transform: capitalize;
+}
+.THIS .custom-input {
+    position: relative!important;
+}
+.THIS .custom-combobox a{
+    position:absolute!important;
+    right:-2.3px!important;
+} 
+.THIS .ui-widget .custom-add	{
+    position:absolute!important;
+    right:23px!important;
+    border-radius: 0;
+    border-right:none
+}
+.THIS .ui-widget .custom-add .slds-icon--x-small {
+    width: .751rem;
+    height: .751rem;
+}
+.THIS .custom-combobox-toggle {
+    position: absolute!important;
+    top: 0!important;
+    bottom: 0!important;
+    margin-left: -1px!important;
+    padding: 0!important;
+    right: -2px;
+}
+.THIS  .custom-combobox-input {
+    margin: 0;
+    padding-right:4.3rem!important;
+    background:#fff!important;
+    border-color:#d8dde6
+}
+.THIS .custom-combobox-toggle{
+    background:#fff!important;
+    border-color:#d8dde6!important;
+}
+.THIS .ui-widget-content{
+    
+} 
+.THIS .ui-autocomplete{
+    border-color:#d8dde6!important;
+    
+}
+.THIS .ui-widget, .THIS .ui-autocomplete{
+    font: 100%/1.875rem "Salesforce Sans", Arial, sans-serif!important;
+    color: #16325c!important;
+    -webkit-tap-highlight-color: transparent!important;
+}
+.THIS .ui-autocomplete .ui-widget-content {
+    
+    background: #d8dde6!important;
+    color: #16325c!important;
+    
+}
+.THIS .ui-menu .ui-menu-item {padding: 0px 1em 0px;}
+.THIS .ui-menu-item.ui-state-focus{
+    background:#eef1f6!important;
+    border-color:#d8dde6!important;
+}
+
+.THIS .slds-form-element__static {
+    line-height: 2.125rem!important;
+    min-height: calc(2.125rem - 2px)!important;
+}
+.THIS .ui-widget .slds-form-element__label{ 
+    font-size: 0.875rem;
+}
+.THIS .layer{
+    opacity: .8;
+    background-color: rgb(168, 183, 199);
+    position:absolute;
+    z-index:9999;
+    width:100%;
+    height:100%;
+    border-radius: .20rem;
+}
+.THIS .hide-row{
+    display : none;
+}
+.THIS .slds-form-element .slds-checkbox [type="checkbox"] ~ .slds-checkbox--faux {
+    margin-right: 0.5rem;
+}
+.THIS .slds-table td {
+    padding: 0.3rem .50rem;
+}
+.THIS .slds-table td .slds-truncate {
+    white-space: normal
+}
+.THIS span.slds-icon__container.slds-icon-action-close {
+    padding: 0.5rem;
+}
+.THIS .custom-close{
+    position: absolute;
+    top: -7px;
+    right: 0px;
+}
+.THIS .custom-close .slds-button__icon{
+    width: 0.625rem;
+    height: 0.625rem
+}
+.THIS .custom-close .slds-button__icon:hover {
+    background-color: #ef6e64;
+    fill: #fff;
+    border-radius: 50%;
+}
+.THIS .edit_section{
+    z-index:9999
+}
+.THIS .slds-popover{
+    max-width: 40rem;
+}
+.THIS .slds-popover__body{
+    max-height: 14rem;
+    overflow:auto
+}
+.THIS .slds-popover__header {
+    padding: 0.75rem;
+}
+.THIS .slds-popover__body {
+    padding: 0!important;
+}
+.THIS .row-bg-color{
+    background:#f9edbe
+}
+.THIS .slds-table--bordered .row-bg-color td  .slds-table--bordered .row-bg-color th {
+    border-top: 1px solid #f0c36d;
+    border-bottom: 1px solid #f0c36d;
+}
+.THIS .slds-table:not(.slds-no-row-hover) tbody .row-bg-color:hover > td  .slds-table:not(.slds-no-row-hover) tbody .row-bg-color:hover > th {
+    background-color: #f9edbe;
+}
+.THIS .slds-table--bordered:not(.slds-no-row-hover) tbody .row-bg-color:hover > td  .slds-table--bordered:not(.slds-no-row-hover) tbody .row-bg-color:hover > th {
+    box-shadow: #f0c36d 0 -1px 0 inset;
+}
+.THIS .row-eq-height {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+}
+.THIS .ui-menu-item a{background:none; border:none;text-decoration:none;color: #16325c; font-size: 0.75rem}
+.THIS .ui-menu-item a:hover{
+    background:none;
+    border:none;
+}
+.THIS .ui-menu-item:hover{
+    background:#eef1f6!important;
+}
+.THIS .ui-menu-item:hover a{border:none;}
+.THIS .showClass {
+    display: block;
+}
+.THIS .hideClass .toggle-cls {
+    display: none;
+}
+
+.THIS .slds-tabs--default__nav .slds-tabs__item a{
+    height: 2.5rem;
+    line-height: 2.5rem;
+}
+.THIS .slds-tabs--default > .slds-tabs__content {
+    padding: 0;
+}
+.THIS .slds-icon__container.slds-icon-action-edit .slds-icon__container.slds-icon-action-join-group {
+    padding: 0.5rem;
+}
+.THIS .slds-text-heading--medium {
+    font-weight: 400;
+    font-size: 1.2rem;
+    line-height: 1.25;
+}
+.THIS .custom-slds{
+    font-size: 0.75rem !important;
+}
+.THIS .slds-input::-webkit-input-placeholder { font-size: 0.75rem !important; }
+.THIS .slds-input:-moz-placeholder { font-size: 0.75rem !important; }
+.THIS .slds-input::-moz-placeholder { font-size: 0.75rem !important; }
+.THIS .slds-input:-ms-input-placeholder { font-size: 0.75rem !important; }
+.THIS .slds-checkbox .slds-form-element__label {
+    font-size: 0.75rem;
+}
+.THIS td .slds-button--icon-container{
+    height:auto;
+}
+.THIS td  .slds-tile__title{
+    cursor:pointer
+}
+.THIS .focus-none:focus{ outline: 0; box-shadow: none;}
+.THIS .slds-icon-action-approval-custom .slds-icon-action-close-custom{
+    padding: 3px !important;
+    line-height: 0 !important;
+    
+}
+
+.THIS .slds-icon-action-approval-custom .slds-icon--x-small .slds-icon-action-close-custom .slds-icon--x-small  {
+    line-height: 1;
+    width: 11px;
+    height: 11px;
+}
+.THIS .slds-popover__body {
+    min-height:14rem;
+}
+.THIS .slds-popover{min-width: 40rem;}
+.THIS .button-small{line-height: 1rem; font-size:85%; min-height: 1.5rem; padding-left: .75rem; padding-right: .75rem;}
+.THIS .users{
+    background:#fff;
+}
+.THIS .slds-input-has-icon--left .slds-input__icon {
+    left: 0.5rem!important;
+}
+.THIS .slds-icon-action-approval-custom, .THIS .slds-icon-action-close-custom{
+    padding: 2px !important;
+    line-height: 0 !important;
+    border-radius: 2px;
+}
+.THIS .slds-icon-action-approval-custom .slds-icon--x-small, .THIS .slds-icon-action-close-custom .slds-icon--x-small  {
+    line-height: 1;
+    width: 11px;
+    height: 11px;
+}
+.THIS .slds-icon__container.slds-icon-action-edit, .THIS .slds-icon__container.slds-icon-action-join-group {
+    padding: 0.5rem;
+}
+.THIS .hover-class{
+    background-color: #f4f6f9;
+    box-shadow: #d8dde6 0 -1px 0 inset;
+}
+.THIS .difference-row{
+    background:#f9edbe;
+}
+.THIS .btn-visible{
+    visibility:hidden;
+}
+.THIS .editCloneBtn{
+    visibility:hidden;
+}
+.THIS .slds-table--bordered:not(.slds-no-row-hover) tbody tr:hover > td, .THIS .slds-table--bordered:not(.slds-no-row-hover) tbody tr:hover > th{
+    box-shadow: none;
+    background:none;
+}
+.THIS .clearSearch{
+    position:absolute;
+    width: 1rem;
+    height: 1rem;
+    position: absolute;
+    top: 50%;
+    margin-top: -0.5rem;
+    fill: #54698d;
+    
+}
+.THIS .clearSearch .slds-input__icon {
+    right: .5rem!important; 
+}
+.THIS .srollbarNone{ 
+    overflow:auto;
+    overflow: -moz-scrollbars-none;
+    -moz-box-orient: vertical;
+    -ms-overflow-style: none;
+}
+.THIS .srollbarNone::-webkit-scrollbar{
+    display:none;}
+
+.THIS .blockUI.blockOverlay{
+    z-index: 1000;
+    border: none;
+    margin: 0px;
+    padding: 0px;
+    width: 100%;
+    top: 0px;
+    left: 0px;
+    opacity: 1!important;
+    cursor: wait;
+    position: absolute;
+    background-color:#f8f9fb!important;
+    overflow: hidden;
+}
+.THIS .addMoreUserBtn {
+    position: absolute;
+    right: 20px;
+    top: 2.5rem;
+}
+.THIS .addMoreProfileBtn {
+    position: absolute;
+    right: 20px;
+    top:2.5rem;
+}
+.THIS .toggle-section {
+    cursor: pointer;
+    background-color: #eef1f6;
+    box-shadow: #d8dde6 0 -1px 0 inset;
+}
+.THIS .sectionWp{
+    background: #f4f6f9;
+}
+.THIS .ui-autocomplete {
+    max-height: 100px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+.THIS .object-hide-cls {
+    display: none;
+}
+.THIS .object-open, .THIS .object-close {margin-right:12px;cursor: pointer;}
+.THIS .toggleIcon .slds-icon{
+    height:.75rem;
+    width:.75rem;
+    
+}
+.THIS .object-open .slds-icon{
+    -webkit-transform: rotate(50deg);
+    -moz-transform: rotate(50deg);
+    -o-transform: rotate(50deg);
+    -ms-transform: rotate(50deg);
+    transform: rotate(50deg);
+    
+}
+.THIS .objectLable span .slds-icon{
+    -webkit-transform: rotate(180deg);
+    -moz-transform: rotate(180deg);
+    -o-transform: rotate(180deg);
+    -ms-transform: rotate(180deg);
+    transform: rotate(180deg);
+}
+.THIS .objectLable {
+    padding-left: 4rem!Important;
+    
+}
+.THIS .objectLable span .slds-icon{
+    fill: #D2D5DB;
+    width:.90rem;
+    height:.90rem;
+}
+.THIS .slds-popover__body {
+    max-height: 22rem;
+}
+.THIS  #loader{
+    margin: auto; position: absolute; top: 0; left: 0; bottom: 0; right: 0; z-index:1011; width:105px!important; height:32px!important;
+}
+.THIS .borderBottom .blockUI.blockOverlay{
+    background: rgba(126, 140, 153, 0.8)!important;;
+}
+.THIS .borderBottom #loader{
+    color:#fff
+}
+
+.THIS .hide-row{display:none}
+.THIS .SumoSelect > .optWrapper.open {
+    top: 30px;
+    
+}
+.THIS .textLoader{
+    position: absolute;
+    right: 7px;
+    top: 7px;
+}
+.THIS .borderBottom{ position:relative }
+.THIS .progress{position:absolute;bottom:0px;height: 2px;}
+
+.THIS .btnLoder svg path, .THIS .btnLoder svg rect{
+    fill: #0070d2;
+}
+.THIS .slds-button--brand .btnLoder svg path, .THIS .slds-button--brand .btnLoder svg rect{
+    fill: #fff;
+}
+/*.THIS .slide-delete-  {
+-webkit-transition: 5s ease-in-out, 5s opacity ease-in-out;
+-moz-transition: 5s ease-in-out, 5s opacity ease-in-out;
+-o-transition: 5s ease-in-out, 5s opacity ease-in-out;
+transition: 5s ease-in-out, 5s opacity ease-in-out;
+}
+.THIS .slide-delete {
+-webkit-transform: translate(30rem,0);
+-moz-transform: translate(30rem,0);
+-o-transform: translate(30rem,0);
+-ms-transform: translate(30rem,0);
+transform: translate(30rem,0);
+opacity:0
+}*/
+.THIS .confirm-box .slds-modal__container{
+    width: 35%;
+}
+.THIS .confirm-box .slds-modal__header{padding: 0.5rem 1rem;}
+.THIS .settingHeader{
+    padding: 0.5rem;
+    background-color: #f4f6f9;
+    text-align: right; 
+}
+.THIS .setting_list {
+    border-bottom: 2px solid #d8dde6;
+    padding: .75rem;
+    margin-bottom: .75rem;
+}
+
+.THIS .setting_list li {
+    display: inline-block;
+    width: 30%;
+    margin-left: 1%;
+    vertical-align: top;
+}
+.THIS .connected-app-form{
+    background:#fff;
+    margin:20px;
+    padding:20px;
+    border: 1px solid #d8dde6;
+}
+.THIS .connected-app-form.modal-form{
+    background: #eef1f6;
+    margin:0px;
+    padding:10px;
+}
+.THIS .helpContent{
+    background:#fff;
+    border: 1px solid #d8dde6;
+    margin:20px;
+    padding:20px;
+    
+}
+
+.THIS .a-disabled {
+    pointer-events: none;
+    cursor: default;
+}
+.THIS .more-none{
+    display : none;
+}
+.THIS .more-warning {
+    position: relative;
+    background: #ffffff;
+    border: 1px solid #ffb75d;
+    padding:10px;
+    margin-bottom:15px
+}
+.THIS .more-warning:after, .THIS .more-warning:before {
+    bottom: 100%;
+    left: 50%;
+    border: solid transparent;
+    content: " ";
+    height: 0;
+    width: 0;
+    position: absolute;
+    pointer-events: none;
+}
+
+.THIS .more-warning:after {
+    border-color: rgba(255, 255, 255, 0);
+    border-bottom-color: #ffffff;
+    border-width: 8px;
+    margin-left: -8px;
+}
+.THIS .more-warning:before {
+    border-color: rgba(255, 183, 93, 0);
+    border-bottom-color: #ffb75d;
+    border-width: 9px;
+    margin-left: -9px;
+}
+.THIS .grid-card {
+    padding: 3rem 0;
+    
+    background: #eef1f6;
+    border-radius: 0.25rem;
+    border: 1px solid #d8dde6;
+    color: #5876A3;
+    text-align: center;
+}
+.THIS .hr--blue {
+    background-color: #73BEFF;
+    background-image: -webkit-linear-gradient(left, rgba(115,190,255,0), #2196ED);
+    background-image: linear-gradient(to right, rgba(115,190,255,0), #2196ED);
+    width: 50%;
+    height: 1px;
+    border: 0;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 15rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+.THIS .site-text-heading--label-weak-large {
+    margin-bottom: 0;
+    font-size: 0.875rem;
+    letter-spacing: 0.0625rem;
+    text-transform: uppercase;
+    font-weight: 400;
+    line-height: 1.25;
+    color: #16325C;
+}
+
+.THIS .confirm-box.header-color-cls .slds-modal__header{
+    background-color: #1dccbf;
+}
+
+.THIS .clear-icons{
+    position: absolute;
+    right: 23px;
+    z-index: 1;
+    width: 32px;
+}
+.THIS .clear-icons svg{
+    width: .751rem;
+    height: .751rem;
+}
+
+.THIS .slds-modal {
+    position: absolute;
+}
+.THIS .slds-modal__container {
+    padding-top: calc(3rem - 42px);
+}
+.THIS .stop-scrolling {
+    overflow: hidden;
+}
+
+.THIS .slds-button--icon-small {
+    width: 2rem!important;
+    height: 2rem!important;
+    border-radius: 0.125rem; }
+
+.THIS .focus-none{font-size: 1.5rem!important;}
+.THIS .slds-modal__content{padding: 1rem!important;}
+.THIS .slds-input[disabled]{
+    background-color: #ffffff;
+    cursor: auto;
+    border-color: #d8dde6;
+}
+.THIS .sndsvr[disabled], .THIS .edit-profile-section .slds-select[disabled]{
+    background-color: #ffffff;
+    border:none;
+    cursor: auto;
+}
+.THIS a.tooltips {
+    position: relative;
+    display: inline;
+}
+.THIS a.tooltips .tooltip-span {
+    position: absolute;
+    width:170px;
+    color: #FFFFFF;
+    background: #16325c;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    
+    display:none;
+    border-radius: 6px;
+}
+.THIS a.tooltips .tooltip-span:after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    margin-top: -8px;
+    width: 0; height: 0;
+    border-left: 8px solid #16325c;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+}
+.THIS a:hover.tooltips .tooltip-span {
+    display:block;
+    opacity: 0.8;
+    right: 100%;
+    top: 50%;
+    margin-top: -15px;
+    margin-right: 15px;
+    z-index: 999;
+}
+
+.THIS .activecls {
+    background-color: #0070d2;
+    color: white;
+}
+
+.THIS .SumoSelect > .optWrapper.multiple > .MultiControls > p.activecls:hover { 
+    background-color: #005fb2;
+}
+
+.THIS .SelectBox {
+    padding: 6px 8px;
+}
+
+.THIS .SelectBox.search .custom-combobox-toggle{
+    height: 32px!important;
+    width: 26.39px!important;
+}
+.THIS .SumoSelect>.CaptionCont>label {
+    z-index: 1;
+}
+.THIS .SumoSelect.open>.search>label {
+    visibility: visible;
+}
+.THIS .SumoSelect.open .search-txt{
+    padding: 7px 8px; 
+}
+.THIS .modelMainHeaderClass{
+    font-size : 1rem;
+    line-height : 1.1;
+    color: #54698d;
+}
+.THIS .modulesubHdrClass{
+    line-height:1.5;
+    color: #54698d;
+}
+
+.THIS .search-padding{
+        padding-top: 0.9rem;
+}
+
+.THIS .slds-input-has-icon--left .slds-input, .THIS .slds-input-has-icon--left .slds-input--bare {
+    padding-left: 2rem;
+}
+.THIS .ui-button-icon-only {
+    text-indent: 0;
+}
+.THIS .ui-state-active, .THIS .ui-widget-content .ui-state-active, .THIS .ui-widget-header .ui-state-active, .THIS a.ui-button:active, .THIS .ui-button:active, .THIS .ui-button.ui-state-active:hover {
+    border:none;
+    background: none;
+
+}
+.THIS .errorNote{
+    color: #31708f;
+    background-color: #d9edf7;
+    border-color: #bce8f1;
+    padding: 5px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px!important;
+}
+
+.THIS .multiple_error {
+    padding: 6px;
+    border-bottom: 1px solid #fff;
+}
+.THIS .connectedAppIframe{padding:3rem}

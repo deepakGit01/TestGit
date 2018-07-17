@@ -1,0 +1,433 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+    <labels>
+        <fullName>Actions</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Actions</shortDescription>
+        <value>Actions</value>
+    </labels>
+    <labels>
+        <fullName>Add</fullName>
+        <categories>Button Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Add</shortDescription>
+        <value>Add</value>
+    </labels>
+    <labels>
+        <fullName>AdvancedSearch</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Advanced Search</shortDescription>
+        <value>Advanced Search</value>
+    </labels>
+    <labels>
+        <fullName>AppLicensesExceeded</fullName>
+        <categories>Error Message</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>App licenses exceeded</shortDescription>
+        <value>Not enough licenses available to activate application</value>
+    </labels>
+    <labels>
+        <fullName>AppUniqueIdAlreadyExists</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>App UniqueId already exists</shortDescription>
+        <value>An application with this unique ID already exists</value>
+    </labels>
+    <labels>
+        <fullName>ApplicationAlreadyExists</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Application already exists</shortDescription>
+        <value>An app with this name already exists</value>
+    </labels>
+    <labels>
+        <fullName>ApplicationLicenseManagement</fullName>
+        <categories>Title</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Application License Management</shortDescription>
+        <value>X-Author for Excel™ Application License Management</value>
+    </labels>
+    <labels>
+        <fullName>ApplicationLicenses</fullName>
+        <categories>Title</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Application Licenses</shortDescription>
+        <value>X-Author for Excel™ Application Licenses</value>
+    </labels>
+    <labels>
+        <fullName>Cancel</fullName>
+        <categories>Button Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Cancel</shortDescription>
+        <value>Cancel</value>
+    </labels>
+    <labels>
+        <fullName>Clear</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Clear</shortDescription>
+        <value>Clear</value>
+    </labels>
+    <labels>
+        <fullName>ClearAll</fullName>
+        <categories>Button Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Clear all</shortDescription>
+        <value>Clear All</value>
+    </labels>
+    <labels>
+        <fullName>ClientDownloadLink</fullName>
+        <categories>Link</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>X-Author For Excel Download Link</shortDescription>
+        <value>Download X-Author™ For Excel</value>
+    </labels>
+    <labels>
+        <fullName>Close</fullName>
+        <categories>Button Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Close</shortDescription>
+        <value>Close</value>
+    </labels>
+    <labels>
+        <fullName>Continue</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Continue</shortDescription>
+        <value>Continue</value>
+    </labels>
+    <labels>
+        <fullName>DesignerLicenseRequiredToActivate</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Designer license required to activate</shortDescription>
+        <value>Designer license required to activate/deactivate apps</value>
+    </labels>
+    <labels>
+        <fullName>Download</fullName>
+        <categories>Title</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Download</shortDescription>
+        <value>Download</value>
+    </labels>
+    <labels>
+        <fullName>EditInExcelLaunchInstruction</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Edit In Excel Launch Instruction</shortDescription>
+        <value>If you click continue, Microsoft Excel will open, Apttus X-Author for Excel will be launched, and you will automatically be connected from Microsoft Excel to Salesforce.</value>
+    </labels>
+    <labels>
+        <fullName>EditInExcelSetupInstruction</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Edit In Excel Setup Instruction</shortDescription>
+        <value>The Edit in Excel feature enables users to edit Salesforce data using Excel.  From a button on  any Salesforce page, Excel is launched and an X-Author for Excel template is opened with the data from that page.</value>
+    </labels>
+    <labels>
+        <fullName>Error</fullName>
+        <categories>Error Message</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Error</shortDescription>
+        <value>Error</value>
+    </labels>
+    <labels>
+        <fullName>ExportDataFailure</fullName>
+        <categories>Error Message</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Export Data Failure</shortDescription>
+        <value>Failed to export the data to {0}</value>
+    </labels>
+    <labels>
+        <fullName>FirstPage</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>First Page</shortDescription>
+        <value>First Page</value>
+    </labels>
+    <labels>
+        <fullName>InfoText1</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>X-Author For Excel Info Text</shortDescription>
+        <value>Apttus X-Author for Excel delivers interaction between Microsoft Excel, Chatter, and Salesforce. Configurable ribbons embedded in Microsoft Excel enable intelligent interaction with Salesforce. The technology allows for activity in a Microsoft Excel document to be shared and fully recorded inside any Structured Data System including Salesforce.</value>
+    </labels>
+    <labels>
+        <fullName>InfoText2</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>X-Author For Excel Info Text</shortDescription>
+        <value>Microsoft Excel users do not need to go into Salesforce or Chatter to perform any tasks. All tasks, including updating Salesforce data and viewing a Chatter feed can be done from inside the Microsoft Excel document.</value>
+    </labels>
+    <labels>
+        <fullName>InstallXAuthor</fullName>
+        <categories>Title</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Install X-Author</shortDescription>
+        <value>Install X-Author™ For Excel</value>
+    </labels>
+    <labels>
+        <fullName>InsufficientPrivilageforRuntime</fullName>
+        <categories>Error Message</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>InsufficientPrivilageforRuntime</shortDescription>
+        <value>You do not have permission to run X-Author for Excel applications.  Please contact your Salesforce Administrator.</value>
+    </labels>
+    <labels>
+        <fullName>InsufficientPrivileges</fullName>
+        <categories>Error Message</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Insufficient Privileges</shortDescription>
+        <value>Insufficient Privileges to use the feature. Please contact your administrator.</value>
+    </labels>
+    <labels>
+        <fullName>InsuffiecientPermissionsToLoadApp</fullName>
+        <categories>Message</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Insuffiecient permissions to load app</shortDescription>
+        <value>Insufficient permissions to load app. Please contact your administrator.</value>
+    </labels>
+    <labels>
+        <fullName>InvalidSchemaError</fullName>
+        <categories>Error Message</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Invalid Schema Error</shortDescription>
+        <value>An error occurred while processing the request.  Please contact your Salesforce Administrator. Error Number : {0}</value>
+    </labels>
+    <labels>
+        <fullName>LastPage</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Last Page</shortDescription>
+        <value>Last Page</value>
+    </labels>
+    <labels>
+        <fullName>License</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>License</shortDescription>
+        <value>License</value>
+    </labels>
+    <labels>
+        <fullName>Login</fullName>
+        <categories>Button Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Login</shortDescription>
+        <value>Login</value>
+    </labels>
+    <labels>
+        <fullName>MergeCallTimeout</fullName>
+        <categories>Message</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Merge Call Timeout</shortDescription>
+        <value>Your request is taking longer than expected. Please come back in a few minutes and refresh the page.</value>
+    </labels>
+    <labels>
+        <fullName>Next</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Next</shortDescription>
+        <value>Next</value>
+    </labels>
+    <labels>
+        <fullName>NextPage</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Next Page</shortDescription>
+        <value>Next Page</value>
+    </labels>
+    <labels>
+        <fullName>NoResultsToDisplay</fullName>
+        <categories>Status Message</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>No results to display</shortDescription>
+        <value>No results to display</value>
+    </labels>
+    <labels>
+        <fullName>PageOf1</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Page X of X</shortDescription>
+        <value>Page</value>
+    </labels>
+    <labels>
+        <fullName>PageOf2</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Page X of X</shortDescription>
+        <value>of</value>
+    </labels>
+    <labels>
+        <fullName>Password</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Password</shortDescription>
+        <value>Password</value>
+    </labels>
+    <labels>
+        <fullName>PicklistValueNone</fullName>
+        <categories>Picklist Value</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Picklist value none</shortDescription>
+        <value>--None--</value>
+    </labels>
+    <labels>
+        <fullName>PleaseWait</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Please Wait</shortDescription>
+        <value>Please Wait</value>
+    </labels>
+    <labels>
+        <fullName>PreviousPage</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Previous Page</shortDescription>
+        <value>Previous Page</value>
+    </labels>
+    <labels>
+        <fullName>RefreshLicense</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Refresh License</shortDescription>
+        <value>Refresh License</value>
+    </labels>
+    <labels>
+        <fullName>Remove</fullName>
+        <categories>Button Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Remove</shortDescription>
+        <value>Remove</value>
+    </labels>
+    <labels>
+        <fullName>RequiredParametersAreMissing</fullName>
+        <categories>Error Message</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Required parameters are missing</shortDescription>
+        <value>Required parameters are missing {0}</value>
+    </labels>
+    <labels>
+        <fullName>Results</fullName>
+        <categories>Label, Title</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Results</shortDescription>
+        <value>Results</value>
+    </labels>
+    <labels>
+        <fullName>Save</fullName>
+        <categories>Button Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Save</shortDescription>
+        <value>Save</value>
+    </labels>
+    <labels>
+        <fullName>SaveToExcel</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Save To Excel</shortDescription>
+        <value>Save to Excel</value>
+    </labels>
+    <labels>
+        <fullName>Search</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Search</shortDescription>
+        <value>Search</value>
+    </labels>
+    <labels>
+        <fullName>SelectAll</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Select all</shortDescription>
+        <value>Select all</value>
+    </labels>
+    <labels>
+        <fullName>SetupEditInExcelApplications</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Setup Edit In Excel Applications</shortDescription>
+        <value>Setup Edit In Excel Applications</value>
+    </labels>
+    <labels>
+        <fullName>TouchlessLaunchInstruction</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Touchless Launch Instruction</shortDescription>
+        <value>This process will run in the background and will refresh the page when complete.  Click Continue to proceed or Cancel to return to the detail page.</value>
+    </labels>
+    <labels>
+        <fullName>UserAppAccessViolation</fullName>
+        <categories>Error Message</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>UserAppAccessViolation</shortDescription>
+        <value>You do not have permission to access this Excel application template.  Please contact your Salesforce Administrator.</value>
+    </labels>
+    <labels>
+        <fullName>ValueIsDuplicate</fullName>
+        <categories>Error Message</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Value is Duplicate</shortDescription>
+        <value>The value is a duplicate</value>
+    </labels>
+    <labels>
+        <fullName>ValueIsMissing</fullName>
+        <categories>Error Message</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Valuei is Missing</shortDescription>
+        <value>You must enter a value</value>
+    </labels>
+</CustomLabels>

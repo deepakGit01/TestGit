@@ -1,0 +1,6 @@
+<aura:event type="COMPONENT" description="Event template">
+    <aura:attribute type="Object" name="objNameMap"/>
+    <aura:attribute type="Object" name="profileArray"/>
+    <aura:attribute type="String[]" name="profileArr"/>
+    <aura:attribute type="String" name="layoutName"/>
+</aura:event>

@@ -1,0 +1,7 @@
+<aura:event type="COMPONENT" description="Event template">
+    <aura:attribute type="Object" name="updateFieldPermissionsObj"/>
+    <aura:attribute type="Object" name="insertFieldPermissionsObj"/>
+    <aura:attribute type="Object" name="layoutMetadata"/>
+    <aura:attribute type="String" name="orgId"/>
+    <aura:attribute type="String" name="layoutId"/>
+</aura:event>

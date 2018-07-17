@@ -1,0 +1,7 @@
+.THIS #table-loginHistory th, .THIS #table-loginHistory td{
+    border: 1px solid #cfd0d2;
+}
+
+.THIS #table-loginHistory tr > th:first-child, .THIS #table-loginHistory tr > td:first-child{
+   padding-left: 0.5rem;
+}

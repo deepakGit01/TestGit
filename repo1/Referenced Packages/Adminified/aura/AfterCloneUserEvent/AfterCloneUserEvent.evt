@@ -1,0 +1,8 @@
+<aura:event type="COMPONENT" Description="Holds Cloned user details.">
+    <aura:attribute name="cloneOrgId" type="String"/>
+    <aura:attribute name="newUserId" type="String"/>
+    <aura:attribute name="randomNumber" type="Integer"/>
+	<aura:attribute name="newUserName" type="String"/>    
+    <aura:attribute name="flag" type="boolean"/>  
+    <aura:attribute name="index" type="Integer"/>
+</aura:event>

@@ -1,0 +1,4 @@
+<aura:event type="COMPONENT" Description="Manage connected organization list after delete organization.">
+    <aura:attribute name="orgId" type="String"/>
+    <aura:attribute name="allOrg" type="Object"/>
+</aura:event>

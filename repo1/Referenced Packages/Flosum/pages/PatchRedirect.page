@@ -1,0 +1,2 @@
+<apex:page standardController="Flosum__Patch__c" extensions="Flosum.PatchRedirectExtension" action="{!redirectToPatch}">
+</apex:page>

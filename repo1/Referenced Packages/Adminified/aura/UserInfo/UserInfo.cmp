@@ -1,0 +1,116 @@
+<aura:component implements="force:appHostable" controller="stivadmn.UserModuleController" >
+    <span><ltng:require styles="" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js" afterScriptsLoaded="{!c.documentReady}" /></span>
+    
+    <!--<aura:handler name="init" value="{!this}" action="{!c.documentReady}"/>-->
+    <!--Define Attributes -->
+    <aura:attribute name="userTemplate" type="Object" access="GLOBAL" Description="Holds data, in json format, which is used while creating structure for UserInfo component. E.g. General Information section and it's standard fields, Permissions section and it's standard fields. "/>
+    <aura:attribute name="strOrgId" type="String" Description="Hold the organization id for fetching the user information."/>
+    <aura:attribute name="strOrgName" type="String" Description="Hold the organization name for fetching the user information."/>
+    <aura:attribute name="randomNumber" type="Integer" Description="Unique number for identifying the particular user information block."/>
+    <aura:attribute name="strUserId" type="String" Description="Hold the user id for fetching the user information."/>
+    <aura:attribute name="strUserName" type="String" Description="Hold the user name for fetching the user information."/>
+    <aura:attribute name="userInfo" type="Object" Description="Store user data in json format."/>
+    <aura:attribute name="index" type="Integer" default="0" Description="Maintain user information block indexing."/>
+    <aura:attribute name="isDeletable" type="Boolean" default="true" Description="Check user information block has deleted or not."/>
+    <aura:attribute name="globalOrg" type="Object" Description="Holds all connected organization."/>
+    <aura:attribute name="permissionSetList" type="List" Description="Store the all permission set of particular user."/>
+    <aura:attribute name="instanceData" type="String" Description="Hold organizations and users name if the have already selected in other user block."/>
+    <aura:attribute name="UserNameForLH" type="String" Description="Hold user name for showing in login history module."/>
+    <aura:attribute name="orgIdForRP" type="String" Description="Hold organization id for resetpassword." />
+    <aura:attribute name="userIdForRP" type="String" Description="Hold user id for resetpassword."/>
+    <aura:attribute name="userCommonId" type="String" Description="Uniquely manage the whole user info structure."/>
+    <aura:attribute name="manageUserNameObj" type="Object" Description="holds the all organization users"/>
+    <!-- Register Events -->
+    <aura:registerEvent name="GetOrgUsers" type="stivadmn:GetOrgUsers" Description="Getting all user of particular organization."/>
+    <aura:registerEvent name="UserInfoEvent" type="stivadmn:UserInfoEvent" Description="Passing user detail for getting user information."/>
+    <aura:registerEvent name="deleteUserCmpEvent" type="stivadmn:deleteUserCmpEvent" Description="Delete user information block."/>
+    <aura:registerEvent name="differenceRow" type="stivadmn:differenceRow" Description="Showing difference in multiple organizations users fields. E.g user name,User role,profile etc."/>
+    <aura:registerEvent name="handleError" type="stivadmn:handleError" Description="Handle error which is getting from server."/>
+    <aura:registerEvent name="renderIconShapEvent" type="stivadmn:renderIconShapEvent" Description="Identify the block."/> 
+    <aura:registerEvent name="AdjustInfoBlock" type="stivadmn:AdjustInfoBlock" Description="Before and after adding or deleting user information component, maintain the size of user information blocks(component). E.g. UserInfo component."/>
+    <aura:registerEvent name="GetGlobalOrg" type="stivadmn:GetGlobalOrg" Description="Get all connected organizaion."/>
+    <aura:registerEvent name="rowHeightEvent" type="stivadmn:rowHeightEvent" Description="Maintain the standard fields row height."/>
+    <aura:registerEvent name="getPermissionSetList" type="stivadmn:getPermissionSetList" Description="Showing permission set name of particular user in user information structure."/>
+    <aura:registerEvent name="setPermissionSetList" type="stivadmn:setPermissionSetList" Description="Set and view permission set name of particular user in user information section(Permission Set section)."/> 
+    <aura:registerEvent name="UpdateInstaceDataList" type="stivadmn:UpdateInstaceDataList" Description="Update organizations and users name list if they have already selected multiple time in other user information block for comparison."/> 
+    <aura:registerEvent name="ResetInstanceDataList" type="stivadmn:ResetInstanceDataList" Description="Reset organizations and users list if they have already selected multiple time in other user information block for comparison."/>
+    <aura:registerEvent name="PutCloneUserEvent" type="stivadmn:PutCloneUserEvent" Description="Showing cloned user information."/> 
+    <aura:registerEvent name="DisabledSreenButtonEvent" type="stivadmn:DisabledSreenButtonEvent" Description="Disable all input when performing some action."/>
+    <aura:registerEvent name="getLoginHistroyEvent" type="stivadmn:getLoginHistroyEvent" Description="Showing login history of particular user."/>
+    <aura:registerEvent name="resetPasswordEvent" type="stivadmn:resetPasswordEvent" Description="Going user for reset password."/>
+    
+    <!--Handle Events -->
+    <aura:handler name="SetUserTemplate" event="stivadmn:SetUserTemplate" action="{!c.getTemplateData}" Description="Create user standard fields and structure using json format data after edit,search,toggle and setting action. E.g. General Information section and its standard field like user name etc. "/>
+    <aura:handler name="GetOrgUsers" event="stivadmn:GetOrgUsers" action="{!c.getOrgUsersData}" Description="Getting all user of particular organization."/>
+    <aura:handler event="stivadmn:UserInfoEvent" action="{!c.getUserDetail}" Description="Passing user detail for getting user information."/>
+    <aura:handler name="AfterEditUserEvent" event="stivadmn:AfterEditUserEvent" action="{!c.getUserDetail}" Description="Editable user information."/>
+    <aura:handler name="AfterCloneUserEvent" event="stivadmn:AfterCloneUserEvent" action="{!c.getOrgUsersData}" Description="Showing cloned user information."/>
+    <aura:handler event="stivadmn:SetGlobalOrg" action="{!c.setGlobalOrg}" Description="Set all connected organizaion in globalOrg attribute."/>
+    <aura:handler event="stivadmn:UpdatedGlobalOrg" action="{!c.updatedGlobalOrg}" Description="update globalOrg attribute."/>
+    <aura:handler event="stivadmn:RefreshCloneUser" action="{!c.putCloneUser}" Description="Put the clone data in user information block."/>
+    <aura:handler event="stivadmn:SetPermissionSetListInUserInfo" action="{!c.getPermissionSetListOfData}" Description="Showing particular user permission set in permission set section of user information block."/>
+    
+    <div id="{!'comp'+v.randomNumber}" class="{!'comp-div'+v.randomNumber+' slds-size--3-of-4 userColSize slds-col-rule--right'}" style="background:#f4f6f9;">   
+        
+        <div class="slds-col-rule--bottom userBorderBottom borderBottom">
+            <div  class="{!'slds-col slds-size--1-of-3 loader-'+v.randomNumber}" style="background:#f4f6f9">
+                <div class="usersectionWp sectionWp" style="height: 124px;">
+                    <div class="sectionHeader">
+                        <div class="c-padding">
+                            <aura:if isTrue="{!v.isDeletable}">
+                                <div class="custom-close ">
+                                    <button class="slds-button slds-button--icon-bare remove-block del" onclick="{!c.deleteUserCmp}" title="Remove block"> <span class="slds-icon__container slds-icon--close">
+                                        <stivadmn:adminifiedIcons class="slds-button__icon slds-icon--" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#close" />
+                                        <span class="slds-assistive-text"> </span> </span> 
+                                    </button>
+                                </div>
+                            </aura:if>
+                            <form class="slds-form--stacked">
+                                <div class="slds-form-element">
+                                    <div class="ui-widget">
+                                        <div class="custom-input">
+                                            <span class="custom-combobox">
+                                                <!--<ui:inputSelect aura:id="org_drop_down" class="{!'selOrg select-org select-org'+v.randomNumber}"></ui:inputSelect>-->
+                                                <select  class="{!'selOrg select-org select-org'+v.randomNumber}"></select>
+                                            </span>
+                                            <button type="button" title="Add Organization" aria-haspopup="true" class="slds-button slds-button--icon-border-filled slds-button--icon-small custom-add"  onclick="{!c.addOrganization}"><span class="slds-icon__container slds-icon-utility-add">
+                                                <stivadmn:adminifiedIcons class="slds-button__icon slds-icon--x-small" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#add" />
+                                                <span class="slds-assistive-text"> </span> </span> </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control cute-loader">
+                                        <input placeholder="Enter three character of user" class="{!'slds-input slds-input--small userAuto tags_'+v.randomNumber}" type="text" id="{!globalId}" onkeyup="{!c.inputKeyup}" />
+                                    </div>
+                                </div>
+                                <div  style="margin-top: 0.5rem;" class="{!'slds-form-element editCloneBtn userBtn'+v.randomNumber}">
+                                    <div class="slds-button-group " style="float:left">
+                                        <button type="button" class="{!'slds-button slds-button--small slds-button--neutral button-small edit-user-cls'+v.randomNumber}" onclick="{!c.editUserData}">Edit</button>
+                                        <button type="button" class="{!'slds-button slds-button--small slds-button--neutral button-small clone-user-cls'+v.randomNumber}" onclick="{!c.cloneUserData}">Clone</button>
+                                        <button type="button" class="{!'slds-button slds-button--small slds-button--neutral button-small rsetPassword-user-cls'+v.randomNumber}" onclick="{!c.resetPassword}">Reset Password</button>
+                                    </div>
+                                    <div style="float:right"> <span id="{!'iconShap'+v.randomNumber}" class="spanLegend" style="display:none"></span> <span> <span id="{!'iconShapApproval'+v.randomNumber}" class="legendApproval" title="True"></span>&nbsp; <span id="{!'iconShapReject'+v.randomNumber}" class="legendReject" title="False"></span> </span> </div>
+                                </div>
+                                
+                                <div class="{!'slds-modal-backdrop slds-modal-backdrop--open user-layer-'+v.randomNumber}" style="display:none"></div>
+                                <div class="EditUser" aura:id="EditUserModule">
+                                    
+                                </div> 
+                                <div class="CloneUser" aura:id="CloneUserModule">
+                                    
+                                </div> 
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="userCmpAppend srollbarNone dataScroll slds-col-rule--top cute-progress">
+            
+        </div> 
+    </div>
+    <div style="clear:both"></div>
+    <div aura:id="orgnizationDiv"></div>
+    
+</aura:component>

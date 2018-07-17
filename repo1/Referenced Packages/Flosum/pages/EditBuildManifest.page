@@ -1,0 +1,3 @@
+<apex:page standardController="Flosum__Build_Manifest__c">
+<h1>You can't edit a Build Manifest record.</h1>
+</apex:page>

@@ -1,0 +1,122 @@
+<aura:component implements="force:appHostable" controller="stivadmn.SettingModuleController">
+    <ltng:require styles="/resource/stivadmn__slds0120/assets/styles/salesforce-lightning-design-system.css" /> 
+    <ltng:require styles="/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.css,/resource/stivadmn__AdminifiedStaticResource/loaderStyle.css,/resource/stivadmn__AdminifiedStaticResource/loader.css,/resource/stivadmn__AdminifiedStaticResource/stivadmn__smoothness/jquery-ui.css, /resource/stivadmn__AdminifiedStaticResource/help/help.css" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js,/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.js,/resource/stivadmn__AdminifiedStaticResource/jquery.blockUI.js" afterScriptsLoaded="{!c.documentReady}" />
+    <!-- Define Attributes -->
+    <aura:attribute name="endPoint" type="String" />
+    <aura:attribute name="globalConOrg" type="Object" Description="Holds connected organization list."/>
+    <aura:attribute name="randomNumber" type="integer" Description="Unique number for identifying the particular Module."/>
+    <aura:attribute name="userShowDiff" type="Boolean" default='true' />
+    <aura:attribute name="profileShowDiff" type="Boolean" default='true' />
+    <aura:attribute name="permissionShowDiff" type="Boolean" default='true' />
+    
+    <!-- Register Events -->
+    <aura:registerEvent name="GetQuickSearchTemplate" type="stivadmn:GetQuickSearchTemplate" Description="Send searchable data to specific module."/>
+    <aura:registerEvent name="SetGlobalOrg" type="stivadmn:SetGlobalOrg" Description="Set connected organization in all modules."/>
+    <aura:registerEvent name="UpdatedGlobalOrg" type="stivadmn:UpdatedGlobalOrg" Description="Update connected organization in all modules."/>
+    <aura:registerEvent name="GetSettingTemplateData" type="stivadmn:GetSettingTemplateData" Description="Showing particular setting module."/>
+    <aura:registerEvent name="handleError" type="stivadmn:handleError" Description="Handle error which is getting from server."/>
+   
+    <!-- Handle Events -->
+    <aura:handler name="GetModuleTemplate" event="stivadmn:GetModuleTemplate" action="{!c.getModuleTemplate}" Description="Get module name for open the setting component."/>
+    <aura:handler name="differenceRow" event="stivadmn:differenceRow" action="{!c.differenceRow}" Description="Show difference in multiple organizations details of all modules."/>
+    <aura:handler name="rowHeightEvent" event="stivadmn:rowHeightEvent" action="{!c.fixedRowHeight}" Description="Maintain standard fields row height of all module. "/>
+    <aura:handler name="sendEndPoint" event="stivadmn:sendEndPoint" action="{!c.setEndPoint}"/>
+    <aura:handler name="LoaderOnCompEvent" event="stivadmn:LoaderOnCompEvent" action="{!c.loaderOnComp}"/>
+    <aura:handler name="handleError" event="stivadmn:handleError" action="{!c.errorHandle}" Description="Handle error which is getting from server."/>
+    <aura:handler name="DisabledSreenButtonEvent" event="stivadmn:DisabledSreenButtonEvent" action="{!c.disabledButton}" Description="Disable all input when performing some action."/>
+    <aura:handler name="renderIconShapEvent" event="stivadmn:renderIconShapEvent" action="{!c.renderIconShapes}" Description="Identify the user information block."/>
+    <aura:handler name="renderIconShapProfileEvent" event="stivadmn:renderIconShapProfileEvent" action="{!c.renderIconShapes}" Description="Identify the profile information block."/>
+    <aura:handler name="renderIconShapPermissionEvent" event="stivadmn:renderIconShapPermissionEvent" action="{!c.renderIconShapes}" Description="Identify the permission set information block."/>
+    <aura:handler name="AdjustInfoBlock" event="stivadmn:AdjustInfoBlock" action="{!c.adjustInfoBlock}" Description="Before and after adding or deleting, maintain the size of all information blocks(component). E.g. UserInfo component,ProfileInfo component and PermissionsSetInfo component."/>
+    <aura:handler name="QuickSearch" event="stivadmn:QuickSearch" action="{!c.setQuickSearch}" Description="Search standard fields in all modules sections and generate searchable data. E.g. search user name in General information saction of user module."/>
+    <aura:handler name="GetGlobalOrg" event="stivadmn:GetGlobalOrg" action="{!c.setGlobalOrg}" Description="Get connected organization in all modules."/>
+    <aura:handler name="OrgCmpEvent" event="stivadmn:OrgCmpEvent" action="{!c.updateGlobalOrg}" Description="Update connected organization in all modules."/>
+    <aura:handler name="AfterDeleteOrg" event="stivadmn:AfterDeleteOrg" action="{!c.UpdateGlobalOrgAfterDelete}" Description="After delete organization, Update connected organization list in all modules."/>
+    <aura:handler name="SetMainSetting" event="stivadmn:SetMainSetting" action="{!c.showSettingEffect}" Description="After setting, show effect in particular module."/>
+    <aura:handler name="TestEvent" event="stivadmn:TestEvent" action="{!c.show}"/>
+    
+    
+    
+    <div class="slds-is-fixed adminified-loader">
+       <div class="loading">
+           <span class="admini-loader" ><img src="/resource/stivadmn__AdminifiedStaticResource/adminifiedloader2.gif"></img>Loading...</span>
+        </div>
+    </div> 
+    <div class="slds main-cmp main-div" style="overflow:hidden;">
+        <div class="slds-text-body--small">
+            <stivadmn:MainTabs aura:id="MainTabs"/>
+        </div>
+        
+        <div class="slds-text-body--small">
+            <stivadmn:SetupSplashWizard aura:id="SetupSplashWizardId"/>
+        </div>
+        
+        <div class="alert-success confirm-box" style="display:none">
+            <div aria-hidden="false" role="dialog" class="slds-modal slds-modal--prompt slds-fade-in-open">
+                <div class="slds-modal__container slds-modal--prompt">
+                    <div class="slds-modal__header slds-theme--success slds-theme--alert-texture">
+                        <h2 class="slds-text-heading--medium">Success</h2>
+                        <button class="slds-button slds-button--icon-inverse slds-modal__close" onclick="{!c.successClose}">
+                            <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#close" category="utility" size="x-small" name="close" class="slds-button__icon"/>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                    </div>
+                    <div class="slds-modal__content">
+                        <div>
+                            <p><b> Success Message : </b> <span class="success-msg"></span>.</p>
+                        </div>
+                    </div>
+                    <div class="slds-modal__footer slds-theme--default">
+                        <button class="slds-button slds-button--neutral" onclick="{!c.successClose}">Close</button>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-modal-backdrop slds-modal-backdrop--open"></div>
+        </div>
+        
+        <div class="alert-error confirm-box" style="display:none">
+            <div aria-hidden="false" role="dialog" class="slds-modal slds-modal--prompt slds-fade-in-open">
+                <div class="slds-modal__container slds-modal--prompt">
+                    <div class="slds-modal__header slds-theme--error slds-theme--alert-texture">
+                        <h2 class="slds-text-heading--medium">Alert</h2>
+                        <button class="slds-button slds-button--icon-inverse slds-modal__close" onclick="{!c.errorClose}">
+                            <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#close" category="utility" size="x-small" name="close" class="slds-button__icon"/>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                    </div>
+                    <div class="slds-modal__content">
+                        <div>
+                            <p><b> Error Message : </b> <span class="error-msg"></span>.</p>
+                        </div>
+                    </div>
+                    <div class="slds-modal__footer slds-theme--default">
+                        <button class="slds-button slds-button--neutral" onclick="{!c.errorClose}">Close</button>&nbsp;&nbsp;
+                        <button class="slds-button slds-button--neutral slds-button--brand set-btn" onclick="{!c.setRemoteSite}">Set</button>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-modal-backdrop slds-modal-backdrop--open"></div>
+        </div>
+        
+        <div aura:id="SetupSplashWizardDiv"></div>
+        
+        <div class="slds sameInstanceShow confirm-box" style="display:none;">
+            <div aria-hidden="false" aria-labelledby="prompt-heading-id" aria-describedby="prompt-message-wrapper" role="alertdialog" class="slds-modal slds-modal--prompt slds-fade-in-open">
+                <div class="slds-modal__container slds-modal--prompt" role="document" id="prompt-message-wrapper" tabindex="0">
+                    <div class="slds-modal__header slds-theme--info slds-theme--alert-texture">
+                        <h2 class="slds-text-heading--medium" id="prompt-heading-id">Info</h2>
+                    </div>
+                    <div class="slds-modal__content slds-p-around--medium">
+                        <div>
+                            <p class="msgCls"></p>
+                        </div>
+                    </div>
+                    <div class="slds-modal__footer slds-theme--default">
+                        <button class="slds-button slds-button--neutral" onclick="{!c.okformsg}">Ok</button>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-backdrop slds-backdrop--open"></div>
+        </div>
+    </div>
+</aura:component>

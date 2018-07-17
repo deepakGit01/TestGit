@@ -1,0 +1,2 @@
+<aura:event type="COMPONENT" Description="Get assign user on particular permission set.">
+</aura:event>

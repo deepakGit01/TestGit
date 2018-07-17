@@ -1,0 +1,4 @@
+<aura:event type="COMPONENT" Description="Handle error which is getting from server.">
+    <aura:attribute name="responseObj" type="Object"/>
+    <aura:attribute name="errors" type="String"/>
+</aura:event>

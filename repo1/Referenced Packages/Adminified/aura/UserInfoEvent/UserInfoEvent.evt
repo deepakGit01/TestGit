@@ -1,0 +1,7 @@
+<aura:event type="APPLICATION" Description="Passing user detail for getting the user information." >
+    <aura:attribute name="redNumber" type="Integer"/>
+    <aura:attribute name="userId" type="String"/>
+    <aura:attribute name="index" type="Integer"/>
+    <aura:attribute name="orgId" type="String"/>
+    <aura:attribute name="userName" type="String"/>
+</aura:event>

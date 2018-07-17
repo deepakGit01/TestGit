@@ -1,0 +1,111 @@
+<aura:component >   
+   <ltng:require styles="/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.css,/resource/stivadmn__AdminifiedStaticResource/smoothness/jquery-ui.css,/resource/stivadmn__AdminifiedStaticResource/help/help.css" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js,/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.js,/resource/stivadmn__AdminifiedStaticResource/jquery.blockUI.js" afterScriptsLoaded="{!c.documentReady}" />
+    
+    <aura:attribute name="whichHelpTab" type="String" default="Add Organization" Description="Hold default help tab name(Add Organization) after select a help module."/>   
+    
+    <div class="slds">
+        <div class="slds-notify slds-notify--alert slds-theme--alert-texture alert-connected-app" style="display:none" role="alert"> <span class="slds-assistive-text">Info</span>
+            <h2>
+                <div class="connected-app-response"></div>
+            </h2>
+        </div>
+        <div class="slds-text-body--small">
+            <div class="slds-tabs--default" >
+                <div id="tab-default-4" class="slds-tabs__content slds-show" role="tabpanel">
+                    <div class="slds-page-header" role="banner">
+                        <div class="slds-grid">
+                            <div class="slds-media">
+                                <div class="slds-media__figure">
+                                    <span class="helpIcon"><stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#help" category="utility" size="medium" name="help" class="slds-icon icon__svg slds-icon-standard-relationship helpIconPadding"/></span>
+                                </div>
+                                <div class="slds-media__body">
+                                       <p class="slds-text-heading--label">HELP</p>
+                                    <div class="slds-grid">
+                                        <div class="slds-col slds-has-flexi-truncate">
+                                            <p class="slds-truncate" title="{!v.whichHelpTab}">{!v.whichHelpTab} </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="centerRegion">
+                        <div class="homePageBodyContainer">
+                            <div class="homePageLeftNav">
+                                <div class="anchorBar uiTabset--base uiTabset--default uiTabset analyticsHomeLeftNav">
+                                    <div role="application tablist">
+                                        <ul class="tabs__nav tab_help_module">
+                                            
+                                            <li class="navOption tabs__item uiTabItem tab-li help_module_li active"><a class="tabHeader" aria-selected="true" href="javascript:void(0);" tabindex="0" role="tab"  title="Add Organization" aria-controls="addOrg"><span class="slds-media__figure"><stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/standard-sprite/svg/symbols.svg#environment_hub" category="" size="small" name="hierarchy" class="slds-icon icon__svg slds-icon-standard-relationship"/></span><span>Add Organization</span> </a></li>
+                                           <li class="navOption tabs__item uiTabItem tab-li help_module_li "><a class="tabHeader" aria-selected="true" href="javascript:void(0);" tabindex="0" role="tab"  title="Add Connected App" aria-controls="addConnApp"><span class="slds-media__figure"><stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/standard-sprite/svg/symbols.svg#connected_apps" category="standard " size="small" name="connected_apps" class="slds-icon icon__svg slds-icon-standard-relationship"/></span><span>Add Connected App</span> </a></li>
+                                            <li class="navOption tabs__item uiTabItem tab-li help_module_li faq-cls"><a class="tabHeader" aria-selected="false" href="javascript:void(0);" tabindex="-1" role="tab"  title="FAQ" aria-controls="FAQ" ><span class="slds-media__figure"><stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/standard-sprite/svg/symbols.svg#question_feed" category="" size="small" name="hierarchy" class="slds-icon icon__svg slds-icon-standard-relationship"/></span><span>FAQ</span> </a></li>
+                                            
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="listViewContainer" >
+                                <div  class="listViewContent">
+                                    <div id="helpScroll" class="uiScroller scroller-wrapper scroll-bidirectional native helpHeight slds-scrollable--y" >
+                                        
+                                        <div id="addOrg" class="slds-tabs__content slds-show helpContent" role="tabpanel">
+                                            <div class="slds-text-heading--small">Add Organization</div>
+                                            <div class="slds-text-longform">
+                                                <ul>
+                                                    <li> Go to Settings -> Manage Organization -> New Organization</li>
+                                                    <li>You see a dialog. </li>
+                                                    <li>Select organization from drop-down.</li>
+                                                    <li>Copy URL.</li>
+                                                    <li>Paste copied URL into another browser.</li>
+                                                    <li>If you are connecting first time you see a screen which asks you for Allowing the app to access data from the instance.</li>
+                                                    <li>If this is not first time then a verification code will appear.</li>
+                                                    <li>Copy verification code and paste into previous browser.</li>
+                                                    <li>Click on Authorize button.</li>          
+                                                </ul>                                            
+                                            </div>
+                                            
+                                        </div>
+                                        
+                                        <div id="addConnApp" class="slds-tabs__content slds-hide helpContent" role="tabpanel">
+                                            <div class="slds-text-heading--small">Add Connected App</div>
+                                            <div class="slds-text-longform">
+                                                 <p>
+                                                    A connected app integrates an application with Salesforce using APIs.
+                                                    Connected apps use standard SAML and OAuth protocols to authenticate, 
+                                                    provide single sign-on, and provide tokens for use with Salesforce APIs.
+                                                    In addition to standard OAuth capabilities, 
+                                                    connected apps allow Salesforce admins to set various security policies and have explicit control over who can use the corresponding apps.
+                                                 </p>
+                                                <ul>
+                                                    <li>Go to Settings -> Connected App </li>
+                                                    <li>Fill the name of Connected app </li>
+                                                   	<li>Click on <strong>Connect</strong> button.</li>          
+                                                </ul>                                            
+                                            </div>
+                                            
+                                        </div>
+                                        
+                                        <div id="FAQ" class="slds-tabs__content slds-hide helpContent" role="tabpanel">
+                                            <div class="slds-text-longform ">
+                                               
+                                                <h3 class="slds-text-heading--small">What is "Remote Site Setting" ?</h3>
+                                                <p>When you want to access the external sites in your Salesforce application using callouts, webservices, etc... You need to add that in the Remote Site Settings. This is just a security that force.com platform is going to check. 
+                                                </p>
+                                                
+                                                <p>Before any Visualforce page, Apex callout, or JavaScript code using XmlHttpRequest in an s-control or custom button can call an external site, that site must be registered in the Remote Site Settings page, or the call will fail. </p>
+                                            </div>
+                                            <hr/>
+                                           
+                                        </div>
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</aura:component>

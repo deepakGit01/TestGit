@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>Accept</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>CancelEdit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Clone</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Delete</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Edit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>List</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>New</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>SaveEdit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Tab</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <deprecated>false</deprecated>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableReports>false</enableReports>
+    <enableSearch>true</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <fields>
+        <fullName>Branch_Description__c</fullName>
+        <deprecated>false</deprecated>
+        <externalId>false</externalId>
+        <label>Branch Description</label>
+        <length>1000</length>
+        <trackTrending>false</trackTrending>
+        <type>LongTextArea</type>
+        <visibleLines>3</visibleLines>
+    </fields>
+    <fields>
+        <fullName>Branch_Name__c</fullName>
+        <deprecated>false</deprecated>
+        <externalId>false</externalId>
+        <label>Branch Name</label>
+        <length>255</length>
+        <required>true</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Last_Updated_On__c</fullName>
+        <defaultValue>NOW()</defaultValue>
+        <deprecated>false</deprecated>
+        <externalId>false</externalId>
+        <label>Last Updated On</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>DateTime</type>
+    </fields>
+    <fields>
+        <fullName>Merged_to_Repository__c</fullName>
+        <defaultValue>false</defaultValue>
+        <deprecated>false</deprecated>
+        <description>- If checked, this branch record has been merged to repository
+- If NOT checked, this branch is not merged yet.</description>
+        <externalId>false</externalId>
+        <inlineHelpText>- If checked, this branch record has been merged to repository 
+- If NOT checked, this branch is not merged yet.</inlineHelpText>
+        <label>Merged to Repository?</label>
+        <trackTrending>false</trackTrending>
+        <type>Checkbox</type>
+    </fields>
+    <label>Branch</label>
+    <listViews>
+        <fullName>All</fullName>
+        <columns>NAME</columns>
+        <columns>Branch_Name__c</columns>
+        <columns>OWNER.ALIAS</columns>
+        <columns>LAST_UPDATE</columns>
+        <filterScope>Everything</filterScope>
+        <label>All</label>
+    </listViews>
+    <nameField>
+        <displayFormat>B-{0000}</displayFormat>
+        <label>Branch Number</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Branches</pluralLabel>
+    <searchLayouts>
+        <customTabListAdditionalFields>Branch_Name__c</customTabListAdditionalFields>
+    </searchLayouts>
+    <sharingModel>ReadWrite</sharingModel>
+    <webLinks>
+        <fullName>Deploy</fullName>
+        <availability>online</availability>
+        <displayType>button</displayType>
+        <height>600</height>
+        <linkType>page</linkType>
+        <masterLabel>Transfer to Patch</masterLabel>
+        <openType>noSidebar</openType>
+        <page>BranchToPatch</page>
+        <protected>false</protected>
+    </webLinks>
+    <webLinks>
+        <fullName>Merge</fullName>
+        <availability>online</availability>
+        <displayType>button</displayType>
+        <encodingKey>UTF-8</encodingKey>
+        <height>600</height>
+        <linkType>url</linkType>
+        <masterLabel>Commit</masterLabel>
+        <openType>sidebar</openType>
+        <protected>false</protected>
+        <url>/apex/{!$Setup.Credentials__c.Namespace__c}MergeCommit?bid={!Branch__c.Id}&amp;type=branch</url>
+    </webLinks>
+    <webLinks>
+        <fullName>Rebaseline</fullName>
+        <availability>online</availability>
+        <displayType>button</displayType>
+        <linkType>javascript</linkType>
+        <masterLabel>Rebaseline</masterLabel>
+        <openType>onClickJavaScript</openType>
+        <protected>false</protected>
+        <url>var $g = jQuery.noConflict(); 
+$g(&apos;head&apos;).append(&apos;&lt;link rel=&quot;stylesheet&quot; href=&quot;https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css&quot; type=&quot;text/css&quot;/&gt; &lt;style&gt;.ui-widget{z-index:101;}div#dialog-confirm {height: 39px !important;}.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.ui-front.ui-dialog-buttons.ui-draggable {top: 0px !important;position: absolute !important;}&lt;/style&gt;&apos;);
+{!REQUIRESCRIPT(&quot;/soap/ajax/30.0/connection.js&quot;)} 
+{!REQUIRESCRIPT(&quot;/soap/ajax/30.0/apex.js&quot;)} 
+{!REQUIRESCRIPT(&quot;/resource/jqueryconfirmmaster/confirm/jquery.min.js&quot;)}
+{!REQUIRESCRIPT(&quot;/resource/jqueryconfirmmaster/confirm/jquery-ui.min.js&quot;)}
+var html = &apos;&lt;div id=&quot;dialog-confirm&quot;&gt;&lt;/div&gt;&apos;; 
+var nameSpace = &apos;{!$Setup.Credentials__c.Namespace__c}&apos;;
+var branchId = &apos;{!Branch__c.Id}&apos;;
+if(nameSpace.lastIndexOf(&apos;__&apos;) &gt; -1)
+{
+  nameSpace = nameSpace.slice(0,nameSpace.lastIndexOf(&apos;__&apos;))+&apos;.&apos;;
+}
+var classWithNameSpace = nameSpace+&quot;FlosumService&quot;;
+//$g(function() { 
+     
+    $g(&apos;head&apos;).append(html); 
+
+    $g(&quot;#dialog-confirm&quot;).dialog({ 
+        resizable: false,
+        modal: true,
+        title: &quot;ReBaseline&quot;,
+        height: 150,
+        width: 400,
+        buttons: { 
+            &quot;All Components&quot;: function() { 
+                $g(this).dialog(&quot;close&quot;); 
+                var t = sforce.apex.execute(classWithNameSpace,&quot;createAllStalePatch&quot;,{BranchId:branchId});
+				if(t == undefined || t == null)
+				{
+					alert(&apos;Unknown Error&apos;);
+				}
+				else
+				{
+					t = &apos;&apos;+t.toString();
+					if(t.length==18)
+					{
+						window.open(t,&quot;_self&quot;);
+					}
+					else
+					{
+						alert(t);
+					}
+				}
+            }, 
+            &quot;Branch Component Only&quot;: function() { 
+                $g(this).dialog(&quot;close&quot;); 
+                var t = sforce.apex.execute(classWithNameSpace,&quot;createStalePatch&quot;,{BranchId:branchId});
+				if(t == undefined || t == null)
+				{
+					alert(&apos;Unknown Error&apos;);
+				}
+				else
+				{
+					t = &apos;&apos;+t.toString();
+					if(t.length==18)
+					{
+						window.open(t,&quot;_self&quot;);
+					}
+					else
+					{
+						alert(t);
+					}
+				}
+            } 
+        } 
+    }); 
+//});</url>
+    </webLinks>
+</CustomObject>

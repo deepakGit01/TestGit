@@ -1,0 +1,165 @@
+<aura:component controller="stivadmn.PermissionSetModuleController">
+    <ltng:require styles="/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.css,/resource/stivadmn__AdminifiedStaticResource/smoothness/jquery-ui.css" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js,/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.js,/resource/stivadmn__AdminifiedStaticResource/jquery.blockUI.js" afterScriptsLoaded="{!c.documentReady}" />
+    <aura:attribute name="errormsg" type="List" access="GLOBAL"></aura:attribute>
+    <aura:attribute name="successmsg" type="List" access="GLOBAL"></aura:attribute>
+    <aura:attribute name="userData1" type="List" access="GLOBAL"/>
+    <aura:attribute name="assignuserData" type="List" access="GLOBAL" Description="Holds the assign user data for a particular permission set."/>
+    <aura:attribute name="alluserData" type="List" access="GLOBAL" Description="Holds all user name of particular permission set."/>
+    <aura:attribute name="permissionName" type="string" access="GLOBAL" Description="Hold permission set name for showing on manage assignment component."/>
+    <aura:attribute name="insertAallUser" type="List" access="GLOBAL" Description="Insert all assign user in assign user table of manage assignment component."/>
+    <aura:attribute name="userData2" type="List" access="GLOBAL"/>
+    <aura:attribute name="permissionData" type="List" access="GLOBAL"/>
+    <aura:attribute name="permissionSetAss" type="List" access="GLOBAL"/>
+    <aura:attribute name="alldeleterow" type="List" access="GLOBAL"/>
+    <aura:attribute name="permissionsetlicense" type="List" access="GLOBAL" Description="Holds the list of permission set user license name."/>
+    <aura:attribute name="orgId" type="String" access="GLOBAL" Description="Hold organization id for getting all assign user list."/>
+    <aura:attribute name="permissionsetId" type="String" access="GLOBAL" Description="Hold permission set id for getting all assign user list."/>
+    <aura:attribute name="randomNumber" type="Integer" access="GLOBAL" Description="Unique number for identifying the particular permission set information block."/>
+    <aura:attribute name="index" type="Integer" access="GLOBAL" Description="Maintain permission set information block indexing."/>
+    
+    <aura:registerEvent name="assignuserevt" type="stivadmn:assignuserevt" Description="Assign user for a particular permission set."/>
+    <aura:registerEvent name="handleError" type="stivadmn:handleError" Description="Handle error which is getting from server."/>
+    <aura:registerEvent name="DisabledSreenButtonEvent" type="stivadmn:DisabledSreenButtonEvent" Description="Disable all input when performing some action."/>
+    
+    <aura:attribute name="bul" type="boolean" access="GLOBAL" default="true" />
+    <div class="manage_Assignment slds-modal slds-fade-in-open slds-modal--large custom-modal">
+        <h1 aura:id="Appdata" style="display:none"></h1>
+        <div aria-hidden="false" role="dialog" class="slds-modal slds-fade-in-open displayPopup">
+            <div class="slds-modal__container">
+                <div class="slds-modal__header" >
+                    <div id="updateMessage" align="center" style="display:none"></div>  
+                    <section class="slds-float--center">
+                        <div class="slds-float--left">
+                            <div class="slds-media" >
+                                <div class="slds-media__figure"><stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/standard-sprite/svg/symbols.svg#apps_admin" category="standard" size="large" name="apps_admin" class="slds-icon icon__svg slds-icon-standard-relationship"/></div>
+                                <div align="left" class="slds-media__body">
+                                    <div ><b><h2 class="slds-text-heading--medium slds-text-align--left" >Manage Assignment</h2></b></div>
+                                    <div ><h2 class="slds-text-heading--medium slds-text-align--left" id="userHead" style="">{!v.permissionName}</h2></div>
+                                </div>
+                            </div> 
+                        </div>
+                        <div class="slds-float--right">
+                            <button class="slds-button slds-button--icon-inverse slds-modal__close close-manage-assignment-btn" onclick="{!c.closeModal}">
+                                <stivadmn:adminifiedIcons class="slds-button__icon slds-button__icon--large" svgPath="/resource/stivadmn__SLDS0120/assets/icons/action-sprite/svg/symbols.svg#close" /> 
+                                <span class="slds-assistive-text">Close</span> </button>
+                        </div>
+                    </section>
+                </div>
+                
+                <div class="slds-modal__content ManageAssScroPos" >      
+                    <div class="showdivmsg slds-scrollable--y" >
+                        <div class="slds-notify slds-notify--alert slds-theme--alert-texture slds-theme--error alertMsgDataerror" style="display:none" role="alert"> <span class="slds-assistive-text">Error</span>
+                            <button class="slds-button slds-notify__close slds-button--icon-inverse btn-alertMsgDataerror" title="Close" >
+                                <stivadmn:adminifiedIcons class="slds-button__icon" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#close" />
+                                <span class="slds-assistive-text">Close</span> </button>
+                            <div class="slds-notify__content slds-grid">
+                                <div class="slds-col slds-align-middle">
+                                    <h2>
+                                        <div class="showErrorMngAssign"></div>
+                                    </h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                 <div class="slds-grid">
+                        <div class="slds-size--3-of-7">
+                            <div class="slds-grid padding-bottom-20">
+                                <div class="slds-col"><h2 class="slds-text-heading--small" >Assigned Users</h2></div>
+                                <div class="slds-col"><div  class="slds-form-element">
+                                    <div class="slds-text-align--right slds-form-element__control slds-input-has-icon slds-input-has-icon--left">
+                                        <stivadmn:adminifiedIcons class="slds-input__icon slds-text-align--right sldsiconarrange" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#search" />
+                                        <input id="Assignuser_search" class="slds-input slds-input-Search slds-input--small search-fields" type="text" aria-autocomplete="list" role="combobox" aria-expanded="true" onkeyup="{!c.userFieldSearch}" aria-activedescendant="" placeholder="Search" />
+                                    </div>
+                                    </div></div>
+                            </div>
+                            <div id="modal-data" class="slds-grid signeddiv slds-scrollable--y ">  
+                                <table class="slds-table slds-table--bordered assigned-user-table">                                
+                                    <thead>
+                                        <tr class="slds-text-heading--label">
+                                            <th class="slds-cell-shrink" scope="col"> </th>
+                                            <th class="slds-truncate" scope="col">
+                                                <span class="slds-truncate"><b>Name</b></span>        
+                                            </th>
+                                            <th scope="col">
+                                                <span class="slds-truncate"><b>Profile</b></span>
+                                            </th> 
+                                            <th scope="col">
+                                                <span class="slds-truncate"><b>License</b></span>
+                                            </th>  
+                                        </tr>
+                                        <tr class="data_loader">
+                                            <th colspan="4" class="slds-text-align--center">
+                                                <div class=" slds-container--center slds-spinner--small dataLoader " >
+                                                    <img src="/resource/stivadmn__SLDS0120/assets/images/spinners/slds_spinner_brand.gif" alt="Loading..." /> Loading...
+                                                </div>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>  
+                                        
+                                    </tbody>
+                                </table> 
+                            </div>
+                        </div>
+                        <div class="slds-size--1-of-7 slds-align-middle slds-text-align--center">
+                            <button type="button" class="slds-button slds-button--small slds-button--neutral button-small cancel moveUp" onclick="{!c.moveUp}">
+                                <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#back" category="utility" size="x-small" name="chevrondown" class="slds-button__icon"/>
+                            </button>
+                            <br/>
+                            <br/>
+                            <br/>
+                            <button type="button" class=" slds-button slds-button--small slds-button--neutral button-small cancel moveDown" onclick="{!c.moveDown}">
+                                <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#forward" category="utility" size="x-small" name="chevronup" class="slds-button__icon"/>                         
+                            </button>
+                            
+                        </div> 
+                        <div class="slds-size--3-of-7">
+                            <div class="slds-grid padding-bottom-20">
+                                <div class="slds-col "><h2 class="slds-text-heading--small" >All Users</h2></div>
+                                <div class="slds-col"><div  class="slds-form-element">
+                                    <div class="slds-text-align--right slds-form-element__control slds-input-has-icon slds-input-has-icon--left">
+                                        <stivadmn:adminifiedIcons class="slds-input__icon sldsiconarrange" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#search" />
+                                        <input id="Alluser_search" class="slds-input slds-input-Search slds-input--small search-fields" type="text" aria-autocomplete="list" role="combobox" aria-expanded="true" onkeyup="{!c.userFieldSearchalluser}" aria-activedescendant="" placeholder="Search" />
+                                    </div>
+                                    </div></div>
+                            </div>
+                            <div id="modal-data" class="unsigned-model  slds-grid unsigneddiv slds-scrollable--y ">                                                
+                                <table class="slds-table unsigned-model-table slds-table--bordered" >                                
+                                    <thead>
+                                        <tr class="slds-text-heading--label">
+                                            <th class="slds-cell-shrink" scope="col"></th>
+                                            <th scope="col" class="slds-truncate">
+                                                <span class="slds-truncate"><b>Name</b></span>
+                                            </th> 
+                                            <th scope="col">
+                                                <span class="slds-truncate"><b>Profile</b></span>        
+                                            </th>
+                                            <th scope="col">
+                                                <span class="slds-truncate"><b>License</b></span>
+                                            </th>
+                                        </tr>
+                                        <tr class="data_loader">
+                                            <th colspan="4" class="slds-text-align--center">
+                                                <div class=" slds-container--center slds-spinner--small dataLoader " >
+                                                    <img src="/resource/stivadmn__SLDS0120/assets/images/spinners/slds_spinner_brand.gif" alt="Loading..." /> Loading...
+                                                </div>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>  
+                                        
+                                    </tbody>
+                                </table> 
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+                <div class="slds-modal__footer"> 
+                    <button type="button" class=" slds-button slds-button--neutral close-model" onclick="{!c.closeModal}" >Close</button>               
+                    <button type="button" name="assignuser" class="slds-m-horizontal--small slds-button slds-button--brand save-btn" onclick="{!c.saveAssignment}" >Save</button>                </div>
+            </div>
+        </div>
+        <div class="slds-modal-backdrop slds-modal-backdrop--open"></div>
+    </div>        
+</aura:component>

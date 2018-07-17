@@ -1,0 +1,18 @@
+<apex:page standardController="Flosum__Component_History__c">
+	<apex:sectionHeader title="Component History Edit" subtitle="{!Flosum__Component_History__c.Name}"/>
+	<apex:form >
+		<apex:pageblock >
+			<apex:pageblocksection columns="1">
+				<apex:outputField value="{!Flosum__Component_History__c.Name}"/>
+				<apex:outputField value="{!Flosum__Component_History__c.Flosum__Component__c}"/>
+				<apex:outputField value="{!Flosum__Component_History__c.Component__r.Flosum__Component_Name__c}"/>
+				<apex:outputField value="{!Flosum__Component_History__c.Flosum__Version__c}"/>
+				<apex:inputField value="{!Flosum__Component_History__c.Flosum__Comments__c}"/>
+			</apex:pageblocksection>
+			<apex:pageblockbuttons >
+				<apex:commandbutton value="Save" action="{!save}"/>
+				<apex:commandbutton value="Cancel" action="{!cancel}"/>
+			</apex:pageblockbuttons>
+		</apex:pageblock>
+	</apex:form>
+</apex:page>

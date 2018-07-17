@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+    <labels>
+        <fullName>Allow</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Allow</shortDescription>
+        <value>Allow</value>
+    </labels>
+    <labels>
+        <fullName>AssignOverviewTitle</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>App Assign Overview Title</shortDescription>
+        <value>Assign Users and Profiles</value>
+    </labels>
+    <labels>
+        <fullName>AssignUsers</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Assign Users</shortDescription>
+        <value>Assign Users</value>
+    </labels>
+    <labels>
+        <fullName>Cancel</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Cancel</shortDescription>
+        <value>Cancel</value>
+    </labels>
+    <labels>
+        <fullName>ClientDownloadLink</fullName>
+        <categories>Link</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>X-Author Designer For Excel Download Link</shortDescription>
+        <value>Download X-Author™ Designer For Excel</value>
+    </labels>
+    <labels>
+        <fullName>Edit</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Edit</shortDescription>
+        <value>Edit</value>
+    </labels>
+    <labels>
+        <fullName>InstallXAuthorDesigner</fullName>
+        <categories>Title</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Install X-Author Designer</shortDescription>
+        <value>Install X-Author™ Designer For Excel</value>
+    </labels>
+    <labels>
+        <fullName>NoProfilesAssigned</fullName>
+        <categories>Message</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>No Profiles Assigned</shortDescription>
+        <value>No profiles assigned</value>
+    </labels>
+    <labels>
+        <fullName>NoUsersAssigned</fullName>
+        <categories>Message</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>No Users Assigned</shortDescription>
+        <value>No users assigned</value>
+    </labels>
+    <labels>
+        <fullName>Profile</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Profile</shortDescription>
+        <value>Profile</value>
+    </labels>
+    <labels>
+        <fullName>Profiles</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Profiles</shortDescription>
+        <value>Profiles</value>
+    </labels>
+    <labels>
+        <fullName>Save</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Save</shortDescription>
+        <value>Save</value>
+    </labels>
+    <labels>
+        <fullName>Users</fullName>
+        <categories>Label</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Users</shortDescription>
+        <value>Users</value>
+    </labels>
+</CustomLabels>

@@ -1,0 +1,130 @@
+<apex:page sidebar="false" showHeader="false" controller="stivadmn.ConnAppController" > 
+ 
+    <style>
+        .errResp{
+            color: red;
+        } 
+    .sucResp{
+        color: green;
+    } 
+    html{ background:none!important}    
+    
+    </style>
+    <apex:includeScript value="{!URLFOR($Resource.stivadmn__AdminifiedStaticResource, 'jsforce.js')}"/>
+    <link href="{!URLFOR($Resource.stivadmn__SLDS0120, 'assets/styles/salesforce-lightning-design-system.css')}" rel="stylesheet"/> <!-- Begin Default Content REMOVE THIS -->
+    <apex:form >
+   <article class="slds-card connectedApp" style="padding:1rem;">
+       
+        <form class="slds-form--stacked">            
+            <div class="slds-form-element">
+                <label class="slds-form-element__label" >App Name<span class="errResp">*</span></label>
+                <div class="slds-form-element__control">
+                    <div class="slds-button-group" role="group">
+                        <input id="app_name" class="slds-input slds-input--small appName" type="text" placeholder="Connected App Name" value="" />
+                        <button class="slds-button copy_btn slds-button--small slds-button--brand slds-button--small connectedApp-btn" type="button" onclick="createNewConnectedApp();">Connect</button>
+                    </div>
+                    <span style="display:none;" id="errorMsgConntdApp" >Please enter app name</span>
+                </div>
+            </div>
+            <br/>
+        </form>
+    </article>
+                    
+  </apex:form>
+  <script>
+     
+       var appName = '{!JSENCODE(HTMLENCODE(appName))}'; 
+       var fullName = appName;
+       var label = appName;
+       var contactEmail = '{!JSENCODE(HTMLENCODE(contactEmail))}';  
+       var consumerKey = '{!JSENCODE(HTMLENCODE(consumerKey))}';  
+       var consumerSecret = '{!JSENCODE(HTMLENCODE(consumerSecret))}';  
+       var callbackUrl = '{!JSENCODE(HTMLENCODE(callbackUrl))}';  
+       var scopestmp = new Array();
+       var scopesString = '{!JSENCODE(HTMLENCODE(scopes))}'; 
+       var scopes = [];
+       scopes = scopesString.split(',');  
+   	document.getElementById('app_name').value = appName;
+      function createNewConnectedApp(){  
+           appName = document.getElementById('app_name').value;
+            var metaData  = [{
+                'fullName': appName,
+                'label': appName,
+                'contactEmail' :contactEmail, 
+                'oauthConfig': {
+                    'scopes':scopes,
+                    'consumerKey' : consumerKey,
+                    'consumerSecret' : consumerSecret,
+                    'callbackUrl' : callbackUrl,
+                }
+            }];
+            
+            var conn = new jsforce.Connection({ accessToken: '{!$Api.Session_Id}' });
+            conn.metadata.create('ConnectedApp', metaData , function(err, results) { 
+                //console.log( 'results  -'+JSON.stringify(results));
+                //console.log( 'err-'+JSON.stringify(err));
+                if(err == null || err == 'null') {
+                    //console.log('Adding connected app.');
+                    addConnectedApp(results); 
+                }else{
+                	document.getElementById('errorMsgConntdApp').innerHTML = err;
+                }
+                
+            });
+            return true;
+      }
+      
+      function addConnectedApp(results) { 
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.ConnAppController.addConnectedApp}',
+            appName, consumerKey,consumerSecret,
+            function(result, event){  
+                var status = '';//Success, Error, Exception
+                var response = '';
+                 if (event.status) {
+                     //console.log('result::'+result.status + '; message::'+result.message);
+                   response = result.message;
+                   status = result.status;
+                } else if (event.type === 'exception') {
+                    //console.log('exception::'+event.message + "<br/>\n<pre>" + event.where + "</pre>");
+                    response = 'exception::'+event.message + "<br/>\n<pre>" + event.where + "</pre>";
+                    status = 'Exception';
+                } else {
+                    //console.log('event.message::'+event.message);
+                    response = event.message;
+                    status = 'Exception';
+                } 
+                
+                if(status == 'Success' && results['success']){
+                    document.getElementById('errorMsgConntdApp').innerHTML = 'Success : '+response;
+                    document.getElementById('errorMsgConntdApp').classList.remove('errResp');
+                    document.getElementById('errorMsgConntdApp').classList.add('sucResp');
+                    
+                }else if (!results['success']) {
+                    document.getElementById('errorMsgConntdApp').innerHTML = 'Error : '+results['errors']['message'];
+                    document.getElementById('errorMsgConntdApp').classList.add('errResp');
+                    document.getElementById('errorMsgConntdApp').classList.remove('sucResp');
+                }else if (event.data.status === "Error") {
+                     document.getElementById('errorMsgConntdApp').innerHTML = 'Error : '+response;
+                    document.getElementById('errorMsgConntdApp').classList.add('errResp');
+                    document.getElementById('errorMsgConntdApp').classList.remove('sucResp');
+                }else if (event.data.status === "Exception") {
+                	 document.getElementById('errorMsgConntdApp').innerHTML = 'Error : '+response;
+                    document.getElementById('errorMsgConntdApp').classList.add('errResp');
+                    document.getElementById('errorMsgConntdApp').classList.remove('sucResp');
+                }
+                document.getElementById("errorMsgConntdApp").style.display ="block";
+                setTimeout(function(){ 
+                    document.getElementById("errorMsgConntdApp").style.display ="none";
+                }, 5000);
+                
+               
+                 
+            }, 
+            {escape: true}
+        );
+    } 
+    
+    
+</script> 
+</apex:page>

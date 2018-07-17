@@ -1,0 +1,9 @@
+<aura:event type="COMPONENT" Description="Showing object fields status of particular profile.">
+    <aura:attribute type="Object" name="orgObj"/>
+    <aura:attribute type="String[]" name="orgIdArray"/>
+    <aura:attribute type="String[]" name="orgNameArr"/>
+    <aura:attribute type="Object" name="objNameMap"/>
+    <aura:attribute type="String" name="status"/>
+    <aura:attribute type="String" name="objName"/>
+    <aura:attribute type="Object" name="objectObj"/>
+</aura:event>

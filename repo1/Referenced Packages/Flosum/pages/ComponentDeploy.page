@@ -1,0 +1,464 @@
+<apex:page controller="Flosum.ComponentDeployController" sidebar="false">
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<apex:includeScript value="{!URLFOR($Resource.Flosum__jszipmaster, 'jszip-master/dist/jszip.js')}"/>
+<c:Wait />
+	<apex:form id="formid">
+		<apex:pagemessages id="msg"/>
+		<apex:pageblock Title="Metadata Deployment">
+			<apex:pageBlockButtons >
+		        <apex:commandButton onClick="disableBoth();" value="Deploy" action="{!startDeployment}" styleClass="disableitem" rendered="{!AND(organisationTargetName != null,organisationTargetName != '',authSuccesfull,!renderValidate)}" oncomplete="checkRequest({!isDone},{!allComplete});" reRender="credentials,msg"/>
+		        <apex:commandButton onClick="disableBoth();" styleClass="disableitem" value="Validate" action="{!startDeployment}" rendered="{!AND(organisationTargetName != null,organisationTargetName != '',authSuccesfull,renderValidate)}" oncomplete="checkRequest({!isDone},{!allComplete});" reRender="credentials,msg"/>
+		    </apex:pageBlockButtons>
+			<apex:pageBlockSection columns="1">
+				<apex:pageBlockSectionItem >
+		            <apex:outputLabel value="Salesforce Organization" /> 
+		            <apex:outputLabel value="{!organisationName}" />
+		        </apex:pageBlockSectionItem>
+		        <apex:pageBlockSectionItem >
+		            <apex:outputLabel value="Snapshot Name" />
+		            <apex:outputLabel value="{!snapshotName}" />
+		        </apex:pageBlockSectionItem>
+		        <apex:pageBlockSectionItem rendered="{!AND(snapshotId != null,snapshotId != '')}">
+		            <apex:outputLabel value="Target Salesforce Organization" />
+		            <apex:selectList size="1" value="{!organisationTargetName}" styleClass="disableitem">
+		                <apex:selectOptions value="{!organisationTarget}"/>
+		                <apex:actionSupport event="onchange"  action="{!setUpAuthentication}" rerender="formid" onsubmit="show();" oncomplete="hide();"/>
+		            </apex:selectList>
+		        </apex:pageBlockSectionItem> 
+	        </apex:pageBlockSection>
+		</apex:pageblock>
+		<apex:actionfunction name="checkAsyncRequest" action="{!checkStatus}" rerender="msg,credentials" oncomplete="checkRequest({!isDone},{!allComplete})"/>
+		<apex:actionfunction name="deployNext" action="{!deploy}" rerender="msg,credentials" oncomplete="checkRequest({!isDone},{!allComplete})"/>
+		
+		<apex:actionfunction name="onceAgainDeploy" action="{!againDeploy}" rerender="msg,credentials" oncomplete="checkRequest({!isDone},{!allComplete})">
+			<apex:param assignTo="{!base64AttBody}" value="" name="newstr"/>
+		</apex:actionfunction>
+		<!-- final patch Deploy -->
+		<apex:actionfunction name="finalPatchDeploy" action="{!finalPatchDeploy}" rerender="msg,credentials" oncomplete="checkFinalRequest({!isDone})">
+			<apex:param assignTo="{!base64AttBody}" value="" name="newstr"/>
+		</apex:actionfunction>
+		<apex:actionfunction name="checkFinalAsyncRequest" action="{!finalCheckStatus}" rerender="msg,credentials" oncomplete="checkFinalRequest({!isDone})"/>
+		<apex:actionfunction name="onceAgainFinalDeploy" action="{!againDeploy}" rerender="msg,credentials" oncomplete="checkFinalRequest({!isDone})">
+			<apex:param assignTo="{!base64AttBody}" value="" name="newstr"/>
+		</apex:actionfunction>
+		<apex:actionfunction name="checkMultiFinalAsyncRequest" action="{!finalCheckStatus}" rerender="msg,credentials" oncomplete="checkfinalBreakDeploy({!isDone})"/>
+		<apex:actionfunction name="MultiFinalDeploy" action="{!finalPatchDeploy}" rerender="msg,credentials" oncomplete="checkfinalBreakDeploy({!isDone})">
+			<apex:param assignTo="{!base64AttBody}" value="" name="newstr"/>
+		</apex:actionfunction>
+		
+		
+		<apex:actionfunction name="showfinalmessage" action="{!allDeployOperationComplete}" rerender="msg" onComplete="enableBoth();"/>
+		<apex:pageblock id="credentials">
+			<apex:inputHidden id="probleItems" value="{!problemItems}"></apex:inputHidden>
+
+			<apex:inputHidden id="attId" value="{!attId}"></apex:inputHidden>
+		</apex:pageblock>
+	</apex:form>
+	<script>
+	var gap;
+	var newzipcount = 5;
+	str = '';
+	var isAttachment = true;
+	var zip,newzip, finalzip;
+	finalzip = new JSZip();
+	var finalzipone ;
+	var finalziptwo ;
+	Visualforce.remoting.timeout = 120000;
+	var first = false;
+	var multifinalarray;
+	var multifinalindex = 0;	
+	
+	function disableBoth()
+	{
+		var toDisableItems = document.getElementsByClassName('disableitem');
+		for (var i = 0; i < toDisableItems.length; i++) 
+		{
+			if(toDisableItems[i].type == 'button' || toDisableItems[i].type == 'select-one')
+			{
+				toDisableItems[i].disabled = true;
+			}
+		}
+	}
+	
+	function enableBoth()
+	{
+		var toDisableItems = document.getElementsByClassName('disableitem');
+		for (var i = 0; i < toDisableItems.length; i++) 
+		{
+			if(toDisableItems[i].type == 'button' || toDisableItems[i].type == 'select-one')
+			{
+				toDisableItems[i].disabled = false;
+			}
+		}
+	}
+	
+		function checkRequest(v,a) 
+		{
+			
+			// Check status
+			if(!v)
+			{
+				gap = setTimeout(checkAsyncRequest,5000);
+			}
+			// Status done
+			else if(v)
+			{
+				clearTimeout(gap);
+				str = $("input[id$='probleItems']").val();
+				var error;
+				if(str != '')
+					error = true;
+				else
+					error = false;
+				
+				// state.error is true
+				if(error && newzipcount>4)
+				{
+					// ---------------again deploy
+					var attId = $("input[id$='attId']").val();
+					if(attId != undefined && isAttachment)
+					{
+						Visualforce.remoting.Manager.invokeAction(
+				            '{!$RemoteAction.ComponentDeployController.getAttachmentBody}',
+				            attId,
+				            handleResult   
+				        );
+			        }
+			        else
+			        {
+			        	var tempEvent = {};
+			        	tempEvent.status = true;
+			        	var newstr_temp = newzip.generate({type:"base64",compression:"DEFLATE"});
+			        	handleResult(newstr_temp, tempEvent);
+			        }
+					
+				}
+				// All attachments deployed
+				else if(a)
+				{
+					var finalcount = 0;
+					for(var name in finalzip.files)
+					{
+						finalcount ++;
+						
+					}
+					if(finalcount > 0 )
+					{	
+						var finalstr = finalzip.generate({type:"base64",compression:"DEFLATE"});
+						if(finalstr.length < 2500000)
+						{
+							var xmldata= '<?xml version="1.0" encoding="UTF-8"?> <Package xmlns="http://soap.sforce.com/2006/04/metadata"><types><members>*</members><name>ApexClass</name></types><types><members>*</members><name>ApexComponent</name></types><types><members>*</members><name>ApexPage</name></types><types><members>*</members><name>ApexTrigger</name></types><types><members>*</members><name>ApprovalProcess</name></types><types><name>AssignmentRule</name></types><types><members>*</members><name>CustomLabels</name></types><types><members>*</members><name>CustomObject</name></types><types><members>*</members><name>CustomPageWebLink</name></types><types><members>*</members><name>CustomTab</name></types><types><members>*</members><name>Layout</name></types><types><members>*</members><name>Profile</name></types><types><name>RemoteSiteSetting</name></types><types><name>Report</name></types><types><members>*</members><name>Role</name></types><types><members>*</members><name>StaticResource</name></types><types><members>*</members><name>Workflow</name></types><types><members>*</members><name>WorkflowTask</name></types><types><members>*</members><name>WorkflowOutboundMessage</name></types><types><members>*</members><name>WorkflowFieldUpdate</name></types><types><members>*</members><name>WorkflowAlert</name></types><types><members>*</members><name>WorkflowRule</name></types><version>33.0</version> </Package>';
+							var xmlname= 'package.xml';
+							finalzip.file(xmlname, ""+xmldata);
+							finalstr = finalzip.generate({type:"base64",compression:"DEFLATE"});
+							finalPatchDeploy(finalstr);
+						}
+						else
+						{
+							// if string size greater than 2500000
+							multifinalarray = new Array();
+							var finalzipbreaksize = 0;
+							for(var name in finalzip.files)
+							{
+								finalzipbreaksize++;
+							}
+							var finalzipbreaksize = finalzipbreaksize/2;
+							var index=0;
+							finalzipone = new JSZip();
+							finalziptwo = new JSZip();
+							for(var name in finalzip.files)
+							{
+								if(index<finalzipbreaksize)
+								{
+									finalzipone.file(""+finalzip.files[name].name, finalzip.files[name].asBinary(),{binary:true});
+								}
+								else
+								{
+									finalziptwo.file(""+finalzip.files[name].name, finalzip.files[name].asBinary(),{binary:true});
+								}
+								index++; 
+								
+							}
+							var xmldata= '<?xml version="1.0" encoding="UTF-8"?> <Package xmlns="http://soap.sforce.com/2006/04/metadata"><types><members>*</members><name>ApexClass</name></types><types><members>*</members><name>ApexComponent</name></types><types><members>*</members><name>ApexPage</name></types><types><members>*</members><name>ApexTrigger</name></types><types><members>*</members><name>ApprovalProcess</name></types><types><name>AssignmentRule</name></types><types><members>*</members><name>CustomLabels</name></types><types><members>*</members><name>CustomObject</name></types><types><members>*</members><name>CustomPageWebLink</name></types><types><members>*</members><name>CustomTab</name></types><types><members>*</members><name>Layout</name></types><types><members>*</members><name>Profile</name></types><types><name>RemoteSiteSetting</name></types><types><name>Report</name></types><types><members>*</members><name>Role</name></types><types><members>*</members><name>StaticResource</name></types><types><members>*</members><name>Workflow</name></types><version>33.0</version> </Package>';
+							var xmlname= 'package.xml';
+							
+							finalzipone.file(xmlname, ""+xmldata);
+							finalziptwo.file(xmlname, ""+xmldata);
+							multifinalarray.push(finalzipone);
+							multifinalarray.push(finalziptwo);
+							finalzip = finalzipone;
+							var finalstr = finalzipone.generate({type:"base64",compression:"DEFLATE"});
+							multifinalindex = 1;
+							
+							if(finalstr.length < 2500000)
+							{
+								MultiFinalDeploy(finalstr);	
+							}
+							else
+							{
+								showfinalmessage();
+							}
+						}
+					}
+					else
+					{
+						showfinalmessage();
+					}
+				} 
+				else if(!a) 
+				{
+					isAttachment = true;
+					newzipcount = 5;
+					deployNext(); 
+				}
+			}
+		}
+		
+		
+		function handleResult(r,e)
+		{
+			if(e.status) 
+			{
+				isAttachment = false;
+	        	if(r != '')
+	        	{
+	        			var removeList = new Array();
+	 
+	        			removeList = str.split(',');
+						zip = new JSZip(r, {base64:true});
+						var count1 = 0;
+						for(var name in zip.files)
+						{
+							count1++;
+						}
+				  	 	if(zip != undefined ) 
+				  	 	{
+				  	 		for(var index in removeList)
+				  	 		{
+				  	 			if(zip.files[removeList[index]]!= undefined)
+				  	 			{
+				  	 				var filepath = zip.files[removeList[index]].name;
+				  	 				var filedata = ""+zip.files[removeList[index]].asBinary();
+				  	 				
+				  	 				if(zip.files[removeList[index]+"-meta.xml"] != undefined)
+				  	 				{
+				  	 					var xmlpath = zip.files[removeList[index]+"-meta.xml"].name;
+				  	 					var xmldata = ""+zip.files[removeList[index]+"-meta.xml"].asText();
+				  	 					finalzip.file(xmlpath, xmldata);
+				  	 					zip.remove(xmlpath);
+				  	 				}
+				  	 				
+			  	 					finalzip.file(filepath, filedata,{binary:true});
+				  	 				
+				  	 				zip.remove(filepath);
+				  	 			}
+				  	 			else
+				  	 			{
+				  	 				
+				  	 			}	
+				  	 		}
+				  	 		newzipcount = 0;
+				  	 		for(var name in zip.files)
+				  	 		{
+				  	 			newzipcount++;
+							}
+							newzip = new JSZip();
+							for(var index in zip.files)
+							{
+								newzip.file(""+zip.files[index].name, zip.files[index].asBinary(),{binary:true});
+							}
+							var newstr = newzip.generate({type:"base64",compression:"DEFLATE"});    
+							
+							onceAgainDeploy(newstr);
+				  	 	}
+				}
+			}
+			else
+			{
+				if(e.message == 'Unable to connect to the server (transaction aborted: timeout).')
+				{
+					Visualforce.remoting.timeout = Visualforce.remoting.timeout*2;
+					var attId = $("input[id$='attId']").val();
+					if(attId != undefined && isAttachment)
+					{
+						Visualforce.remoting.Manager.invokeAction(
+				            '{!$RemoteAction.ComponentDeployController.getAttachmentBody}',
+				            attId,
+				            handleResult   
+				        );
+			        }
+			     }
+			}
+		}
+	
+	var finalzipcount = 5;
+			
+		function checkFinalRequest(v)
+		{
+			if(!v)
+			{
+				gap = setTimeout(checkFinalAsyncRequest,5000);
+			}
+			// Status done
+			else if(v)
+			{
+				clearTimeout(gap);
+				str = $("input[id$='probleItems']").val();
+				var error;
+				if(str != '')
+					error = true;
+				else
+					error = false;
+				
+				var finalcount = 0;
+				for(var name in finalzip.files)
+				{
+					finalcount ++;
+					
+				}	
+				if(error && finalcount > 4)
+				{
+					var tempEvent = {};
+		        	tempEvent.status = true;
+		        	var newstr_temp = finalzip.generate({type:"base64",compression:"DEFLATE"});
+		        	handleFinalResult(newstr_temp, tempEvent);
+				}
+				else
+				{
+					showfinalmessage();
+				}
+			}
+		}
+		
+		function handleFinalResult(r,e)
+		{
+			if(e.status) 
+			{
+	        	if(r != '')
+	        	{
+	        			var removeList = new Array();
+	 
+	        			removeList = str.split(',');
+						finalzip = new JSZip(r, {base64:true});
+						var count1 = 0;
+						for(var name in finalzip.files)
+						{
+							count1++;
+						}
+				  	 	if(finalzip != undefined ) 
+				  	 	{
+				  	 		for(var index in removeList)
+				  	 		{
+				  	 			if(finalzip.files[removeList[index]]!= undefined)
+				  	 			{
+				  	 				var filepath = finalzip.files[removeList[index]].name;
+				  	 				//var filedata = finalzip.files[removeList[index]].asBinary();
+				  	 				
+				  	 				if(finalzip.files[removeList[index]+"-meta.xml"] != undefined)
+				  	 				{
+				  	 					var xmlpath = finalzip.files[removeList[index]+"-meta.xml"].name;
+				  	 					//var xmldata = ""+finalzip.files[removeList[index]+"-meta.xml"].asText();
+				  	 					finalzip.remove(xmlpath);
+				  	 				}			  	 				
+				  	 				finalzip.remove(filepath);
+				  	 			}	
+				  	 		}
+							newzip = new JSZip();
+							for(var index in finalzip.files)
+							{
+								newzip.file(""+finalzip.files[index].name, finalzip.files[index].asBinary(),{binary:true});
+							}
+							finalzip = newzip;
+							var newstr = newzip.generate({type:"base64",compression:"DEFLATE"});
+							onceAgainFinalDeploy(newstr);
+				  	 	}
+				}
+			}
+		}
+		
+		function checkfinalBreakDeploy(v)
+		{
+			if(!v)
+			{
+				gap = setTimeout(checkMultiFinalAsyncRequest,5000);
+			}
+			else if(v)
+			{
+				clearTimeout(gap);
+				str = $("input[id$='probleItems']").val();
+				var error;
+				if(str != '')
+					error = true;
+				else
+					error = false;
+				var finalcount = 0;
+				for(var index in finalzip.files)
+				{
+					finalcount++
+				}
+				if(error && finalcount >4)
+				{
+						var removeList = new Array();
+	 
+	        			removeList = str.split(',');
+						var count1 = 0;
+						for(var name in finalzip.files)
+						{
+							count1++;
+							console.log('before remove files in finalzip-:'+finalzip.files[name].name);
+						}
+				  	 	if(finalzip != undefined ) 
+				  	 	{
+				  	 		for(var index in removeList)
+				  	 		{
+				  	 			if(finalzip.files[removeList[index]]!= undefined)
+				  	 			{
+				  	 				var filepath = finalzip.files[removeList[index]].name;
+				  	 				//var filedata = ""+finalzip.files[removeList[index]].data;
+				  	 				
+				  	 				if(finalzip.files[removeList[index]+"-meta.xml"] != undefined)
+				  	 				{
+				  	 					var xmlpath = finalzip.files[removeList[index]+"-meta.xml"].name;
+				  	 					//var xmldata = ""+finalzip.files[removeList[index]+"-meta.xml"].data;
+				  	 					finalzip.remove(xmlpath);
+				  	 				}			  	 				
+				  	 				finalzip.remove(filepath);
+				  	 			}	
+				  	 		}
+							newzip = new JSZip();
+							for(var index in finalzip.files)
+							{
+								newzip.file(""+finalzip.files[index].name, finalzip.files[index].asBinary(),{binary:true});
+							}
+							finalzip = newzip;
+							var newstr = newzip.generate({type:"base64",compression:"DEFLATE"});
+							MultiFinalDeploy(newstr_temp);
+				  	 	}
+				}
+				else if(multifinalindex< multifinalarray.length)
+				{
+					finalzip = multifinalarray[multifinalindex];
+					var finalstr = finalzip.generate({type:"base64",compression:"DEFLATE"});
+					
+					if(finalstr.length < 2500000)
+					{
+						MultiFinalDeploy(finalstr);	
+					}
+					else
+					{
+						showfinalmessage();
+					}
+					multifinalindex++;
+				}
+				else
+				{
+					showfinalmessage();
+				}
+			}
+		}
+		
+		$(window).bind("beforeunload",function(event) {
+	        return 'Deployment may be in progress.';
+    	});
+	</script>
+</apex:page>

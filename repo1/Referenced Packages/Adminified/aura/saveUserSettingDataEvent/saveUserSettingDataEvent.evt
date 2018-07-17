@@ -1,0 +1,5 @@
+<aura:event type="APPLICATION" description="Event template">
+    <aura:attribute name="settingTabName" type="String"/>
+    <aura:attribute name="moduleTemplate" type="String"/>
+    <aura:attribute name="moduleName" type="String"/>
+</aura:event>

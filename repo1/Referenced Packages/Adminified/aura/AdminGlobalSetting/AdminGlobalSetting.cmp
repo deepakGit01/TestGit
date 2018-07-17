@@ -1,0 +1,47 @@
+<aura:component controller="stivadmn.SettingModuleController" >
+   <ltng:require styles="/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.css,/resource/stivadmn__AdminifiedStaticResource/smoothness/jquery-ui.css" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js,/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.js,/resource/stivadmn__AdminifiedStaticResource/jquery.blockUI.js" afterScriptsLoaded="{!c.document}" />
+    <aura:attribute name="settingTemplate" type="Object" Description="Holds setting data of an particular module which is save to server."/>
+    <aura:attribute name="settingTemplateForLocal" type="Object" Description="Holds setting data of an particular module for locally."/>
+    <aura:attribute name="headerSection" type="String" Description="Hold the header section name in setting. E.g.In user setting, General Information is the header section name."/>
+    <aura:attribute name="settingBlock" type="String" Description="Hold setting block name. E.g. userSettingBlock,profileSettingBlock."/>
+    <aura:attribute name="flag" type="boolean" Description="Set flag for open setting of an particular module."/>
+    <aura:attribute name="settingTabName" type="String" Description="Hold setting tab name. E.g user setting,pofile setting." />
+    <aura:attribute name="moduleName" type="String" Description="Hold module name for manage which setting is open. E.g. usermodule setting."/>
+    
+    <aura:registerEvent name="DisabledSreenButtonEvent" type="stivadmn:DisabledSreenButtonEvent" Description="Disable all input when performing some action."/>
+    <aura:registerEvent name="SetMainSetting" type="stivadmn:SetMainSetting" Description="After setting show effect in particular module."/>
+    
+    <aura:handler event="stivadmn:SaveNewSetting" action="{!c.saveSetting}" Description="Save changes in setting of particular module."/>
+    
+    <div class="slds-modal__header " style="padding: 0;">
+        <section class="slds-clearfix settingHeader">
+            <div class="{!'slds-float--left '+v.headerSection }">
+                <div class="slds-form-element">
+                    <span class="slds-text-align--left"> <label class="slds-checkbox" for="{!'selectchk_'+v.settingTabName}">
+                        <input name="checkbox" type="checkbox" id="{!'selectchk_'+v.settingTabName}" class="allcheckbox" />
+                        <span class="slds-checkbox--faux"></span>
+                        <span class="slds-form-element__label">Select All</span>
+                        </label> 
+                    </span>
+                </div>
+            </div>
+            <div class="slds-float--right">
+                Total items selected  (<span class="{!v.moduleName+'_total_checked_items'}">0</span>)
+            </div>
+        </section>
+        
+    </div>
+    
+    
+<div class="slds-modal__content slds-scrollable--y common_scroll setScrollPosition">
+    <div class="slds-notify slds-notify--alert slds-theme--alert-texture alert-setting" style="display:none" role="alert">
+        <span class="slds-assistive-text">Info</span>
+        <h2><span class="setting-response"></span></h2>
+    </div>
+        <form class="slds-form--stacked">
+            <div class="{!'slds-form-element '+v.settingBlock}">
+            </div>
+        </form>
+    </div>
+  
+ </aura:component>

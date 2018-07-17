@@ -1,0 +1,241 @@
+<aura:component controller="stivadmn.UserModuleController">
+    <ltng:require styles="" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js" afterScriptsLoaded="{!c.documentReady}" />
+    <!--Define Attributes-->
+    <aura:attribute name="userTemplate" type="Object" access="GLOBAL" Description="Holds data, in json format, which is used while creating structure for user module. E.g. General Information section and it's standard fields, Permissions section and it's standard fields."/>
+    <aura:attribute name="newUserTemplateData" type="Object" access="GLOBAL"/>
+    <aura:attribute name="userBody" type="Aura.Component[]" access="GLOBAL" Description="Create structure for showing information of users and compare them regarding to General Information section and it's standard fields, Permissions section and it's standard fields."/>
+    <aura:attribute name="userBody1" type="Aura.Component[]" access="GLOBAL" Description="Create structure for showing information of users and compare them regarding to General Information section and it's standard fields, Permissions section and it's standard fields."/>
+    <aura:attribute name="LoginHistorySectionAreaBody" type="Aura.Component[]" access="GLOBAL" Description="Create structure for showing users login history."/>
+    <aura:attribute name="index" type="Integer" default="-1" Description="Maintain indexing of user information blocks."/>
+    <aura:attribute name="userSettingTemplateData" type="Object" access="GLOBAL" Description="Maintain the structure and it's standard fields in user setting component and user information section. E.g. General Information section."/>
+    <aura:attribute name="adminifiedUserSettingDiv" type="Aura.Component" access="GLOBAL" Description="Create user settings structure for managing the standard fields and showing them. E.g in General Information, show and hide its standard fields and whole General Information section."/>
+    <aura:attribute name="permissionSetList" type="List" Description="Showing list of permission of an particular user in permission section."/>
+    <aura:attribute name="instanceDataList" type="List" Description="Maintain same organization and user list which have not selected multiple time in other user information block for comparison."/>
+    <aura:attribute name="orgIdForLH" type="String" Description="Use organization id for fetching a login history."/>
+    <aura:attribute name="userIdForLH" type="String" Description="Use user id for fetching a login history of particular user of an organization."/>
+    <aura:attribute name="userNameForLH" type="String" Description="Use user Name for showing on login history component."/>
+    <aura:attribute name="apiUserNameForLH" type="String" Description="Use user api Name for showing on login history component."/>
+    <aura:attribute name="userIdForReset" type="String" Description="Use user id for reset password."/>
+    <aura:attribute name="orgIdForReset" type="String" Description="Use organization id for reset password."/>
+    <aura:attribute name="randomNoForReset" type="String" Description="Managing reset password button click using unique no."/>
+    <aura:attribute name="userCommonId" type="String" default="user_id___" Description="Uniquely manage the whole user module structure."/>
+    <aura:attribute name="manageIndex" type="List" Description="Manage index for getting user name in auto complete."/>
+    <!--Register Events-->
+    <aura:registerEvent name="SetUserTemplate" type="stivadmn:SetUserTemplate" Description="Create user standard fields and structure using json format data after edit,search,toggle and setting action. E.g. General Information section and its standard field like user name etc. "/>
+    <aura:registerEvent name="differenceRow" type="stivadmn:differenceRow" Description="Show difference in multiple organizations users fields. E.g user name,User role,profile etc."/>
+    <aura:registerEvent name="DisabledSreenButtonEvent" type="stivadmn:DisabledSreenButtonEvent" Description="Disable all input when performing some action."/>
+    <aura:registerEvent name="QuickSearch" type="stivadmn:QuickSearch" Description="Search standard fields in user information section and generate searchable data. E.g. search user name in General information saction."/>
+    <aura:registerEvent name="SetModuleTemplate" type="stivadmn:SetModuleTemplate" Description="Send json format data for creating user standard fields details and user information section in user information block. E.g. User name and General information saction."/>
+    <aura:registerEvent name="UserInfoEvent" type="stivadmn:UserInfoEvent" Description="Passing user detail for getting the user information."/>
+    <aura:registerEvent name="AdjustInfoBlock" type="stivadmn:AdjustInfoBlock" Description="Before and after adding or deleting user information component, maintain the size of user information blocks(component). E.g. UserInfo component."/>
+    <aura:registerEvent name="rowHeightEvent" type="stivadmn:rowHeightEvent" Description="Maintain the standard fields row height."/>
+    <aura:registerEvent name="RefreshCloneUser" type="stivadmn:RefreshCloneUser" Description="Clone the particular user information and showing cloned data with new user information."/>
+    <aura:registerEvent name="SetPermissionSetListInUserInfo" type="stivadmn:SetPermissionSetListInUserInfo" Description="Showing particular user permission set in permission set section of user information block."/>
+    <aura:registerEvent name="SaveNewSetting" type="stivadmn:SaveNewSetting" Description="Save user setting and reflect in user information block(component)." />
+    <aura:registerEvent name="handleError" type="stivadmn:handleError" Description="Handle error which is getting from server."/>
+    
+    <!--Events Handler-->
+    <aura:handler event="stivadmn:GetSettingTemplateData" action="{!c.getModuleTemplate}" Description="Change in user setting and showing reflection in user information structure."/>
+    <aura:handler name="deleteUserCmpEvent" event="stivadmn:deleteUserCmpEvent" action="{!c.deleteUserCmp}" Description="Delete user information block."/>
+    <!--<aura:handler name="IsUserTemplateBlank" event="c:IsUserTemplateBlank" action="{!c.setUserTemplate}" Description="Put json format data in userTemplate attribute if they are blank for making a user information structure."/>-->
+    <aura:handler event="stivadmn:GetQuickSearchTemplate" action="{!c.getQuickSearchTemplate}" Description="Searching the user standard fields. E.g user name,user role etc."/>
+    <aura:handler name="setPermissionSetList" event="stivadmn:setPermissionSetList" action="{!c.setPermissionSetInList}" Description="View permission set of particular user in user information section(Permission Set section)."/>
+    <aura:handler name="UpdateInstaceDataList" event="stivadmn:UpdateInstaceDataList" action="{!c.setUpdateInstanceList}" Description="Update organizations and users name list if they have already selected multiple time in other user information block for comparison."/>
+    <aura:handler name="ResetInstanceDataList" event="stivadmn:ResetInstanceDataList" action="{!c.resetInstanceList}" Description="Reset organizations and users list if they have already selected multiple time in other user information block for comparison."/>
+    <aura:handler name="PutCloneUserEvent" event="stivadmn:PutCloneUserEvent" action="{!c.getCloneUser}" Description="Showing cloned user information."/>
+    <aura:handler name="getPermissionSetList" event="stivadmn:getPermissionSetList" action="{!c.getPermissionSetListUser}" Description="Showing permission set name of particular user in user information structure." />
+    <aura:handler name="getLoginHistroyEvent" event="stivadmn:getLoginHistroyEvent" action="{!c.getLoginHistroy}" Description="Showing login history of particular user."/>
+    <aura:handler name="resetPasswordEvent" event="stivadmn:resetPasswordEvent" action="{!c.setResetPassword}" Description="Going user for reset password."/>
+    <div class="slds-grid userModule" id="User-info-section">
+       <div class="slds-size--1-of-4 slds-col-rule--right ">
+            <div class="usersectionWp sectionWp slds-col-rule--bottom" >
+                <div class="sectionHeader c-padding">
+                    <section class="slds-clearfix">
+                        <div class="slds-float--left">
+                            <div class="slds-media">
+                                <div class="slds-media__figure">
+                                    <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/standard-sprite/svg/symbols.svg#user" category="standard " size="medium" name="user" class="slds-icon icon__svg slds-icon-standard-relationship"/>
+                                </div>
+                                <div class="slds-media__body">
+                                    <div class="slds-col slds-has-flexi-truncate">
+                                        <p class="slds-text-heading--label">COMPARE</p>
+                                        <p class="slds-truncate" >Users</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-float--right">
+                            <button type="button" onclick="{!c.userModuleSetting}" aria-haspopup="true" class="slds-button slds-button--icon-border-filled slds-button--icon-small local-setting-cls" title="Settings">
+                                <stivadmn:adminifiedIcons class="slds-button__icon" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#settings" />
+                                <span class="slds-assistive-text">Settings</span></button>
+                        </div>
+                    </section>   
+                    <form class="slds-form--stacked">
+                        <div  style="margin-top: 0.5rem;"  class="slds-form-element">
+                            <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--left"> 
+                                <stivadmn:adminifiedIcons class="slds-input__icon" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#search" />
+                                <input id="user_search" class="slds-input slds-input--small search-fields" type="text" aria-autocomplete="list" role="combobox" aria-expanded="true" onkeyup="{!c.userFieldSearch}" aria-activedescendant="" placeholder="Search" />
+                            </div>
+                        </div>
+                        <div class="slds-form-element">
+                            <label for="showHide" class="slds-checkbox" style="display:inline-block">
+                                <input id="showHide" name="checkbox" type="checkbox" onclick="{!c.hideDiffrences}" />
+                                <span class="slds-checkbox--faux"></span><span class="slds-form-element__label">Show differences</span></label>
+                         <label for="showOnlyUserDiff" class="slds-checkbox" style="display:inline-block">
+                                <input id="showOnlyUserDiff" name="checkbox" type="checkbox" onclick="{!c.showDiffrences}" />
+                                <span class="slds-checkbox--faux"></span><span class="slds-form-element__label">Show only differences</span></label>
+                        
+                        </div>
+                        <!--show only difference-->
+                        
+                        <!--show only difference-->
+                    </form>   
+                </div>   
+            </div>
+            <div id="appendDiv" class="srollbarNone dataScroll userscroll scr2"> </div> 
+        </div>
+        <!--<stivadmn:UserInfo aura:id="UserInfo"/>-->
+        
+        {!v.userBody}
+        
+        <div class="addMoreUserBtn"><button  aura:id="addcomponent" onclick="{!c.addComponent}" class="slds-button slds-button--brand slds-button--small compare-btn" ><stivadmn:adminifiedIcons class="slds-button__icon slds-button__icon--left" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#add" /> Add to Compare</button></div>
+        
+        <div aura:id="UserSettingwrapper-div"></div>
+    </div>
+    <div class="slds">
+        <div class="slds-form-element__control">
+        </div>
+        <div  class="model-append-remove localUserSetting" style="Display:none">
+            <div aria-hidden="true" role="dialog" class="slds-modal slds-fade-in-open model-close">
+                <div class="slds-modal__container">
+                    <div class="slds-modal__header" style="padding-bottom:0.5rem;">
+                        <section class="slds-float--center">
+                            <div class="slds-float--left">
+                                <div class="slds-media" >
+                                    <div class="slds-media__figure"> <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/custom-sprite/svg/symbols.svg#custom67" category="custom" size="medium" name="custom67" class="slds-icon icon__svg slds-icon-standard-relationship"/></div>
+                                    <div align="left" class="slds-media__body">
+                                        <h1 class="modelMainHeaderClass" style=""><b>Setting</b></h1>
+                                        <h2 class="modulesubHdrClass">User</h2>
+                                    </div>
+                                </div> 
+                            </div>
+                            <div class="slds-float--right">
+                                <button class="slds-button slds-button--icon-inverse slds-modal__close close-model-User close-model-User-icon">
+                                    <stivadmn:adminifiedIcons class="slds-button__icon slds-button__icon--large" svgPath="/resource/stivadmn__SLDS0120/assets/icons/action-sprite/svg/symbols.svg#close" /> 
+                                    <span class="slds-assistive-text">Close</span> </button>
+                            </div>
+                        </section>
+                    </div>
+                    {!v.adminifiedUserSettingDiv}
+                    <div class="slds-modal__footer ">
+                        <button class="slds-button slds-button--neutral close-model-User" onclick="{!c.cancelUserSetting}">Cancel</button>
+                        <span class="slds-p-horizontal--medium">
+                            <button class="slds-button slds-button--brand save-btn save-btn-User " type="button" onclick="{!c.saveUserSetting}">Save</button></span>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-modal-backdrop slds-modal-backdrop--open"></div>
+        </div>
+    </div>   
+    <div class="LoginHistorySection" style="display:none">
+        <div class="slds-modal slds-fade-in-open slds-modal--large custom-modal" aria-hidden="false" role="dialog">
+            <div class="slds-modal__container">
+                <div class="slds-modal__header" >
+                    <section class="slds-float--center">
+                        <div class="slds-float--left">
+                            <div class="slds-media" >
+                                <div class="slds-media__figure"><stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/standard-sprite/svg/symbols.svg#recent" category="" size="large" name="hierarchy" class="slds-icon icon__svg slds-icon-standard-relationship"/></div>
+                                <div align="left" class="slds-media__body">
+                                    <div ><b>Login History</b></div>
+                                    <div class="org-name"></div>
+                                    <div class="org-user-name"></div>
+                                </div>
+                            </div> 
+                        </div>
+                        <div class="slds-float--right">
+                            <button class="slds-button slds-button--icon-inverse slds-modal__close close-login-history-btn" onclick="{!c.closeLoginHistoryComponent}" disabled="disabled">
+                                <stivadmn:adminifiedIcons class="slds-button__icon slds-button__icon--large" svgPath="/resource/stivadmn__SLDS0120/assets/icons/action-sprite/svg/symbols.svg#close" /> 
+                                <span class="slds-assistive-text">Close</span> </button>
+                        </div>
+                    </section>
+                </div>
+                <div class="slds-modal__content slds-p-around--medium Field_Dpendencies_model-close-cls" style="overflow: auto;">
+                    <div class="LoginHistorySectionArea">
+                        <div align="center" class="LoginHistorySectionLoader">
+                            <div class=" slds-container--center slds-spinner--small dataLoader" style="display: inline;"><img src="/resource/stivadmn__SLDS0120/assets/images/spinners/slds_spinner_brand.gif" alt="Loading..." style="max-width: 32px; height: 32px;"/> Loading. Please wait...</div>
+                        </div>
+                        {!v.LoginHistorySectionAreaBody}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop--open"></div>
+    </div>
+    
+    
+    <div class='password-reset-success confirm-box' style="display:none">
+        <div aria-hidden="false" role="dialog" class="slds-modal slds-modal--prompt slds-fade-in-open slds-backdrop slds-backdrop--open">
+            <div class="slds-modal__container slds-modal--prompt ">
+                <div class="slds-modal__header slds-theme--success slds-theme--alert-texture" >
+                    <h2 class="slds-text-heading--medium">Change Password</h2>
+                    <button class="slds-button slds-button--icon-inverse slds-modal__close" onclick="{!c.resetCancel}">
+                        <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#close" category="utility" size="x-small" name="close" class="slds-button__icon"/>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                </div>
+                <div class="slds-modal__content" >
+                    <div>
+                        <p>New password for the following user have been sent via email. They will be required to enter a new password upon initial login to salesforce.com. </p>
+                    </div>
+                </div>
+                <div class="slds-modal__footer slds-theme--default">
+                    <button type="button" class="slds-button slds-button--neutral" onclick="{!c.successOkay}">Okay</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+    <div class='password-reset-error confirm-box' style="display:none">
+        <div aria-hidden="false" role="dialog" class="slds-modal slds-modal--prompt slds-fade-in-open slds-backdrop slds-backdrop--open">
+            <div class="slds-modal__container slds-modal--prompt ">
+                <div class="slds-modal__header slds-theme--error slds-theme--alert-texture" >
+                    <h2 class="slds-text-heading--medium">Alert</h2>
+                    <button class="slds-button slds-button--icon-inverse slds-modal__close" onclick="{!c.errorOkay}">
+                        <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#close" category="utility" size="x-small" name="close" class="slds-button__icon"/>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                </div>
+                <div class="slds-modal__content" >
+                    <div>
+                        <p><b>Error Message: </b> <span class="password-reset-error-msg"></span> </p>
+                    </div>
+                </div>
+                <div class="slds-modal__footer slds-theme--default">
+                    <button type="button" class="slds-button slds-button--neutral" onclick="{!c.errorOkay}">Okay</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class='confirm-box header-color-cls reset-password-confirm' style="display:none">
+        <div aria-hidden="false" role="dialog" class="slds-modal slds-modal--prompt slds-fade-in-open slds-backdrop slds-backdrop--open">
+            <div class="slds-modal__container slds-modal--prompt ">
+                <div class="slds-modal__header slds-theme--error slds-theme--alert-texture" >
+                    <h2 class="slds-text-heading--medium">Confirm</h2>
+                    
+                </div>
+                <div class="slds-modal__content" >
+                    <div>
+                        <p>Are you sure you want to reset password of user <b><span class="reset-user-name"></span></b>?</p>
+                    </div>
+                </div>
+                <div class="slds-modal__footer slds-theme--default">
+                    <button type="button" class="slds-button slds-button--neutral" onclick="{!c.resetCancel}">Cancel</button>&nbsp;&nbsp;
+                    <button type="button" class="slds-button slds-button--neutral slds-button--brand" onclick="{!c.resetConfirm}">Ok</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</aura:component>

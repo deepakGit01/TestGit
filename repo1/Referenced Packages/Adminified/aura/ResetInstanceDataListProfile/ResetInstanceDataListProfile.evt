@@ -1,0 +1,3 @@
+<aura:event type="COMPONENT" Description="Reset organizations and profile name in list if they have already selected multiple time in other profile information block for comparison.">
+    <aura:attribute name="instanceData" type="String" />
+</aura:event>

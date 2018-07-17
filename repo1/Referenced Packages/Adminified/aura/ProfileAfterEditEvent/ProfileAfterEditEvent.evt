@@ -1,0 +1,7 @@
+<aura:event type="COMPONENT" Description="Create profile module structure after edit in profile edit component.">
+    <aura:attribute name="afterOrgId" type="String"/>
+    <aura:attribute name="afterProfileId" type="String"/>
+    <aura:attribute name="randomNo" type="String"/>
+    <aura:attribute name="afterFlag" type="Boolean"/>
+    <aura:attribute name="index" type="Integer"/>
+</aura:event>

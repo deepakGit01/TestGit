@@ -1,0 +1,20 @@
+<apex:page standardController="Flosum__Snapshot__c" extensions="Flosum.SnapshotDeleteExtension" action="{!redirectToParent}">
+	<apex:pagemessages id="msg"/>
+	<apex:pageBlock >
+		<apex:pageBlockSection >
+			<apex:outputField value="{!Flosum__Snapshot__c.Name}"/>
+			<apex:outputField value="{!Flosum__Snapshot__c.Flosum__Organisation__c}"/>
+			<apex:outputField value="{!Flosum__Snapshot__c.Flosum__No_of_Metadata_Items__c}"/>
+			<apex:outputField value="{!Flosum__Snapshot__c.Flosum__No_of_Apex_Classes__c}"/>
+			<apex:outputField value="{!Flosum__Snapshot__c.Flosum__No_of_Apex_Pages__c}"/>
+			<apex:outputField value="{!Flosum__Snapshot__c.Flosum__No_of_Apex_Triggers__c}"/>
+			<apex:outputField value="{!Flosum__Snapshot__c.Flosum__No_of_Custom_Labels__c}"/>
+			<apex:outputField value="{!Flosum__Snapshot__c.Flosum__No_of_Custom_Objects__c}"/>
+			<apex:outputField value="{!Flosum__Snapshot__c.Flosum__No_of_Groups__c}"/>
+			<apex:outputField value="{!Flosum__Snapshot__c.Flosum__No_of_Record_Types__c}"/>
+			<apex:outputField value="{!Flosum__Snapshot__c.Flosum__No_of_Reports__c}"/>
+			<apex:outputField value="{!Flosum__Snapshot__c.Flosum__No_of_Workflow_Rules__c}"/>
+			<apex:outputField value="{!Flosum__Snapshot__c.Flosum__Other_Metadata_Items__c}"/>
+		</apex:pageBlockSection>
+	</apex:pageBlock>
+</apex:page>

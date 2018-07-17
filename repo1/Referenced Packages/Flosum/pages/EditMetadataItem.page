@@ -1,0 +1,3 @@
+<apex:page standardController="Flosum__Metadata_Item__c">
+<h1>You can't edit a metadata Item record.</h1>
+</apex:page>

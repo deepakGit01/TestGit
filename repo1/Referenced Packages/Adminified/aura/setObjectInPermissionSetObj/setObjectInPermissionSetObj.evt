@@ -1,0 +1,4 @@
+<aura:event type="COMPONENT" Description="Set all object in object section of particular permission set information block.">
+    <aura:attribute name="objList" type="List"/>
+    <aura:attribute name="index" type="Integer"/>
+</aura:event>

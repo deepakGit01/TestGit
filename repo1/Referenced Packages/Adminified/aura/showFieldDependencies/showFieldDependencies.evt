@@ -1,0 +1,7 @@
+<aura:event type="COMPONENT" Description="Create structure for object dependency component">
+    <aura:attribute name="orgNameArray" type="Object"/>
+    <aura:attribute name="objNameMap" type="Object"/>
+    <aura:attribute name="objName" type="String"/>
+    <aura:attribute name="objLabel" type="String"/>
+    <aura:attribute name="objList" type="Object"/>
+</aura:event>

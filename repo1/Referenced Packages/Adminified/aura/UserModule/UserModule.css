@@ -1,0 +1,43 @@
+.THIS .addMoreUserBtn{
+    position:absolute;
+    right:20px;
+   	top:2.5rem
+}
+.THIS .display_block{
+    display:block;
+}
+.THIS .display_none{
+    display:none;
+}
+
+
+.THIS .hide-row{
+     display:none;
+}
+
+.THIS .toggle-cls{
+    display:none;
+}
+.THIS .toggle-section-panel{
+    display:none;
+}
+.THIS .toggle-section{cursor:pointer; background-color: #eef1f6;box-shadow: #d8dde6 0 -1px 0 inset;}
+.THIS .section-field-hide{display:none}
+
+.THIS .Displaynone{
+   Display:none;
+}
+.THIS .Display-Block{
+    display:block;
+}
+
+.THIS .slds-form-element .slds-checkbox [type="checkbox"] ~ .slds-checkbox--faux {
+    margin-right: 0.5rem;
+}
+
+.THIS .custom-chekbox{
+    display:table!important;
+}
+.THIS .custom-chekbox .slds-form-element__label{
+   display:table-cell!important;
+}

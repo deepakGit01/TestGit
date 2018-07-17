@@ -1,0 +1,72 @@
+<apex:page controller="Flosum.AppSettingController" action="{!settingAction}">
+ <style>
+	.labestyle{
+	font-size: 91%;
+	font-weight: bold;
+	color: #333;
+	float: left;
+	margin-left: -2%;
+	padding-left:1%;
+	margin-left: -22px;
+	}
+ </style>
+ <style>
+	 .secret
+	 {
+		width: 82%;
+		float: right;
+	 }
+ </style>  
+ 	<apex:pagemessages id="msg"/>
+    <apex:form >
+        <apex:pageBlock >
+            <apex:pageBlockbuttons location="top">
+                <apex:commandbutton value="Save" action="{!Save}"/>
+                <apex:commandbutton value="Cancel" immediate="true" action="{!cancel}"/>
+            </apex:pageBlockbuttons>
+            <apex:pageBlockSection columns="1">
+                <apex:inputField value="{!cred.Flosum__ConsumerKey__c}"/>
+                <apex:outputPanel layout="block" style="padding-left: 4px;">
+                <apex:outputLabel value="{!$ObjectType.Flosum__Credentials__c.fields.Flosum__ConsumerSecret__c.Label}" styleClass="labelCol labestyle "/>
+                <apex:outputPanel layout="block" styleClass="requiredInput secret" >
+                 <apex:outputPanel layout="block" styleClass="requiredBlock"></apex:outputPanel>
+		               <apex:inputsecret value="{!cred.Flosum__ConsumerSecret__c}" required="true"/>
+                </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+        </apex:pageBlock>  
+     </apex:form>
+         <apex:form >
+	         <apex:pageBlock title="Build Organization">
+	        	<apex:pageBlockSection columns="1">
+	        		<apex:inputField value="{!metaLog.Flosum__Organisation__c}"/>
+	        		<apex:pageBlockSectionItem >
+			        	<apex:outputLabel value="Run Test" />
+						<apex:selectList size="1" value="{!selectedRunTest}">
+			                <apex:selectOptions value="{!runTestOption}"/>
+			            </apex:selectList>
+			        </apex:pageBlockSectionItem>
+	        	</apex:pageBlockSection>
+	        	<apex:pageBlockbuttons location="top">
+	            	<apex:commandbutton value="Save" reRender="msg" action="{!savePrimaryOrg}"/>
+	        	</apex:pageBlockbuttons>
+	         </apex:pageBlock>
+             <apex:pageBlock rendered="{!leftOptionList.size != 0 || rightOptionList.size != 0}">
+            	<apex:pageBlockSection columns="1" title="Select metadata types to retrieve" collapsible="false">
+            	    <apex:pageBlockSectionItem >
+		           		<apex:outputpanel id="picklist" layout="block">
+			            	<c:MultiSelectComponent leftLabel="Available Metadata"
+				                leftOption="{!leftOptionList}"
+				                rightLabel="Selected Metadata"
+				                rightOption="{!rightOptionList}"
+				                size="10"
+				                width="150px"/>
+		            	</apex:Outputpanel>
+	            	</apex:pageBlockSectionItem>
+		            <apex:pageBlockSectionItem >
+		                <apex:commandButton value="Save" action="{!saveCustomSetting}" rerender="picklist,msg"/>
+		            </apex:pageBlockSectionItem>
+            	</apex:pageBlockSection>
+        	</apex:pageBlock>
+    </apex:form>
+</apex:page>

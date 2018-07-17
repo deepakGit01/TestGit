@@ -1,0 +1,28 @@
+<aura:component controller="stivadmn.ProfileModuleController">
+    <ltng:require styles="/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.css,/resource/stivadmn__AdminifiedStaticResource/smoothness/jquery-ui.css" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js,/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.js,/resource/stivadmn__AdminifiedStaticResource/jquery.blockUI.js" afterScriptsLoaded="{!c.documentReady}" />
+    <aura:attribute name="orgNameArrayData" type="Object" access="GLOBAL" Description="Holds the array of organization details."/>
+    <aura:attribute name="fieldName" type="String" access="GLOBAL"/>
+    <aura:attribute name="objList" type="Object" access="GLOBAL" Description="Holds the object list."/>
+    <aura:attribute name="objNameMap" type="Object" access="GLOBAL" Description="Holds the map of objects details."/>
+    <aura:attribute name="objName" type="String" access="GLOBAL" Description="Hold the object name."/>
+    <aura:attribute name="objectDependentData" type="Object" access="GLOBAL" Description="Holds the object dependent data which is getting from server."/>
+    <aura:attribute name="tempdata" type="String" access="GLOBAL" Description="Store json format data for checking condition."/>
+    
+    <aura:handler event="stivadmn:showfillDataINFieldDependentModule" action="{!c.showfillDataINFieldDependentModule}" Description="Showing object dependent data in FieldDependentModule."/>
+    <!--Field Depend-->
+    <div id="fieldDependentModule">
+        <div class="slds-notify slds-notify--alert slds-theme--alert-texture slds-theme--error errorobjDepend" style="display:none" role="alert">
+               <span class="slds-assistive-text">Error</span>
+                <button class="slds-button slds-notify__close slds-button--icon-inverse" title="Close" onclick="{!c.close}">
+                    <stivadmn:adminifiedIcons class="slds-button__icon" svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#close" />
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <div class="slds-notify__content slds-grid">
+                    <div class="slds-col slds-align-middle">
+                        <h2><div class="showErrorobjDepend"></div></h2>
+                    </div>
+                </div>
+          </div>
+        <div class="fieldLevelDpendenciesBody"></div>
+    </div>
+</aura:component>

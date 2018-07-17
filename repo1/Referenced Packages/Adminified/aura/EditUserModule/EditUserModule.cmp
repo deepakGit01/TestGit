@@ -1,0 +1,107 @@
+<aura:component controller="stivadmn.UserModuleController">
+    <ltng:require scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js" afterScriptsLoaded="{!c.documentReady}" />
+    
+    <!--Attributes -->
+    <aura:attribute name="userTemplateData" type="Object" Description="Holds the user structure data in json format. E.g. General information."/>
+    <aura:attribute name="userMeta" type="Object" Description="Holds data, in json format, which is used while creating structure for edit user module. E.g. General Information section and it's standard fields."/>
+    <aura:attribute name="userInfo" type="Object" Description="Holds organization detail like user name,organization id."/>
+    <aura:attribute name="userData" type="Object" Description="Holds the user information in json format."/>
+    <aura:attribute name="randomNumber" type="Integer" Description="Unique number for identifying the particular edit user module."/>
+    <aura:attribute name="strUserName" type="String" Description="Showing user name in edit user module."/>
+    <aura:attribute name="strProfileName" type="String" Description="Showing profile name in edit user module."/>
+    <aura:attribute name="index" type="Integer" Description="Maintain user information block indexing."/>
+    <aura:attribute name="flag" type="Boolean" default="false" Description="Set flag for showing edit message."/>
+    <aura:attribute name="userRoles" type="Object" Description="It holds the all User Roles of specific organization."/>
+    <aura:attribute name="UserLicenses" type="Object" Description="It holds the all User Licenses of specific organization."/>
+    <aura:attribute name="holdEmail" type="String" Description="It holds the User Email Id for checking changes in Email."/>
+    <aura:attribute name="userProfileList" type="Object" Description="It holds the User Profile On the basics of user license."/>
+    <aura:attribute name="setFlg" type="Boolean" Default="false" Description="Hold the select change action."/>
+    <!--Register Events -->
+    <aura:registerEvent name="AfterEditUserEvent" type="stivadmn:AfterEditUserEvent" Description="Holds editable user detail."/>
+    <aura:registerEvent name="handleError" type="stivadmn:handleError"  Description="Handle error which is getting from server."/>
+    <aura:registerEvent name="DisabledSreenButtonEvent" type="stivadmn:DisabledSreenButtonEvent" Description="Disable all input when performing some action."/>
+    
+    
+    <!--Handler -->
+    <div class="{!'slds-modal-backdrop slds-modal-backdrop--open edit-user-layer-'+v.randomNumber}" style="display:none"></div>
+    <div class="{!'slds edit_section slds-is-fixed edit-user-'+v.randomNumber}" id="remove_cmp" style="display:none;">
+        <div class="custom-slds">
+            <div class="layer edit-loader" style="display:none"><div class="slds-form-element__control slds-text-align--center" align="center" ><span class="slds-avatar slds-avatar--large"><img src="/resource/stivadmn__SLDS0120/assets/images/spinners/slds_spinner_brand.gif" alt="Loading data" /></span></div></div>
+            <div class="slds-popover" role="dialog">
+                
+                <div class="slds-popover__content">
+                    
+                    <div class="slds-popover__header" style="background-color: #f4f6f9;border-bottom: 2px solid #d8dde6;">
+                        <section class="slds-clearfix">
+                            <div class="slds-float--left">
+                                <div class="slds-media" >
+                                    <div class="slds-media__figure"> <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__SLDS0120/assets/icons/action-sprite/svg/symbols.svg#edit" category="action" size="small" name="edit" class="slds-icon icon__svg slds-icon-action-edit slds-p-around_none"/></div>
+                                    <div class="slds-media__body">
+                                        <div class="slds-grid">
+                                            <h1 class="slds-text-heading--medium slds-m-right--small slds-truncate slds-align-middle">Edit: <span class="edit-user-name">{!v.strUserName}</span></h1>
+                                        </div>
+                                        <p class="slds-text-heading--label"><span class="edit-profile">{!v.strProfileName}</span></p>
+                                    </div>
+                                </div>
+                                
+                                
+                            </div>
+                            <div class="slds-float--right">
+                                <button class="slds-button slds-button--icon-bare for-disable" onclick="{!c.closeEdit}" type="button">
+                                    <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#close" category="utility" size="x-small" name="close" class="slds-button__icon"/>
+                                    <span class="slds-assistive-text">close</span>
+                                </button>
+                            </div>
+                        </section>
+                    </div>
+                    <div class="slds-popover__body loader-cls">
+                        <div class="slds-notify slds-notify--alert slds-theme--alert-texture alert-edit" style="display:none" role="alert">
+                            <span class="slds-assistive-text">Info</span>
+                            <h2><div class="edit-response"></div></h2>
+                        </div> 
+                        <div class="slds-scrollable--y">
+                            
+                            <table class="{!'slds-table slds-table--bordered slds-max-medium-table--stacked slds-table--bordered addRow-edit edit-table-'+v.randomNumber}" style=" border-left: 1px solid #D8DDE6;  border-right: 1px solid #D8DDE6;">
+                                
+                            </table>
+                            
+                        </div>
+                    </div>
+                    
+                    <div class="slds-popover__header slds-modal__footer">
+                        <button type="button" class="slds-button slds-button--neutral resetBtn for-disable" onclick="{!c.reset}" >Reset</button> &nbsp;&nbsp;
+                        <button type="button" class="slds-button slds-button--neutral slds-button--brand for-disable save-btn editBtn" onclick="{!c.save}" >Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class='confirm-box header-color-cls edit-user-confirm' style="display:none">
+            <div aria-hidden="false" role="dialog" class="slds-modal slds-modal--prompt slds-fade-in-open">
+                <div class="slds-modal__container slds-modal--prompt">
+                    <div class="slds-modal__header slds-theme--error slds-theme--alert-texture" >
+                        <h2 class="slds-text-heading--medium">Confirm</h2>
+                        
+                    </div>
+                    <div class="slds-modal__content" >
+                        <div>
+                            <p>Are you sure you want to edit <b><span class="edit-user-name">{!v.strUserName}</span></b>?</p>
+                            <div class="showMsgForEmail" style="display:none;">
+                                <br/>
+                                <p >To ensure system security, the owner of the new email address must verify this change.</p>
+                                <br/>
+                                <p>When you click Ok, an email will be sent to the specified address with direction on confirming change.</p>
+                                <br/>
+                                <p>Click cancel if you do not want to make this change.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-modal__footer slds-theme--default">
+                        <button type="button" class="slds-button slds-button--neutral" onclick="{!c.cancel}">Cancel</button>&nbsp;&nbsp;
+                        <button type="button" class="slds-button slds-button--neutral slds-button--brand" onclick="{!c.confirm}">Ok</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</aura:component>

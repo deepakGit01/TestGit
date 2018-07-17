@@ -1,0 +1,6 @@
+<aura:event type="COMPONENT" Description="Before and after adding or deleting information component, maintain the size of information blocks(component). E.g. UserInfo component.">
+    <aura:attribute name="colSizeName" type="String"/>
+    <aura:attribute name="buttonName" type="String"/>
+    <aura:attribute name="moduleName" type="String"/>
+    <aura:attribute name="eventName" type="String"/>
+</aura:event>

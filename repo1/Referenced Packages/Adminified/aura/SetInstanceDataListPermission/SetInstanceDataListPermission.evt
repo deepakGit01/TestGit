@@ -1,0 +1,8 @@
+<aura:event type="COMPONENT" Description="Set organizations and permission set name in list if they have already selected multiple time in other permission set information block for comparison." >
+    <aura:attribute name="instanceData" type="String" />
+    <aura:attribute name="randomNo" type="String" />
+    <aura:attribute name="permissionId" type="String" />
+    <aura:attribute name="index" type="String" />
+    <aura:attribute name="orgId" type="String" />
+    <aura:attribute name="permissionName" type="String" />
+</aura:event>

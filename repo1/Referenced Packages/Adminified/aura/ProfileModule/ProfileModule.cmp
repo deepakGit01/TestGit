@@ -1,0 +1,366 @@
+<aura:component controller="stivadmn.ProfileModuleController">
+    <ltng:require styles="/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.css,/resource/stivadmn__AdminifiedStaticResource/smoothness/jquery-ui.css" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js,/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.js,/resource/stivadmn__AdminifiedStaticResource/jquery.blockUI.js" afterScriptsLoaded="{!c.documentReady}" />
+    <!--Define Attributes -->
+    <aura:attribute name="profileTemplate" type="Object" access="GLOBAL" Description="Holds data, in json format, which is used while creating structure for profile module. E.g. Profile Details section and it's standard fields."/>
+    <aura:attribute name="objName" type="String" access="GLOBAL"/>
+    <aura:attribute name="whichFieldependencies" type="String"/>
+    <aura:attribute name="objListForDependency" type="Object" Description="Holds the list of objects for showing the object dependencies of particular profile." />
+    <aura:attribute name="objNameMap" type="Object" access="GLOBAL" Description="Holds the map of objects details."/>
+    <aura:attribute name="orgNameArrayData" type="Object" access="GLOBAL" Description="Holds the array of organization details."/>
+    <aura:attribute name="fieldDependenciesData" type="Object" access="GLOBAL"/>
+    <aura:attribute name="profileTemplateData" type="Object" access="GLOBAL"/>
+    <aura:attribute name="profileTemplateDataSetting" type="Object" access="GLOBAL"/>
+    <aura:attribute name="profileBody" type="Aura.Component[]" access="GLOBAL" Description="Create structure for showing information of profile info and compare them regarding to Profile Details section and it's standard fields etc."/>
+    <aura:attribute name="index" type="Integer" default="-1" Description="Maintain indexing of profile information blocks."/>
+    <aura:attribute name="profileStruct" type="Object" />
+    <aura:attribute name="adminifiedProfileSettingDiv" type="Aura.Component[]" Description="Create profile settings structure for managing the standard fields and showing them. E.g in Profile Details section, show and hide its standard fields and whole Profile Details section."/>
+    <aura:attribute name="profileInstanceList" type="List" Description="Maintain same organization and profile list which have not selected multiple time in other profile information block for comparison."/>
+    <aura:attribute name="objList" type="List" Description="Holds object list on the basics of organization and profile."/>
+    <aura:attribute name="objectStatus" type="Aura.Component[]" access="GLOBAL" Description="Create structure for showing status of object of particular profile."/>
+    <aura:attribute name="FieldDependentModuleBody" type="Aura.Component[]" access="GLOBAL" Description="Create structure for showing object dependencies of particular profile."/> 
+    <aura:attribute name="FieldLevelSecurityBody" type="Aura.Component[]" access="GLOBAL" Description="Create structure for showing object filed level security and accessibility."/> 
+    
+    <aura:attribute name="profileCommonId" type="String" default="profile_id___" Description="Uniquely manage the whole profile module structure."/> 
+     <aura:attribute name="idAttrMap" type="Map"/>
+    <!--Register Events-->
+    <aura:registerEvent name="QuickSearch" type="stivadmn:QuickSearch" Description="Search standard fields in profile information section and generate searchable data. E.g. search User License in Profile Details section."/>
+    <aura:registerEvent name="DisabledSreenButtonEvent" type="stivadmn:DisabledSreenButtonEvent" Description="Disable all input when performing some action."/>
+    <aura:registerEvent name="rowHeightEvent" type="stivadmn:rowHeightEvent" Description="Maintain the standard fields row height."/>
+    <aura:registerEvent name="differenceRow" type="stivadmn:differenceRow" Description="Show difference in multiple organizations profile fields. E.g user license,user Type etc."/>
+    <!--<aura:registerEvent name="ProfileModuleEvent" type="c:ProfileModuleEvent"/>
+    <aura:registerEvent name="getAllObjectFromObject" type="c:getAllObjectFromObject"/>-->
+    <aura:registerEvent name="AdjustInfoBlock" type="stivadmn:AdjustInfoBlock" Description="Before and after adding or deleting profile information component, maintain the size of profile information blocks(component). E.g. ProfileInfo component."/>
+    <!--<aura:registerEvent name="openFieldDependentModule" type="c:openFieldDependentModule"/>-->
+    <aura:registerEvent name="showfillDataINFieldDependentModule" type="stivadmn:showfillDataINFieldDependentModule" Description="Showing object dependent data in FieldDependentModule."/>
+    
+    <!--new-->
+    <aura:registerEvent name="ProfileInfoEvent" type="stivadmn:ProfileInfoEvent" Description="Passing profile detail for getting the profile information."/>
+    <aura:registerEvent name="SaveNewSetting" type="stivadmn:SaveNewSetting" Description="Save profile setting."/>
+    <aura:registerEvent name="SetModuleTemplate" type="stivadmn:SetModuleTemplate" Description="Send json format data for creating profile standard fields details and profile information section in profile information block. E.g. User License and profile Details saction."/>
+    <aura:registerEvent name="SetAllObjEvt" type="stivadmn:SetAllObjEvt" Description="Set object of particular profile in profile module."/>
+    <aura:registerEvent name="ObjectClose" type="stivadmn:ObjectClose" Description="Erase all object from profile module and profile information."/>
+    <aura:registerEvent name="handleError" type="stivadmn:handleError" Description="Handle error which is getting from server."/>
+    
+    
+    <!--Events Handler-->
+    <aura:handler event="stivadmn:GetSettingTemplateData" action="{!c.getProfileModuleTemplate}" Description="Get profile setting data in json format for creating a profile setting structure."/>
+    <aura:handler event="stivadmn:GetQuickSearchTemplate" action="{!c.getQuickSearchTemplate}" Description="Searching the profile standard fields. E.g user license,User Type etc."/>
+    <aura:handler name="deleteProfileCmpEvent" event="stivadmn:deleteProfileCmpEvent" action="{!c.deleteProfileCmp}" Description="Delete profile information section."/>
+    <aura:handler name="setObjectInProfileObj" event="stivadmn:setObjectInProfileObj" action="{!c.setObjInList}" Description="Set objects in profile module object list."/>
+    <aura:handler name="SetInstanceDataListProfile" event="stivadmn:SetInstanceDataListProfile" action="{!c.setInInstanceList}" Description="Set organizations and profile list if they have already selected multiple time in other profile information block for comparison."/>
+    <aura:handler name="ResetInstanceDataListProfile" event="stivadmn:ResetInstanceDataListProfile" action="{!c.resetInstanceListProfile}" Description="Reset organizations and profile list if they have already selected multiple time in other profile information block for comparison."/>
+    <aura:handler name="getAllObjectFromObject" event="stivadmn:getAllObjectFromObject" action="{!c.getObjListAll}" Description="Get object list of particular profile."/>
+    <aura:handler name="ObjectClose" event="stivadmn:ObjectClose" action="{!c.getObjListAll}" Description="Erase all object from profile module and profile information."/>
+    <aura:handler name="CreateObjectFieldStatus" event="stivadmn:CreateObjectFieldStatus" action="{!c.createObjStatusComponent}" Description="Showing object fields status of particular profile."/>
+    <aura:handler name="CreateFieldLevelAccessible" event="stivadmn:CreateFieldLevelAccessible" action="{!c.createFieldLevelAccessibilityComponent}" Description="Create structure for object field levell accessibility component"/>
+    <aura:handler name="showFieldDependencies" event="stivadmn:showFieldDependencies" action="{!c.showFieldDependencies}" Description="Create structure for object dependency component"/>
+    <aura:handler name="showObjDependOnChngObj" event="stivadmn:showObjDependOnChngObj" action="{!c.showObjDependOnChngObj}"/>
+    <aura:handler name="setAttrIdInEditList" event="stivadmn:setAttrIdInEditList" action="{!c.getSetAttrIdInEditList}"/>
+    
+    
+    
+    
+    <div class="slds-grid profile-section" style="" id="profile-info-section">
+        <div class="slds-size--1-of-4 slds-col-rule--right ">
+            <div class="profilesectionWp sectionWp slds-col-rule--bottom">
+                <div class="sectionHeader c-padding ">
+                    <section class="slds-clearfix">
+                        <div class="slds-float--left">
+                            <div class="slds-media">
+                                <div class="slds-media__figure profile-Heading-icon">
+                                    
+                                </div>
+                                <div class="slds-media__body">
+                                    <div class="slds-col slds-has-flexi-truncate">
+                                        <p class="slds-text-heading--label">COMPARE</p>
+                                        <p class="slds-truncate" >Profiles</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-float--right">
+                            <button type="button" onclick="{!c.settingLocal}" aria-haspopup="true" title="Settings" class="slds-button slds-button--icon-border-filled slds-button--icon-small local-setting-cls">
+                                <stivadmn:adminifiedIcons class="slds-button__icon" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#settings" />
+                                <span class="slds-assistive-text">Settings</span></button>
+                        </div>
+                    </section>   
+                    <form class="slds-form--stacked">
+                        <div  style="margin-top: 0.5rem;"  class="slds-form-element">
+                            <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--left"> 
+                                <stivadmn:adminifiedIcons class="slds-input__icon" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#search" />
+                                <input id="profile_search" class="slds-input slds-input--small search-fields" type="text" aria-autocomplete="list" role="combobox" aria-expanded="true" aria-activedescendant="" placeholder="Search" onkeyup="{!c.profileSearchField}"/>
+                            </div>
+                        </div>
+                        
+                        <div class="slds-form-element">
+                            <label for="showHideProfileDiff" class="slds-checkbox" style="display:inline-block">
+                                <input id="showHideProfileDiff" name="showHideProfileDiff" type="checkbox" onclick="{!c.profileDiffrences}"/>
+                                <span class="slds-checkbox--faux"></span><span class="slds-form-element__label">Show differences</span></label>
+                            <label for="showOnlyProfileDiff" class="slds-checkbox" style="display:inline-block">
+                                <input id="showOnlyProfileDiff" name="showOnlyProfileDiff" type="checkbox" onclick="{!c.showOnlyProfileDiff}"/>
+                                <span class="slds-checkbox--faux"></span><span class="slds-form-element__label">Show only differences</span></label>
+                        </div>
+                    </form>   
+                </div>   
+            </div>
+            <div id="ProfileSectionDiv" class="srollbarNone profilescroll dataScroll scr2"> </div>
+            <div aura:id="setting-div"></div>
+            
+        </div>
+        {!v.profileBody}
+        
+        <div class="addMoreProfileBtn"><button aura:id="addcomponent" onclick="{!c.addComponent}" class="slds-button slds-button--brand slds-button--small compare-btn" ><stivadmn:adminifiedIcons class="slds-button__icon slds-button__icon--left" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#add" /> Add to Compare</button></div>
+    </div>
+    <div class="prof_setting_cls" >
+        <div  class="model-append-remove localProfileSetting" style="Display:none;">
+            <div aria-hidden="true" role="dialog" class="slds-modal slds-fade-in-open model-close">
+                <div class="slds-modal__container">
+                    <div class="slds-modal__header" style="padding-bottom:0.5rem;">
+                        <section class="slds-float--center">
+                            <div class="slds-float--left">
+                                <div class="slds-media" >
+                                    <div class="slds-media__figure"> <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/custom-sprite/svg/symbols.svg#custom67" category="custom" size="medium" name="custom67" class="slds-icon icon__svg slds-icon-standard-relationship"/></div>
+                                    <div align="left" class="slds-media__body">
+                                        <h1 class="modelMainHeaderClass" style=""><b>Setting</b></h1>
+                                        <h2 class="modulesubHdrClass">Profile</h2>
+                                    </div>
+                                </div> 
+                            </div>
+                            <div class="slds-float--right">
+                                <button class="slds-button slds-button--icon-inverse slds-modal__close close-model-Profile close-model-Profile-icon">
+                                    <stivadmn:adminifiedIcons class="slds-button__icon slds-button__icon--large" svgPath="/resource/stivadmn__SLDS0120/assets/icons/action-sprite/svg/symbols.svg#close" /> 
+                                    <span class="slds-assistive-text">Close</span> </button>
+                            </div>
+                        </section>
+                    </div>
+                    {!v.adminifiedProfileSettingDiv}
+                    <div class="slds-modal__footer ">
+                        <button class="slds-button slds-button--neutral close-model-Profile" onclick="{!c.cancel}">Cancel</button>
+                        <span class="slds-p-horizontal--medium">
+                            <button class="slds-button slds-button--brand save-btn save-btn-Profile" onclick="{!c.save}">Save</button></span>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-modal-backdrop slds-modal-backdrop--open"></div>
+        </div>
+    </div>  
+    
+    <div class="fieldLevelSecurity" style="display:none">
+        <div class="slds-modal slds-fade-in-open slds-modal--large custom-modal" aria-hidden="false" role="dialog">
+            <div class="slds-modal__container">
+                
+                <button class="slds-button slds-button--icon-inverse slds-modal__close" onclick="{!c.closeModel}">
+                    <stivadmn:adminifiedIcons class="slds-button__icon slds-button__icon--large" svgPath="/resource/stivadmn__SLDS0120/assets/icons/action-sprite/svg/symbols.svg#close" /> 
+                    <span class="slds-assistive-text">Close</span> </button>
+                <div class="slds-page-header top-rounded" role="banner">
+                    <div class="slds-grid">
+                        <div class="slds-col slds-has-flexi-truncate">
+                            <div class="slds-media slds-media--center slds-no-space slds-grow header-view-mode">
+                                <div class="slds-media__figure header-logo-fieldlevel">   
+                                </div>
+                                <div class="slds-media__body">
+                                    <h1 class="slds-page-header__title slds-m-right--small slds-truncate slds-align-middle" title="Field Level Accessibility">Field Level Accessibility</h1>
+                                </div>
+                            </div>
+                            <div class="slds-media slds-media--center slds-no-space slds-grow header-edit-mode" style="display:none;">
+                                <div class="slds-media__figure header-logo-edit-fieldlevel">   
+                                    <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/action-sprite/svg/symbols.svg#edit" category="action" size="small" name="edit" class="slds-icon slds-icon--small"/>
+                                </div>
+                                <div class="slds-media__body">
+                                    <h1 class="slds-page-header__title slds-m-right--small slds-truncate slds-align-middle" title="Edit Field Level Accessibility">Edit Field Level Accessibility</h1>
+                                    <p class="slds-text-heading--label org-name-which-edit"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-col slds-no-flex slds-grid slds-align-bottom">
+                            <div class="slds-form--inline">
+                                <div class="slds-form-element view-mode-layput">
+                                    <label class="slds-form-element__label" for="select-01">Layouts</label>
+                                    <div class="slds-form-element__control">
+                                        <select id="LayoutName" class="slds-select"></select>
+                                        <span class='select-loader'></span>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element"> 
+                                    <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--left"> 
+                                        <stivadmn:adminifiedIcons class="slds-input__icon" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#search" />
+                                        <input class="slds-input slds-input--small search-fields-view" aria-expanded="true" aria-autocomplete="list" type="text" role="combobox" placeholder="Search" id="view-search" aria-activedescendant=""/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-dropdown-trigger slds-dropdown-trigger--click slds-is-open" aria-expanded="true">                     
+                                <button class="slds-button slds-button--brand edit-btn-org-fieldlevelaccessible edit-btn-cls" id="field_accessible_edit">
+                                    <stivadmn:adminifiedIcons class="slds-button__icon slds-button__icon--small edit-btn-cls" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#edit_form" /> 
+                                    Edit
+                                    <stivadmn:adminifiedIcons class="slds-button__icon slds-button__icon--x-small edit-btn-cls" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#down" /> 
+                                    <span class="slds-assistive-text">More settings</span>
+                                </button>
+                                <button class="slds-button slds-button--icon-border-filled refresh-field-level-accessibility" title="Refresh">
+                                    <stivadmn:adminifiedIcons class="slds-button__icon slds-button__icon--small edit-btn-cls" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#refresh" /> 
+                                    <span class="slds-assistive-text">Refresh</span>
+                                </button>
+                                <div class="slds-dropdown slds-dropdown--right slds-nubbin--top-right open-list-of-org close-edit" style='right:2.5rem;'>
+                                    <ul class="dropdown__list field-level-accessible-edit" role="menu">
+                                        
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <ul class="slds-grid slds-page-header__detail-row slds-list--horizontal slds-has-dividers--left legend-list profileFieldLevel profilefieldlevelcls view-mode-org-legend" style="padding: 0rem 1.5rem;     border-top: 1px solid #d8dde6;">
+                        
+                    </ul>
+                    <div class="slds-notify_container field-level-accessibility-error" style="display:none;">
+                        <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+                            <span class="slds-assistive-text">Error</span>
+                            <button class="slds-button slds-notify__close slds-button--icon-inverse" title="Close" onclick="{!c.closeError}">
+                                <stivadmn:adminifiedIcons class="slds-button__icon" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#close" />
+                                <span class="slds-assistive-text">Close</span>
+                            </button>
+                            <div class="slds-notify__content slds-grid">
+                                <div class="slds-col slds-align-middle">
+                                    <h2 class="slds-text-heading--small notify-msg"> </h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-notify_container field-level-accessibility-success" style="display:none;">
+                        <div class="slds-notify slds-notify--toast slds-theme--success" role="alert">
+                            <span class="slds-assistive-text">Success</span>
+                            <button class="slds-button slds-notify__close slds-button--icon-inverse" title="Close" onclick="{!c.closeSuccess}">
+                                <stivadmn:adminifiedIcons class="slds-button__icon" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#close" />
+                                <span class="slds-assistive-text">Close</span>
+                            </button>
+                            <div class="slds-notify__content slds-grid">
+                                <div class="slds-col slds-align-middle">
+                                    <h2 class="slds-text-heading--small notify-msg"> </h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="slds-modal__content slds-p-around--medium model-close-cls" style="overflow: auto; padding: 0rem !important;">
+                    {!v.FieldLevelSecurityBody}                    
+                </div>
+                <div class="slds-modal__footer field-level-accessibility-save field-level-accessibility-footer" style="padding: 0.3rem 1rem;float:left;display:none;">
+                    <button type="button" class="slds-button slds-button--small save-field-permission button-small slds-button--brand" id="">Save</button>
+                    <button type="button" class="slds-button slds-button--small slds-button--neutral cancel-field-permission button-small" id="">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop--open"></div>
+    </div>
+    <!--Field Depend-->
+    <div class="fieldLevelDpendencies" style="display:none">
+        <div class="slds-modal slds-fade-in-open slds-modal--large custom-modal" aria-hidden="false" role="dialog">
+            <div class="slds-modal__container">
+                <button class="slds-button slds-button--icon-inverse slds-modal__close close-obj-Dpendencies-btn" onclick="{!c.closeFieldDependModel}">
+                    <stivadmn:adminifiedIcons class="slds-button__icon slds-button__icon--large" svgPath="/resource/stivadmn__SLDS0120/assets/icons/action-sprite/svg/symbols.svg#close" />
+                    <span class="slds-assistive-text">Close</span> </button>
+                <div class="slds-page-header top-rounded" role="banner">
+                    <div class="slds-grid">
+                        <div class="slds-col slds-has-flexi-truncate">
+                            <div class="slds-media slds-media--center slds-no-space slds-grow header-view-mode">
+                                <div class="slds-media__figure"><stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/standard-sprite/svg/symbols.svg#relationship" category="" size="medium" name="hierarchy" class="slds-icon icon__svg slds-icon-standard-relationship"/></div>
+                                <div class="slds-media__body">
+                                    <h1 class="slds-page-header__title slds-m-right--small slds-truncate slds-align-middle" title="Object Dependencies ">Object Dependencies </h1>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-col slds-no-flex slds-grid slds-align-bottom">
+                            <div class="slds-form--inline">
+                                <div class="slds-form-element view-mode-layput">
+                                    <label class="slds-form-element__label" for="select-object-dependent">Objects</label>
+                                    <div class="slds-form-element__control">
+                                        <select id="select-object-dependent" class="slds-select object-change-dependent-details">
+                                        </select>
+                                        <span class='select-object-dependent-loader'></span> </div>
+                                </div>
+                                <div class="slds-form-element">
+                                    <label class="slds-form-element__label" for="search-dependent-field">Search</label>
+                                    <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--left">
+                                        <stivadmn:adminifiedIcons class="slds-input__icon" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#search" />
+                                        <input class="slds-input slds-input--small search-dependent-view" aria-expanded="true" aria-autocomplete="list" type="text" role="combobox" placeholder="Search" id="search-dependent-field" aria-activedescendant=""/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-dropdown-trigger slds-dropdown-trigger--click slds-is-open" aria-expanded="true">
+                                <button type="button" class="slds-button slds-button--small slds-button--brand col-exp-btn" >Collapse All</button>
+                            </div>
+                        </div>
+                    </div>
+                    <ul class="slds-grid slds-page-header__detail-row slds-list--horizontal slds-has-dividers--left legend-list org-details org-name-for-objDependency view-mode-org-legend" style="padding: 0.5rem 1.5rem;     border-top: 1px solid #d8dde6;">
+                    </ul>
+                </div>
+                
+                <div class="slds-modal__content slds-p-around--medium Field_Dpendencies_model-close-cls">
+                    <div class="FieldDependentModuleBodyDiv">
+                        <div align="center" class="FieldDependentDataLoader">
+                            <div class=" slds-container--center slds-spinner--small dataLoader" style="display: inline;"><img src="/resource/stivadmn__SLDS0120/assets/images/spinners/slds_spinner_brand.gif" alt="Loading..." style="max-width: 32px; height: 32px;"/> Loading. Please wait...</div>
+                        </div>
+                        {!v.FieldDependentModuleBody}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop--open"></div>
+    </div>
+    
+    <div class="object-fields-status" style="display:none">
+        <div class="slds-modal slds-fade-in-open slds-modal--large custom-modal" aria-hidden="false" role="dialog">
+            <div class="slds-modal__container">
+                <button class="slds-button slds-button--icon-inverse slds-modal__close" onclick="{!c.closeFieldInfo}">
+                        <stivadmn:adminifiedIcons class="slds-button__icon slds-button__icon--large" svgPath="/resource/stivadmn__SLDS0120/assets/icons/action-sprite/svg/symbols.svg#close" />
+                        <span class="slds-assistive-text">Close</span> </button>
+                
+                    <div class="slds-page-header top-rounded" role="banner">
+                        <div class="slds-grid">
+                            <div class="slds-col slds-has-flexi-truncate">
+                                <div class="slds-media slds-media--center slds-no-space slds-grow header-view-mode">
+                                    <div class="slds-media__figure">
+                                        <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#info" category="" size="medium" name="hierarchy" class="slds-icon icon__svg slds-icon-standard-relationship"/>
+                                    </div>
+                                    <div class="slds-media__body">
+                                        <h1 class="slds-page-header__title slds-m-right--small slds-truncate slds-align-middle" title=" ">Object Used Field </h1>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-no-flex slds-grid slds-align-bottom">
+                                <div class="slds-form--inline">
+                                    <div class="slds-form-element view-mode-layput">
+                                        <label class="slds-form-element__label" for="select-object-dependent">Objects</label>
+                                        <div class="slds-form-element__control">
+                                            <select id="select-object" class="slds-select object-change-details">
+                                            </select>
+                                            <span class='select-object-loader'></span> </div>
+                                    </div>
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label" for="search-dependent-field">Search</label>
+                                        <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--left">
+                                            <stivadmn:adminifiedIcons class="slds-input__icon" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#search" />
+                                            <input class="slds-input slds-input--small search-fields-view" aria-expanded="true" aria-autocomplete="list" type="text" role="combobox" placeholder="Search" id="search-object-field" aria-activedescendant=""/>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                        <ul class="slds-grid slds-page-header__detail-row slds-list--horizontal slds-has-dividers--left legend-list org-details view-mode-org-legend" style="padding: 0.5rem 1.5rem;     border-top: 1px solid #d8dde6;">
+                        </ul>
+                        
+                    </div>
+               
+                <div class="slds-modal__content slds-p-around--medium model-close-cls">
+                    {!v.objectStatus}
+                </div>
+                <div class="slds-modal__footer header-object-status" style="padding: 0.3rem 1rem;display:none; float:left">
+                    <button type="button" class="slds-button slds-button--small slds-button--brand button-small object-used-info-loader" onclick="{!c.getUsedRowDetails}">Fetch Used Row</button>
+                </div>
+            </div>
+            
+        </div>
+        <div class="slds-backdrop slds-backdrop--open"></div>
+    </div>
+    
+</aura:component>

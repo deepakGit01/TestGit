@@ -1,0 +1,51 @@
+<apex:page doctype="HTML-5.0" standardController="Flosum__Organisation__c" extensions="Flosum.RegisterOrganizationController" sidebar="false">
+<c:Wait /> 
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+	<apex:form >
+		<apex:pagemessages id="msg_cred"/>
+		<apex:pageblock title="Add Organizations">
+
+			<apex:pageBlockSection id="creds" rendered="true" columns="1"> 
+				<apex:pageBlockSectionItem >
+					<apex:outputlabel value="{!$ObjectType.Flosum__Organisation__c.fields.Name.label}" />
+					<apex:inputField value="{!Flosum__Organisation__c.Name}"/>
+			   	</apex:pageBlockSectionItem>   
+				<apex:pageBlockSectionItem >
+					<apex:outputlabel value="{!$ObjectType.Flosum__Organisation__c.fields.Flosum__Username__c.label}" />
+				    <apex:inputField value="{!Flosum__Organisation__c.Flosum__Username__c}"/>
+				</apex:pageBlockSectionItem>
+			    <apex:pageBlockSectionItem >
+					<apex:outputlabel value="Authorization Code"/>
+				    <apex:inputsecret value="{!password}" styleclass="pkp"/>
+			    </apex:pageBlockSectionItem>
+			    <apex:pageBlockSectionItem >
+				    <apex:outputlabel value="{!$ObjectType.Flosum__Organisation__c.fields.Flosum__Organisation_Type__c.label}" />
+				    <apex:outputField value="{!Flosum__Organisation__c.Flosum__Organisation_Type__c}"/>
+			    </apex:pageBlockSectionItem>
+			    <apex:pageBlockSectionItem rendered="{!If(Flosum__Organisation__c.Flosum__Organisation_Type__c == 'Government cloud org',true,false)}">
+				    <apex:outputlabel value="{!$ObjectType.Flosum__Organisation__c.fields.Flosum__HostName__c.label}" />
+				    <apex:outputField value="{!Flosum__Organisation__c.Flosum__HostName__c}"/>
+			    </apex:pageBlockSectionItem>
+			</apex:pageBlockSection>
+			<apex:pageBlockButtons location="bottom">	    
+			    <apex:commandbutton onclick="auth(); return false;" value="Authorize" rerender="creds,msg_cred" />
+			    <apex:commandbutton action="{!cancelSave}" value="Cancel" />
+			</apex:pageBlockButtons>
+		</apex:pageblock>
+		<apex:actionfunction name="checkAndSave" action="{!updateAndSave}" rerender="creds,msg_cred" oncomplete="hide();"/>
+		<apex:actionfunction name="authorize" action="{!processLogin}" oncomplete="prompt('Copy the following link and open in other browser or in incognito mode to get autorization code', '{!JSENCODE(loginUrl)}');" rerender="msg"></apex:actionfunction> 
+	</apex:form>
+	
+	<script>
+			function auth() {
+					if($(".pkp").val() == '') {
+						authorize();
+					} else {
+						show();
+						checkAndSave();
+					}
+				return false;
+			}
+		</script>
+</apex:page>

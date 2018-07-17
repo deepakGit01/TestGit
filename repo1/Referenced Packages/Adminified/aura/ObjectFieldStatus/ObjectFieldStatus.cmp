@@ -1,0 +1,49 @@
+<aura:component controller="stivadmn.ProfileModuleController">
+    <ltng:require scripts="/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.js,/resource/stivadmn__AdminifiedStaticResource/jquery.js" afterScriptsLoaded="{!c.jsLoad}" />
+    
+    <aura:registerEvent name="handleError" type="stivadmn:handleError" Description="Handle error which is getting from server."/>
+    
+    <!--Define Attribute-->
+    <aura:attribute name="orgIdArray" type="String[]" access="GLOBAL" Description="Holds the list of organizations id."/>
+    <aura:attribute name="orgNameArr" type="String[]" access="GLOBAL" Description="Array of organization name using for fetching data."/>
+    <aura:attribute name="orgObj" type="Object" access="GLOBAL" Description=""/>
+    <aura:attribute name="objNameMap" type="Object" access="GLOBAL" Description="Holds the map of objects details."/>
+    <aura:attribute name="objectObj" type="Object" access="GLOBAL" Description="Holds list of objects."/>
+    <aura:attribute name="fieldObject" type="Object" access="GLOBAL"  Description="Holds list of fields of particular object."/>
+    <aura:attribute name="status" type="String" access="GLOBAL" Description="Check navigation status for open ObjectFieldStatus component."/>
+    <aura:attribute name="objName" type="String" access="GLOBAL" Description="Hold object name which is using in showing field status."/>
+    <aura:attribute name="colspansize" type="Integer" access="GLOBAL" default="1" Description="Manage column size."/>
+    
+    
+    <div class="section-class">
+        <table class="slds-table slds-table--bordered custom-border object-fields-status-table" style="border-top: none;">
+            <thead>
+                <tr class="slds-text-heading--label">
+                    <th class="custom-heading" scope="col">&nbsp;</th>
+                    <th class="custom-heading slds-text-align--center" scope="col">Field Label</th>
+                    <th class="custom-heading slds-text-align--center" scope="col">Field Type</th>
+                    <th class="custom-heading slds-text-align--center" scope="col" colspan="{!v.colspansize}">Used Records<span class="org-total-record" style="display:none"></span></th>
+                    <th class="custom-heading slds-text-align--center" scope="col" colspan="{!v.colspansize}">Used Records %</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+            </tbody>
+        </table>
+        <div class="slds-notify_container slds-is-fixed cls-notify" style="display:none;">
+            <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+                <span class="slds-assistive-text">Error</span>
+                <button class="slds-button slds-notify__close slds-button--icon-inverse" title="Close" onclick="{!c.close}">
+                    <stivadmn:adminifiedIcons class="slds-button__icon" svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#close" />
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <div class="slds-notify__content slds-grid">
+                    <stivadmn:adminifiedIcons class="slds-button__icon" svgPath="/resource/stivadmn__slds0120/assets/icons/utility-sprite/svg/symbols.svg#warning" />
+                    <div class="slds-col slds-align-middle">
+                        <h2 class="slds-text-heading--small notify-msg"> </h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</aura:component>

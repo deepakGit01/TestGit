@@ -1,0 +1,48 @@
+.THIS #LayoutName[disabled]{
+    background-color: #ffffff;
+    cursor: auto;
+    border-color: #d8dde6;
+}
+
+.THIS .readonly-field-access {
+    font-size: 10px;
+    text-decoration: none;
+    color: #000000;
+}
+
+.THIS .editable-field-access {
+    font-size: 10px;
+    text-decoration: none;
+    color: #009900;
+}
+
+.THIS .required-field-access {
+    font-size: 10px;
+    text-decoration: none;
+    color: #990000;
+}
+
+.THIS .hidden-field-access {
+    font-size: 10px;
+    text-decoration: none;
+    color: #999999;
+}
+.THIS .field-security{
+    padding-right: 2rem!important;
+}
+.THIS .field-accessible{
+    padding-right: 2rem!important;
+}
+.THIS .field-mapping{
+     padding-right: 2rem!important;
+}
+.THIS .field-accessible {
+    padding-right: 4rem!important;
+}
+
+.THIS .not-available-layout{
+    pointer-events: none!important;
+    cursor: default!important;
+    opacity: 0.5!important;
+    text-decoration: line-through!important;
+}

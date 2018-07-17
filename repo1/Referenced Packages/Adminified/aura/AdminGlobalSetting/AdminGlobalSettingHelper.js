@@ -1,0 +1,5 @@
+({
+	createSettingTemplate : function() {
+		
+	}
+})

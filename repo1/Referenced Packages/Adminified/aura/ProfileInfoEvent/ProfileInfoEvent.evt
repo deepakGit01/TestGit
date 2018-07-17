@@ -1,0 +1,6 @@
+<aura:event type="APPLICATION" Description="Passing profile detail for getting the profile information." >
+    <aura:attribute name="redNumber" type="Integer"/>
+    <aura:attribute name="profileId" type="String"/>
+    <aura:attribute name="index" type="Integer"/>
+    <aura:attribute name="instanceData" type="String"/>
+</aura:event>

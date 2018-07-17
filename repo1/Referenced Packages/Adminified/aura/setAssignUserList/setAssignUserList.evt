@@ -1,0 +1,4 @@
+<aura:event type="COMPONENT" description="Event template">
+	<aura:attribute name="assignUserList" type="List"/>
+    <aura:attribute name="index" type="Integer"/>    
+</aura:event>

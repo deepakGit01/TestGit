@@ -1,0 +1,2 @@
+<aura:event type="COMPONENT" Description="Get all object list of particular permission set.">
+</aura:event>

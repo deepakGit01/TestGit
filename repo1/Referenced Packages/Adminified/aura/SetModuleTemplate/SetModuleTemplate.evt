@@ -1,0 +1,4 @@
+<aura:event type="APPLICATION" Description="Send json format data for creating standard fields details and information section in information block. E.g. User name field and General information saction." >
+	<aura:attribute type="Object" name="template"/>
+    <aura:attribute type="String" name="moduleName"/>
+</aura:event>

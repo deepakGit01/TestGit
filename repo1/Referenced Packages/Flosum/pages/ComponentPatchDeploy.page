@@ -1,0 +1,3090 @@
+<apex:page controller="Flosum.ComponentPatchDeployController" sidebar="false">
+<apex:includeScript value="{!URLFOR($Resource.Flosum__jsforce)}"/> 
+<apex:includeScript value="{!URLFOR($Resource.Flosum__jszipmaster, 'jszip-master/dist/jszip.js')}"/>
+<script src="{!$Resource.xmltojson}"></script>
+<script src="{!$Resource.X2JS}"></script>
+
+<script type="text/javascript" async="" src="{!URLFOR($Resource.zipp,'res/ga.js')}"></script>
+<script type="text/javascript" src="{!URLFOR($Resource.zipp,'res/js/zip.js')}"></script>
+    
+<c:Wait />
+	<apex:form id="formid">
+		<apex:pagemessages id="msg"/>
+		<apex:actionFunction name="createLogRecord" action="{!createLogRecord}" reRender="msg" onComplete="handleLogRecord('{!logRecordId}','{!targetSession}','{!targetInstance}','{!targetReferesh}');"/>
+		<apex:actionFunction name="redirectToLog" action="{!redirectToLog}" reRender="msg" onComplete="enableBoth();">
+			<apex:param assignTo="{!IsSuccessDeployment}" value="" name="deploymentFlag"/>
+		</apex:actionFunction>
+		<apex:pageblock Title="Metadata Deployment" id="block">
+			<apex:pageBlockButtons >
+		        <apex:commandButton action="{!showMessage}" value="{!IF(IsValidate,'Validate','Deploy')}" onClick="disableBoth();getPatchDetail({!IsValidate},'{!patchId}','{!selectedOrg}','{!selectedRunTest}');" styleClass="disableitem" rendered="{!AND(selectedOrg != null,selectedOrg != '',authSuccesfull)}" reRender="msg">
+		        	<apex:param assignTo="{!message}" value="Creating Patch...#in" name="newstr"/>
+		        </apex:commandButton>
+		    </apex:pageBlockButtons>
+			<apex:pageBlockSection columns="1">
+		        <apex:pageBlockSectionItem >
+		            <apex:outputLabel value="Patch Name" />
+		            <apex:outputLabel value="{!patchName}" />
+		        </apex:pageBlockSectionItem>
+		        <apex:pageBlockSectionItem rendered="{!AND(patchId != null,patchId != '')}">
+		            <apex:outputLabel value="Target Salesforce Organisation" />
+		            <apex:selectList size="1" value="{!selectedOrg}" styleClass="disableitem">
+		                <apex:selectOptions value="{!targetOrgOptions}"/>
+		                <apex:actionSupport event="onchange"  action="{!setUpAuthentication}" rerender="msg,block" onsubmit="show();" oncomplete="hide();"/>
+		            </apex:selectList>
+		        </apex:pageBlockSectionItem>
+		        <apex:pageBlockSectionItem >
+		        	<apex:outputLabel value="Run Test" />
+					<apex:selectList size="1" value="{!selectedRunTest}" styleClass="disableitem">
+		                <apex:selectOptions value="{!runTestOption}"/>
+		                <apex:actionSupport event="onchange" rerender="msg,block" onsubmit="show();" oncomplete="hide();"/>
+		            </apex:selectList>
+		        </apex:pageBlockSectionItem> 
+		        <apex:pageBlockSectionItem >
+		        	<apex:outputLabel value="Rollback On Error" />
+		        	<input type="checkbox" class="disableitem" id="rollbackid" checked="checked"/>
+		        </apex:pageBlockSectionItem>
+		        <apex:pageBlockSectionItem >
+		        	<apex:outputLabel value="Validate Profile and PermissionSet" />
+					<apex:inputCheckbox value="{!ValidProfile}" styleClass="ValidProfile disableitem"/>
+				</apex:pageBlockSectionItem>
+	        </apex:pageBlockSection>
+		</apex:pageblock>
+		<apex:actionfunction action="{!showMessage}" reRender="msg" name="showMessage" onComplete="hide();enableBoth();">
+			<apex:param assignTo="{!message}" value="" name="newstr"/>
+		</apex:actionfunction>
+	</apex:form>
+	<script>
+		var NameSpacePrefix = '{!NameSpacePrefix}';
+		zip.workerScriptsPath = "{!URLFOR($Resource.zipp,'res/js/workers')}/";
+        var zipFileEntry, zipWriter, writer, creationMethod, URL = window.webkitURL || window.mozURL || window.URL;
+        
+        var IsNullResponseError;
+	
+		var deployPatchId;
+		var IsCheckOnly;
+		var targetOrgId;
+		var RunTesOption;
+		var deploymentLogId;
+		var dploymentZiplist = [];
+		var targetSession = '';
+		var targetReferesh = '';
+		var targetInstance = '';
+		var successDeployment = false;
+		
+		var UnknownErrorInDeploy = [];
+     	var successItemMap = {};
+    	var errorItemMap = {};
+    	var runAllTestMap = {};
+    	
+    	var successLog = '';
+	    var errorLog = '';
+	    var runTestLog = '';
+    
+    	var createdSet = {};
+    	var updatedSet = {};
+    	var deletedSet = {};
+    	var patchAttachmentList = [];
+    	var ValidName = {'ApexClass': [], 
+							'CustomObject': [], 
+							'ApexPage':[], 
+							'CustomTab': [],
+							'Layout': []
+						};
+		var conn1;
+		var ROLL_BACK_ZIP_DESCRIPTION = 'BACKUP ZIP';
+		var ROLL_BACK_FILE_DESCRIPTION = 'Rollback';
+		var ROLL_BACK_FILE_TYPE = 'application/zip';
+		
+		var flosumsf = jsforce;
+		Visualforce.remoting.timeout = 120000;
+		var attachmentMap = {};
+		var attList = [];
+		var patchDataMap = {};
+		var patchItems = [];
+		var ZipfilesMap= {};
+		var ZipfilesList = [];
+		var attObjectList = [];
+		var attPostPrefix = '';
+		var preDestructiveManifest = '';
+    	var postDestructiveManifest = '';
+    	var packageXml = '';
+    	var patchList = {};
+    	var limitofZip = 24000000;
+    	var attachmentLimit          = 25000000;
+    	var bufferLimitforattachment = 22000000;
+    	var attIdsCount = 0;
+    	
+    	var IsrollbackOnError = false;
+    	//var limitofZip = 352;
+    	var xmlname= 'package.xml';
+    	
+    	var parentMap = {};
+    	parentMap['WorkflowRules'] = 'WorkflowRules';
+    	parentMap['CustomObject'] = 'CustomObject';
+    	parentMap['CustomLabels'] = 'CustomLabels';
+    	parentMap['AssignmentRules'] = 'AutoResponseRules';
+    	parentMap['MatchingRules'] = 'MatchingRules';
+    	parentMap['ManagedTopics'] = 'ManagedTopics';
+    	parentMap['Package-xml'] = 'Package-xml';
+    	
+		
+		var mmap = new Object();
+	    mmap['CustomField'] = true;
+	    mmap['CustomLabel'] = true;
+	    mmap['CompactLayout'] = true;
+	    mmap['WebLink'] = true;
+	    mmap['RecordType'] = true;
+	    mmap['ListView'] = true;
+	    mmap['FieldSet'] = true;
+	    mmap['AssignmentRule'] = true;
+	    mmap['AutoResponseRule'] = true;
+	    mmap['ValidationRule'] = true;
+	    mmap['WorkflowTask'] = true;
+		mmap['WorkflowOutboundMessage'] = true;
+		mmap['WorkflowFieldUpdate'] = true;
+		mmap['WorkflowAlert'] = true;
+		mmap['WorkflowRule'] = true;
+		
+		mmap['SharingOwnerRule'] = true;
+		mmap['SharingCriteriaRule'] = true;
+		mmap['BusinessProcess'] = true;
+		mmap['SharingReason'] = true;
+		mmap['EscalationRule'] = true;
+		mmap['MatchingRule'] = true;
+		mmap['ManagedTopic'] = true;
+		
+		var folderMap = {};
+		folderMap['DocumentFolder'] = 'Document';
+		folderMap['DashboardFolder'] = 'Dashboard';
+		folderMap['ReportFolder'] = 'Report';
+		folderMap['EmailFolder'] = 'EmailTemplate';
+		
+		
+		var metadataTypeHeaderMap = {};
+		metadataTypeHeaderMap['CustomLabel'] = '<?xml version="1.0" encoding="UTF-8"?><CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['CustomField'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['CompactLayout'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['WebLink'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['RecordType'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['ListView'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['FieldSet'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['BusinessProcess'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['SharingReason'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['ValidationRule'] = '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['AssignmentRule'] = '<?xml version="1.0" encoding="UTF-8"?><AssignmentRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['AutoResponseRule'] = '<?xml version="1.0" encoding="UTF-8"?><AutoResponseRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+	    metadataTypeHeaderMap['WorkflowTask'] = '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['WorkflowOutboundMessage'] = '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['WorkflowFieldUpdate'] = '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['WorkflowAlert'] = '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['WorkflowRule'] = '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['SharingOwnerRule'] = '<?xml version="1.0" encoding="UTF-8"?><SharingRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['SharingCriteriaRule'] = '<?xml version="1.0" encoding="UTF-8"?><SharingRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['EscalationRule'] = '<?xml version="1.0" encoding="UTF-8"?><EscalationRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['MatchingRule'] = '<?xml version="1.0" encoding="UTF-8"?><MatchingRules xmlns="http://soap.sforce.com/2006/04/metadata">';
+		metadataTypeHeaderMap['ManagedTopic'] = '<?xml version="1.0" encoding="UTF-8"?><ManagedTopics xmlns="http://soap.sforce.com/2006/04/metadata">';
+		
+		var metadataTypeFooterMap = {};
+		metadataTypeFooterMap['CustomLabel'] = '</CustomLabels>';
+		metadataTypeFooterMap['CustomField'] = '</CustomObject>';
+	    metadataTypeFooterMap['CompactLayout'] = '</CustomObject>';
+	    metadataTypeFooterMap['WebLink'] = '</CustomObject>';
+	    metadataTypeFooterMap['RecordType'] = '</CustomObject>';
+	    metadataTypeFooterMap['ListView'] = '</CustomObject>';
+	    metadataTypeFooterMap['FieldSet'] = '</CustomObject>';
+	    metadataTypeFooterMap['BusinessProcess'] = '</CustomObject>';
+		metadataTypeFooterMap['SharingReason'] = '</CustomObject>';
+	    metadataTypeFooterMap['ValidationRule'] = '</CustomObject>';
+	    metadataTypeFooterMap['AssignmentRule'] = '</AssignmentRules>';
+	    metadataTypeFooterMap['AutoResponseRule'] = '</AutoResponseRules>';
+	    metadataTypeFooterMap['WorkflowTask'] = '</Workflow>';
+		metadataTypeFooterMap['WorkflowOutboundMessage'] = '</Workflow>';
+		metadataTypeFooterMap['WorkflowFieldUpdate'] = '</Workflow>';
+		metadataTypeFooterMap['WorkflowAlert'] = '</Workflow>';
+		metadataTypeFooterMap['WorkflowRule'] = '</Workflow>';
+		metadataTypeFooterMap['SharingOwnerRule'] = '</SharingRules>';
+		metadataTypeFooterMap['SharingCriteriaRule'] = '</SharingRules>';
+		metadataTypeFooterMap['EscalationRule'] = '</EscalationRules>';
+		metadataTypeFooterMap['MatchingRule'] = '</MatchingRules>';
+		metadataTypeFooterMap['ManagedTopic'] = '</ManagedTopics>';
+		
+		var metadataTypePreTagMap = {};
+		metadataTypePreTagMap['CustomLabel'] = '<labels>';
+		metadataTypePreTagMap['CustomField'] = '<fields>';
+	    metadataTypePreTagMap['CompactLayout'] = '<compactLayouts>';
+	    metadataTypePreTagMap['WebLink'] = '<webLinks>';
+	    metadataTypePreTagMap['RecordType'] = '<recordTypes>';
+	    metadataTypePreTagMap['ListView'] = '<listViews>';
+	    metadataTypePreTagMap['FieldSet'] = '<fieldSets>';
+	    metadataTypePreTagMap['BusinessProcess'] = '<businessProcesses>';
+		metadataTypePreTagMap['SharingReason'] = '<sharingReasons>';
+	    metadataTypePreTagMap['ValidationRule'] = '<validationRules>';
+	    metadataTypePreTagMap['AssignmentRule'] = '<assignmentRule>';
+	    metadataTypePreTagMap['AutoResponseRule'] = '<autoResponseRule>';
+	    metadataTypePreTagMap['WorkflowTask'] = '<tasks>';
+		metadataTypePreTagMap['WorkflowOutboundMessage'] = '<outboundMessages>';
+		metadataTypePreTagMap['WorkflowFieldUpdate'] = '<fieldUpdates>';
+		metadataTypePreTagMap['WorkflowAlert'] = '<alerts>';
+		metadataTypePreTagMap['WorkflowRule'] = '<rules>';
+		metadataTypePreTagMap['SharingOwnerRule'] = '<sharingOwnerRules>';
+		metadataTypePreTagMap['SharingCriteriaRule'] = '<sharingCriteriaRules>';
+		metadataTypePreTagMap['EscalationRule'] = '<escalationRule>';
+		metadataTypePreTagMap['MatchingRule'] = '<matchingRules>';
+		metadataTypePreTagMap['ManagedTopic'] = '<managedTopic>';
+		
+		var metadataTypePostTagMap = {};
+		metadataTypePostTagMap['CustomLabel'] = '</labels>';
+		metadataTypePostTagMap['CustomField'] = '</fields>';
+	    metadataTypePostTagMap['CompactLayout'] = '</compactLayouts>';
+	    metadataTypePostTagMap['WebLink'] = '</webLinks>';
+	    metadataTypePostTagMap['RecordType'] = '</recordTypes>';
+	    metadataTypePostTagMap['ListView'] = '</listViews>';
+	    metadataTypePostTagMap['FieldSet'] = '</fieldSets>';
+	    metadataTypePostTagMap['BusinessProcess'] = '</businessProcesses>';
+		metadataTypePostTagMap['SharingReason'] = '</sharingReasons>';
+	    metadataTypePostTagMap['ValidationRule'] = '</validationRules>';
+	    metadataTypePostTagMap['AssignmentRule'] = '</assignmentRule>';
+	    metadataTypePostTagMap['AutoResponseRule'] = '</autoResponseRule>';
+	    metadataTypePostTagMap['WorkflowTask'] = '</tasks>';
+		metadataTypePostTagMap['WorkflowOutboundMessage'] = '</outboundMessages>';
+		metadataTypePostTagMap['WorkflowFieldUpdate'] = '</fieldUpdates>';
+		metadataTypePostTagMap['WorkflowAlert'] = '</alerts>';
+		metadataTypePostTagMap['WorkflowRule'] = '</rules>';
+		metadataTypePostTagMap['SharingOwnerRule'] = '</sharingOwnerRules>';
+		metadataTypePostTagMap['SharingCriteriaRule'] = '</sharingCriteriaRules>';
+		metadataTypePostTagMap['EscalationRule'] = '</escalationRule>';
+		metadataTypePostTagMap['MatchingRule'] = '</matchingRules>';
+		metadataTypePostTagMap['ManagedTopic'] = '</managedTopic>';
+		
+		function getPatchDetail(IsValidate,patchId,targetOrg,selectedRunTest)
+		{
+			attIdsCount = 0;
+			IsNullResponseError = false;
+			IsrollbackOnError = false;
+			patchAttachmentList = [];
+			successDeployment = false;
+			attachmentMap = {};
+			patchDataMap = {};
+			ZipfilesMap = {};
+			ZipfilesList = [];
+			attList = [];
+			patchItems = [];
+			preDestructiveManifest = '';
+	    	postDestructiveManifest = '';
+	    	packageXml = '';
+	    	patchList = {};
+	    	
+	    	
+			deploymentLogId = undefined;
+			dploymentZiplist = [];
+			targetSession = '';
+			targetReferesh = '';
+			targetInstance = '';
+			
+			UnknownErrorInDeploy = [];
+     		successItemMap = {};
+    		errorItemMap = {};
+    		runAllTestMap = {};
+    		
+    		successLog = '';
+	    	errorLog = '';
+	    	runTestLog = '';
+	    	
+	    	createdSet = {};
+    		updatedSet = {};
+    		deletedSet = {};
+			
+			
+			deployPatchId = patchId;
+			IsCheckOnly = IsValidate;
+			targetOrgId = targetOrg;
+			RunTesOption = selectedRunTest;
+			
+			if(RunTesOption == 'NoSpecificTests')
+				RunTesOption = 'NoTestRun';
+			
+			
+			//IsrollbackOnError
+			var check = document.getElementById('rollbackid');
+			if(check != null)
+			{
+				if(check.checked)
+					IsrollbackOnError = true;
+				else
+					IsrollbackOnError = false;
+			}
+			console.log('IsrollbackOnError---'+IsrollbackOnError);
+			if(patchId != undefined && patchId.length == 18)
+			{
+				bindWindow();
+				Visualforce.remoting.Manager.invokeAction(
+						            '{!$RemoteAction.ComponentPatchDeployController.getPatchData}',
+						            patchId,
+						            handlePatchDetail   
+						        );
+			}
+			else
+			{
+				enableBoth();
+			}
+		}
+		
+		function handlePatchDetail(r,e)
+		{
+			if(e.status && r) 
+		    {
+		    	preDestructiveManifest = destructiveXmlCreator(r.destructiveInfo.preMap);
+		    	postDestructiveManifest = destructiveXmlCreator(r.destructiveInfo.postMap);
+		    	packageXml = packageXmlCreator(r.MetaItemlist);
+		    	if(r.MetaItemlist.length > 0 || preDestructiveManifest != '' || postDestructiveManifest != '')
+		    	{
+		    		patchItems = r.MetaItemlist;
+		    		createValidDATA();
+		    		for(var index in r.MetaItemlist)
+					{
+						if(index < r.MetaItemlist.length)
+						{
+							var metaItems = r.MetaItemlist[index];
+							var packageXmlLi = metaItems.items;
+							for(var index2 in packageXmlLi)
+							{
+								if(index2 < packageXmlLi.length)
+								{
+									var attIds = packageXmlLi[index2].attachmentIds;
+									for(var index3 in attIds)
+									{
+										if(index3 < attIds.length)
+										{
+											attachmentMap[attIds[index3]] = attIds[index3];
+										}
+									}
+								}
+							}
+						}
+					}
+					getAttachmentsDetail();
+		    	}
+		    	else
+		    	{
+		    		showMessage('There should be at least one item in manifest or destructive changes related list.');
+		    	}
+		    }
+		    else
+		    {
+		    	showMessage(e.message);
+		    }
+		}
+		
+		function getAttachmentsDetail()
+		{
+			attIdsCount = mapCounter(attachmentMap);
+			Visualforce.remoting.Manager.invokeAction(
+						            '{!$RemoteAction.ComponentPatchDeployController.getAttachmentsDetail}',
+						            JSON.stringify(attachmentMap),
+						            handleAttachmentDetail   
+						        );
+		}
+		
+		function handleAttachmentDetail(r,e)
+		{
+			if(e.status && r) 
+		    {
+		    	if(attIdsCount != r.length)
+		    	{
+		    		showMessage('Some zip files are missing.');
+		    		return;
+		    	}
+		    	if(r.length > 0)
+				{
+					attList = [];
+					var bodySize = 0;
+					var temp = [];
+					for(var i in r)
+					{
+						if(i< r.length)
+						{
+							var att = r[i];
+							if((bodySize +att.BodyLength) > 3000000 && temp.length > 0) 
+							{
+								attList.push(temp);
+								bodySize = 0;
+								temp = [];
+							}
+							temp.push(att.Id);
+							bodySize = bodySize+att.BodyLength;
+						}
+					}
+					if(temp.length > 0)
+					{
+						attList.push(temp);
+					}
+				}
+				if(attList.length > 0)
+				{
+					//attachment found.
+					getAttachments();
+				}
+				else
+				{
+					//showMessage('No attachment found.');
+					zipFiles();
+				}
+		    }
+		    else
+		    {
+		    	showMessage(e.message);
+		    }
+		}
+		
+		function getAttachments()
+		{
+			if(attList.length > 0)
+			{
+				var attLi = attList[0];
+				Visualforce.remoting.Manager.invokeAction(
+						            '{!$RemoteAction.ComponentPatchDeployController.getAttachments}',
+						            JSON.stringify(attLi),
+						            deployPatchId,
+						            handleGetAttachments   
+						        );
+				attList.remove(attLi);
+			}
+		}
+		
+		function handleGetAttachments(r,e)
+		{
+			if(e.status && r) 
+		    {
+		    	if(r.length > 0)
+		    	{
+		    		var attReadIndex = 0;
+		    		var readFullAtt = function(){
+		    			if(attReadIndex < r.length)
+		    			{
+		    				var att = r[attReadIndex];
+							var parentId = att.parentId;
+				    		var metaType = att.compType;
+				    		var base64str = att.base64;
+				    		// use a Data64URIReader to read the zip from a base64 string
+							zip.createReader(new zip.Data64URIReader(base64str), function(reader) {
+								var EntryIndex = 0;
+								// get all entries from the zip
+								reader.getEntries(function(entries) {
+									if(entries.length)
+									{
+										var readSingleFile = function(){
+											    if (EntryIndex < entries.length) 
+											    {
+											    	var singleEntry = entries[EntryIndex];
+											    	var fileName = singleEntry.filename;
+											    	if(metaType == 'Profile' || metaType == 'PermissionSet')
+													{
+														entries[EntryIndex].getData(new zip.TextWriter(), function(text) {
+															if(fileName != undefined && (fileName.indexOf("profiles/") == 0 || fileName.indexOf("permissionsets/") == 0) && fileName != 'package.xml') 
+											            	{
+											            		var keyFileName = parentId+'#'+metaType+'#'+fileName;
+											            		var fileData = '';
+																if(patchDataMap[keyFileName] != undefined)
+																{
+																	var profileXmlList = [];
+																	profileXmlList.push(patchDataMap[keyFileName]);
+																	profileXmlList.push(text);
+																	
+																	if(metaType == 'Profile')
+																	{
+																		fileData = profileJoin(profileXmlList);
+																	}
+																	else if(metaType == 'PermissionSet')
+																	{
+																		fileData = permissionSetJoin(profileXmlList);
+																	}
+																}	
+																else
+																{
+																	fileData = text;
+																}
+																if(fileData != '')
+																{
+																	if ($(".ValidProfile").is(':checked')) {
+							                                        	fileData = validationProfileAndPermissionSet(fileData);
+							                                        }
+							                                        patchDataMap[keyFileName] = fileData;
+																}
+															}
+															EntryIndex++;
+															readSingleFile();
+														});
+													}
+													else if(parentMap[metaType] != undefined)
+													{
+														entries[EntryIndex].getData(new zip.TextWriter(), function(text) {
+															if(fileName != undefined && fileName != 'package.xml')
+													        {
+													        	patchDataMap[parentId+'#'+metaType+'#'+fileName] = text;
+															}
+															EntryIndex++;
+															readSingleFile();
+														});
+													}
+													else if(mmap[metaType] == undefined)
+													{
+														entries[EntryIndex].getData(new zip.BlobWriter(), function(blobData) {
+													        if(fileName != undefined && fileName != 'package.xml')
+													        {
+													        	patchDataMap[parentId+'#'+metaType+'#'+fileName] = blobData;
+													        }
+															EntryIndex++;
+															readSingleFile();
+												    	});
+													}
+													else
+													{
+														entries[EntryIndex].getData(new zip.TextWriter(), function(text) {
+															if(fileName != undefined && fileName != 'package.xml')
+													        {
+													        	childSplitter(text,metaType,parentId,fileName);
+															}
+															EntryIndex++;
+															readSingleFile();
+														});
+													}
+										    	}
+										    	else
+										    	{
+										    		// close the zip reader
+											        reader.close(function() {
+											          // onclose callback
+											          	attReadIndex++;
+											        	readFullAtt();
+											        });
+										    	}
+									    	}
+									    	readSingleFile();
+									}
+									else
+									{
+										console.log('!entries.length');
+									}
+								});
+							}, function(error) {
+								  // onerror callback
+								  console.log('Error in reading file from attachments.');
+								  console.log(error);
+								  console.log(JSON.stringify(error));
+									if(error.message != undefined)
+									{
+										showMessage(error.message);
+									}
+									else
+									{
+										showMessage('Unknown error.');
+									}
+							});
+		    			}
+		    			else
+		    			{
+		    				if(attList.length > 0)
+							{
+								//attachment found.
+								getAttachments();
+							}
+							else
+							{
+								//all attachment collected succesfully.
+								fileListCreator();
+							}
+		    			}
+		    		}
+		    		readFullAtt();
+		    	}
+		    	else if(attList.length > 0)
+				{
+					//attachment found.
+					getAttachments();
+				}
+				else
+				{
+					//all attachment collected succesfully.
+					fileListCreator();
+				}
+			}
+		    else
+		    {
+		    	showMessage(e.message);
+		    }
+		}
+		
+		function fileListCreator()
+		{
+			if(patchItems.length > 0 || preDestructiveManifest != '' || postDestructiveManifest != '')
+			{
+				var patchTypeIndex = 0;
+				var addPatchTypes = function(){
+					if(patchTypeIndex < patchItems.length)
+				    {
+				    	var metaTypeitemDetail = patchItems[patchTypeIndex];
+	    				var componentType = metaTypeitemDetail.metaType;
+	    				var metaTypeitems = metaTypeitemDetail.items;
+	    				
+	    				var patchItemIndex = 0;
+	    				var addSingleTypeItems = function(){
+	    					if(patchItemIndex < metaTypeitems.length)
+	    					{
+	    						//collect file
+	    						var item = metaTypeitems[patchItemIndex];
+		    					var fileName = item.fileName;
+				    			var fullName = item.itemName;
+				    			var parentId = item.snapId;
+				    			var fileData = undefined;
+				    			var compKey = parentId+'#'+componentType+'#'+fileName;
+				    			if(mmap[componentType] == undefined)
+								{
+									if(folderMap[componentType] != undefined)
+					    			{
+					    				compKey = parentId+'#'+folderMap[componentType]+'#'+fileName;
+					    			}
+									if(patchDataMap[compKey] != undefined)
+									{
+										fileData = patchDataMap[compKey];
+									}
+									else
+									{
+										//console.log('item not found.'+componentType+'----'+fullName);
+									}
+								}
+								else
+								{
+									compKey = parentId+'#'+componentType+'#'+fullName;
+									if(patchDataMap[compKey] != undefined)
+									{
+										if(ZipfilesMap[fileName] != undefined)
+										{
+											var fileInfo = ZipfilesMap[fileName];
+											var zipData = fileInfo.data;
+											var newData = patchDataMap[compKey];
+											var tempData = childXMLJoin(zipData,newData,componentType,fullName);
+											fileData = tempData;
+										}
+										else
+										{
+											fileData = patchDataMap[compKey];
+										}
+									}
+									else
+									{
+										
+										//console.log('item not found.'+componentType+'----'+fullName);
+									}
+								}
+								if(fileData != undefined)
+								{
+									var fileInfo = new Object();
+									fileInfo.name = fileName;
+									fileInfo.data = fileData;
+									fileInfo.type = componentType;
+									ZipfilesMap[fileName]= fileInfo;
+									var metaXmlKey = compKey+'-meta.xml';
+									if(patchDataMap[metaXmlKey] != undefined)
+									{
+										var metaXmlFileName = fileName+'-meta.xml';
+										var xmlData = patchDataMap[metaXmlKey];
+										
+										var xmlfileInfo = new Object();
+										xmlfileInfo.name = metaXmlFileName;
+										xmlfileInfo.data = xmlData;
+										xmlfileInfo.type = componentType;
+										ZipfilesMap[metaXmlFileName]= xmlfileInfo;
+									}
+								}
+	    						
+	    						patchItemIndex++;
+	    						setTimeout(addSingleTypeItems, 0005);
+	    					}
+	    					else
+	    					{
+	    						patchTypeIndex++;
+	    						setTimeout(addPatchTypes, 0005);
+	    					}
+	    				}
+	    				addSingleTypeItems();
+				    }
+				    else
+				    {
+				    	zipFiles();
+				    }
+				}
+				addPatchTypes();
+			}
+			else
+			{
+				showMessage('No zip files found.');
+			}
+		}
+		
+		function zipFiles()
+		{
+			for(var key in ZipfilesMap)
+			{
+				ZipfilesList.push(ZipfilesMap[key]);
+			}
+			if(packageXml != undefined && packageXml != '')
+			{
+				var xmlfileInfo = new Object();
+				xmlfileInfo.name = 'package.xml';
+				xmlfileInfo.data = packageXml;
+				xmlfileInfo.type = 'Package-xml';
+				ZipfilesList.push(xmlfileInfo);
+			}
+			if(preDestructiveManifest != '')
+			{
+				var xmlfileInfo = new Object();
+				xmlfileInfo.name = 'destructiveChangesPre.xml';
+				xmlfileInfo.data = preDestructiveManifest;
+				xmlfileInfo.type = 'Package-xml';
+				ZipfilesList.push(xmlfileInfo);
+			}
+			if(postDestructiveManifest != '')
+			{
+				var xmlfileInfo = new Object();
+				xmlfileInfo.name = 'destructiveChangesPost.xml';
+				xmlfileInfo.data = postDestructiveManifest;
+				xmlfileInfo.type = 'Package-xml';
+				ZipfilesList.push(xmlfileInfo);
+			}
+			if(ZipfilesList.length > 0)
+			{
+				deploymentZipFileCreator(ZipfilesList);
+			}
+			else
+			{
+				showMessage('There should be at least one item in manifest or destructive changes related list.');
+			}
+		}
+		
+		function deploymentZipFileCreator(files) {
+			var addIndex = 0;
+			var tempWriter;
+			function nextFile() 
+			{
+				var file = files[addIndex];
+				if(file.type == 'Profile' || file.type == 'PermissionSet' || mmap[file.type] != undefined || parentMap[file.type] != undefined)
+				{
+						tempWriter.add(file.name, new zip.TextReader(file.data), function() {
+						addIndex++;
+						if (addIndex < files.length)
+							nextFile();
+						else
+						{
+							tempWriter.close(function(base64Data) {
+			    					base64Data = base64Data.slice(base64Data.indexOf(';base64,') + 8);
+			    					var li = [];
+			    					li.push(base64Data);
+			    					patchList['Patch'] = li;
+			    					saveAttachmentforPatch();
+			    				});
+						}
+					});
+				}
+				else
+				{
+						tempWriter.add(file.name, new zip.BlobReader(file.data), function() {
+						addIndex++;
+						if(addIndex < files.length)
+							nextFile();
+						else
+						{
+							tempWriter.close(function(base64Data) {
+			    					base64Data = base64Data.slice(base64Data.indexOf(';base64,') + 8);
+			    					var li = [];
+			    					li.push(base64Data);
+			    					patchList['Patch'] = li;
+			    					saveAttachmentforPatch();
+			    				});
+						}
+					});
+				}
+			}
+
+			function createZipWriter() {
+                  zip.createWriter(new zip.Data64URIWriter(), function(writer2) {
+					tempWriter = writer2;
+					nextFile();
+				}, function(error) {
+					// onerror callback
+					console.log('Error while creating single zip.');
+					console.log(error);
+					console.log(JSON.stringify(error));
+					if(error.message != undefined)
+					{
+						showMessage(error.message);
+					}
+					else
+					{
+						showMessage('Unknown error.');
+					}
+				});
+			}
+			createZipWriter();
+		}
+			
+		function onerror(message) {
+			console.log('Error while creating single zip.');
+			console.log(message);
+			console.log(JSON.stringify(message));
+			if(message.message != undefined)
+			{
+				showMessage(message.message);
+			}
+			else
+			{
+				showMessage('Unknown error.');
+			}
+		}
+		
+		function saveAttachmentforPatch()
+		{
+			attPostPrefix = '';
+			attObjectList = [];
+			if(patchList['Patch'] != undefined)
+			{
+				var li = patchList['Patch'];
+				if(li.length > 0)
+				{
+					var base64Str = li[0];
+					if(base64Str.length < attachmentLimit)
+					{
+						attObjectList.push({ParentId: deployPatchId,Name : 'Patch A',Body:base64Str,ContentType : 'application/zip'});
+						patchSingleFileSaver();
+					}
+					else
+					{
+						creatZipFileForAttachment(ZipfilesList,base64Str.length);
+					}
+				}
+			}
+		}
+		
+		function creatZipFileForAttachment(files,base64strLength)
+		{
+			var bodySize = 0;
+			var addIndex = 0;
+			var tempWriter;
+			function nextFile() 
+			{
+				var file = files[addIndex];
+				if(file.type == 'Profile' || file.type == 'PermissionSet' || mmap[file.type] != undefined || parentMap[file.type] != undefined)
+				{
+					bodySize = bodySize + file.data.length;
+					tempWriter.add(file.name, new zip.TextReader(file.data), function() {
+						addIndex++;
+						if (addIndex < files.length && bodySize < bufferLimitforattachment)
+							nextFile();
+						else
+						{
+							bodySize = 0;
+							tempWriter.close(function(base64Data) {
+		    					base64Data = base64Data.slice(base64Data.indexOf(';base64,') + 8);
+		    					if(attPostPrefix == '')
+									attPostPrefix = 'A';
+								else
+									attPostPrefix = succ(attPostPrefix);
+								attObjectList.push({ParentId: deployPatchId,Name : 'Patch '+attPostPrefix,Body : base64Data,ContentType : 'application/zip'});
+								
+		    					if(addIndex < files.length)
+		    					{
+		    						createZipWriter();
+		    					}
+		    					else
+		    					{
+		    						patchSingleFileSaver();
+		    					}
+		    				});
+						}
+					});
+				}
+				else
+				{
+					bodySize = bodySize + file.data.size;
+					tempWriter.add(file.name, new zip.BlobReader(file.data), function() {
+						addIndex++;
+						if(addIndex < files.length && bodySize < bufferLimitforattachment)
+							nextFile();
+						else
+						{
+							bodySize = 0;
+							tempWriter.close(function(base64Data) {
+		    					base64Data = base64Data.slice(base64Data.indexOf(';base64,') + 8);
+		    					if(attPostPrefix == '')
+									attPostPrefix = 'A';
+								else
+									attPostPrefix = succ(attPostPrefix);
+								attObjectList.push({ParentId: deployPatchId,Name : 'Patch '+attPostPrefix,Body : base64Data,ContentType : 'application/zip'});
+								
+		    					if(addIndex < files.length)
+		    					{
+		    						createZipWriter();
+		    					}
+		    					else
+		    					{
+		    						patchSingleFileSaver();
+		    					}
+		    				});
+						}
+					});
+				}
+			}
+
+			function createZipWriter() {
+                   zip.createWriter(new zip.Data64URIWriter(), function(writer2) {
+					tempWriter = writer2;
+					nextFile();
+				}, function(error) {
+					// onerror callback
+					console.log('Error while creating zip files for attachments.');
+					console.log(error);
+					console.log(JSON.stringify(error));
+					createLogRecord();
+				});
+			}
+			createZipWriter();
+		}
+		
+		function patchSingleFileSaver()
+		{
+			if(attObjectList.length > 0)
+			{
+				var attObj = attObjectList[0];
+				var selfConn = new flosumsf.Connection({ accessToken: '{!$API.Session_Id}' });
+				selfConn.sobject('Attachment').create(attObj,function(err, result){
+					if(err)
+					{
+						showMessage(err.errorCode);
+					}
+					else
+					{
+						patchSingleFileSaver();
+					}
+				});
+				attObjectList.shift();
+			}
+			else
+			{
+				createLogRecord();
+			}
+		}
+		
+		function handleLogRecord(logId,sessionT,orgInstance,refereshT)
+		{
+			if(logId != undefined && logId != null && logId.length == 18) 
+		    {
+		    	targetSession = sessionT;
+				targetReferesh = refereshT;
+				targetInstance = orgInstance;
+		    	deploymentLogId = logId;
+		    	if(IsCheckOnly)
+           		{
+           			//start deployment
+  					startDeployment();
+           		}
+           		else
+           		{
+           			getBackUpInfo();
+           		}
+		    }
+		    else
+		    {
+		    	if(logId != undefined && logId != null)
+		    		showMessage(logId);
+		    	else
+		    		showMessage('Required attributes not found.');
+		    }
+		}
+		
+		function startDeployment()
+		{
+			if(patchList['Patch'] != undefined && targetSession != '' && targetReferesh != '' && targetInstance != '')
+			{
+				dploymentZiplist = patchList['Patch'];
+				if(dploymentZiplist.length > 0)
+				{
+					if(IsCheckOnly)
+						setMessageOnPage("Validating Patch...");
+					else
+						setMessageOnPage("Deploying Patch...");
+					conn1 = createConnection(targetSession,targetReferesh,targetInstance);
+					conn1.metadata.pollTimeout = 12000000;
+					conn1.metadata.pollInterval = 4000;
+					var baseStr =  dploymentZiplist[0];
+					var deployOption = getDeployOptions();
+					var IsFirstRun = true;
+					conn1.metadata.deploy(baseStr, deployOption,function(err, result){
+						if(IsFirstRun)
+						{
+							IsFirstRun = false;
+	                    	if(err) 
+			                {
+			                	console.log('Error while deploy');
+			                	console.log(err);
+			                	console.log(JSON.stringify(err));
+			                	if(err != null && err != undefined)
+					           	{
+					            	UnknownErrorInDeploy.push(JSON.stringify(err));
+					           	}
+					           	else
+					           	{
+					           		IsNullResponseError = true;
+						        	UnknownErrorInDeploy.push('The metadata to be deployed was sent to the target Salesforce org. However, the target Salesforce org did not return any response.\nTo check the success of deployment, please login to the target Salesforce organization, and check the deployment status.');
+					           	}
+			                	finishDeployment();
+			                }
+			                else
+			                {
+			                	if(result != undefined && result.id != undefined)
+			                	{
+			                		var caseSensitiveDeploymentId = result.id.length == 18 ? result.id.slice(0,15) : result.id;
+			                		var selfConn = new flosumsf.Connection({ accessToken: '{!$API.Session_Id}' });
+			                		var logObjectName = 'Metadata_Log__c';
+									if(NameSpacePrefix != '')
+									{
+										logObjectName = NameSpacePrefix +'__Metadata_Log__c';
+									}
+									var fieldName = 'Id';
+									var fieldName2 = 'Async_Request_Id__c';
+									var fieldName3 = 'Run_Test_Param__c'
+									if(NameSpacePrefix != '')
+									{
+										fieldName2 = NameSpacePrefix+'__Async_Request_Id__c';
+										fieldName3 = NameSpacePrefix+'__Run_Test_Param__c';
+									}
+						            var str = '{"'+ fieldName +'":"'+deploymentLogId+'","'+ fieldName2 +'":"'+caseSensitiveDeploymentId+'","'+fieldName3+'":"'+RunTesOption+'"}';
+									var logRecord = JSON.parse(str);
+			                		selfConn.sobject(logObjectName).update(logRecord,function(attErr,attresult){
+										if(attErr)
+										{
+											return showMessage(attErr.errorCode);
+										}
+										else if(attresult.id != undefined && attresult.id != null)
+										{
+											var remainingTime = 20;
+											var idMessage;
+											if(IsCheckOnly)
+												idMessage = "To get latest up-to-the-second validation status, please login to the target organization. Check Validation status with name: "+ caseSensitiveDeploymentId;
+											else
+												idMessage = "To get latest up-to-the-second deployment status, please login to the target organization. Check Deployment status with name: "+ caseSensitiveDeploymentId;
+						        			var timeCounter = function(){
+						        				if(remainingTime > 0)
+						        				{
+						        					var strMessage;
+						        					if(IsCheckOnly)
+						        						strMessage = "Salesforce is validating your patch. Checking validation status in "+remainingTime+" seconds.#"+idMessage;
+						        					else
+						        						strMessage = "Salesforce is deploying your patch. Checking deployment status in "+remainingTime+" seconds.#"+idMessage;
+													setMessageOnPage(strMessage);
+						                            setTimeout(timeCounter, 1000);
+						                            remainingTime--;
+						        				}
+						        				else
+						        				{
+						        					conn1.metadata.checkDeployStatus(result.id,true,deployDetail);
+						        				}
+						        			}
+						        			timeCounter();
+				                		}
+				                	});	
+			                	}
+			                	else
+			                	{
+			                		UnknownErrorInDeploy.push('Async Id not found.');
+	                                finishDeployment();
+			                	}
+			                }
+		                }
+		            });
+		        }
+		        else
+		        {
+		        	finishDeployment();
+		        }
+		    }
+		    else
+			{
+				UnknownErrorInDeploy.push('Required attributes not found.');
+				finishDeployment();
+			}
+		}
+		
+		//to get deployOptions
+		function getDeployOptions()
+		{
+			var deployOption = new Object();
+			deployOption.allowMissingFiles=true;
+           	deployOption.autoUpdatePackage=false;
+           	deployOption.checkOnly=IsCheckOnly;
+           	deployOption.ignoreWarnings=false;
+           	deployOption.performRetrieve=false;
+           	deployOption.purgeOnDelete=false;
+           	deployOption.rollbackOnError=IsrollbackOnError;
+           	deployOption.singlePackage=true;
+           	deployOption.runTests=[];
+           	deployOption.testLevel=RunTesOption;
+           	
+           	return deployOption;
+		}
+		
+		function deployDetail(err, result)
+		{
+    		if(err)
+            {
+            	console.log('Error while deployDetail');
+               	console.log(err);
+               	console.log(JSON.stringify(err));
+            	if(err != null && err != undefined)
+	           	{
+	           		UnknownErrorInDeploy.push(JSON.stringify(err));
+	           	}
+               	else
+               	{
+               		IsNullResponseError = true;  
+	           		UnknownErrorInDeploy.push('The metadata to be deployed was sent to the target Salesforce org. However, the target Salesforce org did not return any response.\nTo check the success of deployment, please login to the target Salesforce organization, and check the deployment status.');
+               	}
+               	//finish deployment and save logs.
+		        finishDeployment();
+       		}
+            else
+            {
+            	if(result.done)
+	        	{
+	        		if(result.success)
+	        		{
+	        			successDeployment = true;
+	        		}
+	        		else
+	        		{
+	        			successDeployment = false;
+	        			if(result.errorMessage != undefined)
+	        			{
+	        				UnknownErrorInDeploy.push(result.errorMessage);
+	        			}
+	        		}
+	        		if(result.details != undefined)
+		            {
+		            	if(result.details.runTestResult != undefined)
+		            	{
+		            		runTestLog ='No. of Test Run: '+result.details.runTestResult.numTestsRun +'  Failures: '+result.details.runTestResult.numFailures+' Total Time: '+result.details.runTestResult.totalTime+'\n\n';
+		            		if(result.details.runTestResult.codeCoverageWarnings != undefined)
+        					{
+        						if(Array.isArray(result.details.runTestResult.codeCoverageWarnings))
+		            			{
+					        		for(var index in result.details.runTestResult.codeCoverageWarnings)
+					        		{
+					        			if(index < result.details.runTestResult.codeCoverageWarnings.length)
+					        			{
+					        				var warning = result.details.runTestResult.codeCoverageWarnings[index];
+						        			var error = '\n Coverage Warning: ' + 
+								                           '\n Message: '+warning.message;
+									    	runAllTestMap[warning.name +''+new Date().getTime()]= error;
+						                }
+					        		}
+				        		}
+				        		else
+				        		{
+				        			var warning = result.details.runTestResult.codeCoverageWarnings;
+				        			var error = '\n Coverage Warning: ' + 
+						                           '\n Message: '+warning.message;
+							    	runAllTestMap[warning.name +''+new Date().getTime()]= error;
+				        		}
+        					}
+        					if(result.details.runTestResult.failures != undefined)
+        					{
+        						if(Array.isArray(result.details.runTestResult.failures))
+		            			{
+					        		for(var index in result.details.runTestResult.failures)
+					        		{
+					        			if(index < result.details.runTestResult.failures.length)
+					        			{
+					        				var rtf = result.details.runTestResult.failures[index];
+						        			var error = '\n Component Fail name: '+rtf.name + 
+			                           						'\n Message: '+rtf.message;
+							                runAllTestMap[rtf.type_x+''+rtf.name+''+new Date().getTime()]= error;
+						                }
+					        		}
+				        		}
+				        		else
+				        		{
+				        			var rtf = result.details.runTestResult.failures;
+				        			var error = '\n Component Fail name: '+rtf.name + 
+	                           						'\n Message: '+rtf.message;
+					                runAllTestMap[rtf.type_x+''+rtf.name+''+new Date().getTime()]= error;
+				        		}
+        					}
+        					if(result.details.runTestResult.successes != undefined)
+        					{
+        						if(Array.isArray(result.details.runTestResult.successes))
+		            			{
+					        		for(var index in result.details.runTestResult.successes)
+					        		{
+					        			if(index < result.details.runTestResult.successes.length)
+					        			{
+					        				var rtf = result.details.runTestResult.successes[index];
+						        			var scc = '\n Component Pass name: '+rtf.name + 
+			                           				'\n Method Name: '+rtf.methodName;
+							                runAllTestMap[scc.name+''+scc.methodName+''+new Date().getTime()]= scc;
+						                }
+					        		}
+				        		}
+				        		else
+				        		{
+				        			var rtf = result.details.runTestResult.successes;
+				        			var scc = '\n Component Pass name: '+rtf.name + 
+	                           				'\n Method Name: '+rtf.methodName;
+					                runAllTestMap[scc.name+''+scc.methodName+''+new Date().getTime()]= scc;
+				        		}
+        					}	
+		            	}
+		            	if(result.details.componentFailures != undefined)
+		            	{
+		            		if(Array.isArray(result.details.componentFailures))
+		            		{
+			            		for(var index in result.details.componentFailures)
+				        		{
+				        			if(index < result.details.componentFailures.length)
+				        			{
+				        				var failureComp = result.details.componentFailures[index];
+				        				var error = '\n File name: '+failureComp.fileName + 
+							                            	', Component name: '+failureComp.fullName + 
+							                                ' (Line: ' + failureComp.lineNumber + ': Column:' + failureComp.columnNumber + ') : ' + 
+							                                '\n Message: '+failureComp.problem;
+				        				errorItemMap[failureComp.componentType+':'+failureComp.fileName+''+failureComp.fullName] = error;
+				        			}
+				        		}
+			        		}
+			        		else
+			        		{
+			        			var failureComp = result.details.componentFailures;
+			        			var error = '\n File name: '+failureComp.fileName + 
+							                            	', Component name: '+failureComp.fullName + 
+							                            	'\n Message: '+failureComp.problem;
+			        			errorItemMap[failureComp.componentType+':'+failureComp.fileName+''+failureComp.fullName] = error;
+			        		}
+		            	}
+		            	if(result.details.componentSuccesses != undefined && result.success)
+		            	{
+		            		if(Array.isArray(result.details.componentSuccesses))
+		            		{
+			            		for(var index in result.details.componentSuccesses)
+				        		{
+				        			if(index < result.details.componentSuccesses.length)
+				        			{
+				        				var successComp = result.details.componentSuccesses[index];
+				        				if(successComp.fullName != 'package.xml')
+				        				{
+					        				var componentStatus = ( successComp.created == 'true' ? 'CREATED ' : successComp.changed == 'true' ? 'UPDATED ' : successComp.deleted == 'true' ? 'DELETED ' : ' N/A ');
+											var successMessage = "";			
+											if(componentStatus != ' N/A ')
+						            		{
+							                	successMessage = '\n Component '+successComp.fullName + ' is '+componentStatus;
+							                	if(!IsCheckOnly)
+							                	{
+								                	if(componentStatus == 'CREATED ')
+										    			createdSet[successComp.componentType+':'+successComp.fullName] = successComp.componentType+':'+successComp.fullName;
+										    		else if(componentStatus == 'UPDATED ')
+										    			updatedSet[successComp.componentType+':'+successComp.fullName] = successComp.componentType+':'+successComp.fullName;
+										    		else if(componentStatus == 'DELETED ')
+										    			deletedSet[successComp.componentType+':'+successComp.fullName] = successComp.componentType+':'+successComp.fullName;
+						            			}    
+						            		}
+						            		else
+						            		{
+						            			//if item status in N/A.
+						            			successMessage = '\n Component '+successComp.fullName + '  NO CHANGE';
+						            		}
+					        				successItemMap[successComp.componentType+':'+successComp.fileName+''+successComp.fullName] = successMessage;
+				        				}
+				        			}
+				        		}
+			        		}
+			        		else
+			        		{
+			        			var successComp = result.details.componentSuccesses;
+			        			var componentStatus = ( successComp.created == 'true' ? 'CREATED ' : successComp.changed == 'true' ? 'UPDATED ' : successComp.deleted == 'true' ? 'DELETED ' : ' N/A ');
+			        			var successMessage = '\n Component '+successComp.fullName + ' is '+componentStatus;
+			        			successItemMap[successComp.componentType+':'+successComp.fileName+''+successComp.fullName] = successMessage;
+			        		}
+		            	}
+		            }
+		            //finish deployment and save logs.
+		            finishDeployment();
+		        }
+		        else
+		        {
+        			var caseSensitiveDeploymentId = result.id.length == 18 ? result.id.slice(0,15) : result.id;
+        			var remainingTime = 20;
+					var idMessage;
+					if(IsCheckOnly)
+						idMessage = "To get latest up-to-the-second validation status, please login to the target organization. Check Validation status with name: "+ caseSensitiveDeploymentId;
+					else
+						idMessage = "To get latest up-to-the-second deployment status, please login to the target organization. Check Deployment status with name: "+ caseSensitiveDeploymentId;
+        			var timeCounter = function(){
+        				if(remainingTime > 0)
+        				{
+        					var strMessage;
+        					if(IsCheckOnly)
+        						strMessage = "Salesforce is validating your patch. Checking validation status in "+remainingTime+" seconds.#"+idMessage;
+        					else
+        						strMessage = "Salesforce is deploying your patch. Checking deployment status in "+remainingTime+" seconds.#"+idMessage;
+							setMessageOnPage(strMessage);
+                            setTimeout(timeCounter, 1000);
+                            remainingTime--;
+        				}
+        				else
+        				{
+        					conn1.metadata.checkDeployStatus(result.id,true,deployDetail);
+        				}
+        			}
+        			timeCounter();
+		        }
+            }
+       	} 
+       	
+       	//finish deployment and save logs.
+       	function finishDeployment()
+       	{
+	    	if(deploymentLogId != undefined && deploymentLogId != null)
+	    	{
+	    		//Success Log
+	    		successLog += '\n---------- Success Log Begin ----------------\n';
+	    		var tempMap = {};
+		        for(var key in successItemMap)
+		        {
+		        	var successList = [];
+		        	var temp = key.split(':');
+		        	var mType = 'Unknown';
+		        	if(temp.length > 0)
+		        	{
+		        		mType = temp[0];
+		        	}
+		        	if(tempMap[mType])
+		        	{
+		        		successList = tempMap[mType];
+		        	}
+		        	successList.push(successItemMap[key]);
+		        	tempMap[mType] = successList;
+		        }
+		        //successItemMap = {};
+		        for(var key in tempMap)
+		        {
+		        	if(IsCheckOnly)
+		        		successLog +=  '\n\n---------- Validate '+key+' ----------------\n';
+		        	else
+		        		successLog +=  '\n\n---------- Deployed '+key+' ----------------\n';
+		        	var successList = tempMap[key];
+		        	for(var index in successList)
+		        	{
+		        		if(index < successList.length)
+			        		successLog += successList[index];
+			        }
+		        }
+		        tempMap = {};
+		        successLog += '\n\n---------- Success Log Finished ----------------\n';
+	    		
+	    		// Error Log
+		        errorLog += '\n---------- Error Log Begin ----------------\n';
+		        for(var index in UnknownErrorInDeploy)
+		        {
+		        	if(index < UnknownErrorInDeploy.length)
+		        	{
+		        		errorLog += UnknownErrorInDeploy[index];
+		        		errorLog += '\n';
+		        	}
+		        }
+		        tempMap = {};
+		        for(var key in errorItemMap)
+		        {
+		        	var successList = [];
+		        	var temp = key.split(':');
+		        	var mType = 'Unknown';
+		        	if(temp.length > 0)
+		        	{
+		        		mType = temp[0];
+		        	}
+		        	if(tempMap[mType])
+		        	{
+		        		successList = tempMap[mType];
+		        	}
+		        	successList.push(errorItemMap[key]);
+		        	tempMap[mType] = successList;
+		        }
+		        //errorItemMap = {};
+		        for(var key in tempMap)
+		        {
+		        	if(IsCheckOnly)
+		        		errorLog +=  '\n\n---------- Validate '+key+' ----------------\n';
+		        	else
+		        		errorLog +=  '\n\n---------- Deployed '+key+' ----------------\n';
+		        	var successList = tempMap[key];
+		        	for(var index in successList)
+		        	{
+		        		if(index < successList.length)
+			        		errorLog += successList[index];
+			        }
+		        }
+		        tempMap = {};
+		        errorLog += '\n---------- Error Log Finished ----------------\n';
+	    		
+	    		
+	    		
+	    		
+	    		var attDMLList = [];
+	    		attDMLList.push({ParentId: deploymentLogId,Name : IsCheckOnly ? 'Validate Success Log' : 'Deployment Success Log',Body: window.btoa(successLog),ContentType : 'text/plain'});
+		    	var IsRunTestEmpty=true;
+		    	for(var key in runAllTestMap)
+		    	{
+		    		IsRunTestEmpty=false;
+		    		break;
+		    	}
+		    	if(!IsRunTestEmpty)
+		    	{
+		    		//Run all test log
+		    		var fulldetail = runTestLog;
+		    		runTestLog = '\n---------- Run All Tests Log Begin ----------------\n';
+		    		runTestLog += fulldetail;
+	                for(var key in runAllTestMap)
+	                {
+	                	runTestLog +=  runAllTestMap[key];
+	                	runTestLog += '\n';
+	                }
+	                runTestLog += '\n\n---------- Run All Tests Log Finished ----------------\n';
+		    		attDMLList.push({ParentId: deploymentLogId,Name : 'Run All Tests Log',Body: window.btoa(runTestLog),ContentType : 'text/plain'});
+		    	}
+		    	attDMLList.push({ParentId: deploymentLogId,Name : IsCheckOnly ? 'Validate Error Log' : 'Deployment Error Log',Body: window.btoa(errorLog),ContentType : 'text/plain'});
+		    	if(!IsCheckOnly)
+		    	{
+		    		//Roll back Info file.
+		    		var wrap = new Object();
+		    		wrap.createdSet = [];
+                	wrap.updatedSet = [];
+                	wrap.deletedSet = [];
+                	wrap.message = '';
+                	
+                	
+		    		for(var key in createdSet)
+		    		{
+		    			wrap.createdSet.push(key);
+		    		}
+		    		for(var key in updatedSet)
+		    		{
+		    			wrap.updatedSet.push(key);
+		    		}
+		    		for(var key in deletedSet)
+		    		{
+		    			wrap.deletedSet.push(key);
+		    		}
+		    		if(IsNullResponseError)
+                	{
+                		wrap.message = 'The rollback was not created since Flosum did not receive a response on which components were altered. The older versions of the components are available in the backup.zip. The components altered in the target organization can be seen by the system administrator in the Setup Audit Trail.';
+                	}
+                	else if(wrap.createdSet.length == 0 && wrap.updatedSet.length == 0 && wrap.deletedSet.length == 0)
+                	{
+                		wrap.message = 'No components have changed, hence the rollback file is empty.';
+                	}
+		    		//if(wrap.createdSet.length > 0 || wrap.updatedSet.length > 0 || wrap.deletedSet.length > 0)
+		    			attDMLList.push({ParentId: deploymentLogId,Name : ROLL_BACK_FILE_DESCRIPTION,Body: window.btoa(JSON.stringify(wrap)),ContentType : 'text/plain',Description : ROLL_BACK_FILE_DESCRIPTION});
+		    	}
+	    		var selfConn = new flosumsf.Connection({ accessToken: '{!$API.Session_Id}' });
+	        	selfConn.sobject('Attachment').create(attDMLList,logSaveHandler);
+	    	}
+       	}
+       	
+       	function logSaveHandler(err, ret)
+        {
+        	if (err) 
+           	{ 
+           		showMessage(err.errorCode);
+           	}
+           	else
+           	{
+           		unbindWindow();
+           		redirectToLog(successDeployment);
+           	}
+       	}
+		
+		function getBackUpInfo()
+		{
+			Visualforce.remoting.Manager.invokeAction(
+						            '{!$RemoteAction.ComponentPatchDeployController.collectBackupInfo}',
+						            deployPatchId,
+						            handleBackUpInfo   
+						        );
+		}
+		
+		function handleBackUpInfo(r,e)
+		{
+			if(e.status && r) 
+		    {
+		    	setMessageOnPage("Creating backup...");
+	    		conn1 = createConnection(targetSession,targetReferesh,targetInstance);
+	    		var retrieveRequest = getRetrieveRequest(r);
+	    		conn1.metadata.pollTimeout = 1200000;
+	    		conn1.metadata.retrieve(retrieveRequest,retrieveDetail);
+		    }
+		    else
+		    {
+		    	UnknownErrorInDeploy.push('Error while getting backup of target org :'+e.message);
+				finishDeployment();
+		    }
+		}
+		
+		function retrieveDetail(err, result)
+        {
+			if(err) 
+            { 
+               	if(err != null && err != undefined && err.errorCode != undefined)
+	           	{
+               		UnknownErrorInDeploy.push(err.errorCode);
+               		finishDeployment();
+               	}
+               	else
+               	{
+               		UnknownErrorInDeploy.push('A request was sent to Salesforce to retrieve the prior version of the files before deployment. However, Salesforce did not return any response. Flosum was not able to create a rollback.');
+               		startDeployment();
+               	}
+			}
+            else
+            {
+               	if(result != undefined && result.id != undefined)
+               	{
+               		var AsyncId = result.id;
+               		var remainingTime = 10;
+        			var timeCounter = function(){
+        				if(remainingTime > 0)
+        				{
+							setMessageOnPage("Backup Retrieval status check is scheduled after "+remainingTime+" seconds.");
+                            setTimeout(timeCounter, 1000);
+                            remainingTime--;
+        				}
+        				else
+        				{
+        					checkRetrieveStatus(AsyncId);
+        				}
+        			}
+        			timeCounter();
+               	}
+            }
+        }
+        
+        function checkRetrieveStatus(AsyncId)
+        {
+        	conn1.metadata.pollTimeout = 1200000;
+        	conn1.metadata.checkRetrieveStatus(AsyncId,checkRetrieveStatusDetail);
+        }
+        
+        var backupObjectList = [];
+        
+        function checkRetrieveStatusDetail(err, result)
+        {
+        	if(err) 
+            {
+            	if(err != null && err != undefined && err.errorCode != undefined)
+	           	{
+	            	UnknownErrorInDeploy.push(err.errorCode);
+	            	finishDeployment();
+               	}
+               	else
+               	{
+               		UnknownErrorInDeploy.push('A request was sent to Salesforce to retrieve the prior version of the files before deployment. However, Salesforce did not return any response. Flosum was not able to create a rollback.');
+               		startDeployment();
+               	}
+			}
+            else
+            {
+            	if(result != undefined && result.id != undefined)
+               	{
+               		if(result.done == 'true')
+               		{
+						// Errors?
+						if(result.status == 'Succeeded')
+						{
+							if(result.zipFile != undefined )
+							{
+								if(result.zipFile.length < 3000000)
+								{
+									saveBackupZip(deploymentLogId,ROLL_BACK_ZIP_DESCRIPTION,ROLL_BACK_ZIP_DESCRIPTION,result.zipFile,ROLL_BACK_FILE_TYPE);
+								}
+								else
+								{
+									backupObjectList = [];
+									zip.createReader(new zip.Data64URIReader(result.zipFile), function(reader) {
+											var EntryIndex = 0;
+											// get all entries from the zip
+											reader.getEntries(function(entries) {
+												if(entries.length)
+												{
+													var bodySize = 0;
+													var fileLi = [];
+													var readSingleFile = function(){
+														if (EntryIndex < entries.length) 
+														{
+															var singleEntry = entries[EntryIndex];
+															var fileName = singleEntry.filename;
+															entries[EntryIndex].getData(new zip.BlobWriter(), function(blobData) {
+																if(bodySize + blobData.size > 2000000 && fileLi.length > 0)
+																{
+																	var addIndex = 0;
+																	function nextFile() 
+																	{
+																		var file = fileLi[addIndex];
+																			zipWriter.add(file.name, new zip.BlobReader(file.data), function() {
+																			addIndex++;
+																			if(addIndex < fileLi.length)
+																				nextFile();
+																			else
+																			{
+																				zipWriter.close(function(base64Data) {
+																    					base64Data = base64Data.slice(base64Data.indexOf(';base64,') + 8);
+																    					bodySize = 0;
+																						fileLi = [];
+																						backupObjectList.push({ParentId: deploymentLogId,Name : ROLL_BACK_ZIP_DESCRIPTION,Description:ROLL_BACK_ZIP_DESCRIPTION,Body:base64Data,ContentType : ROLL_BACK_FILE_TYPE});	
+																							
+																						var fileInfo = new Object();
+																						fileInfo.name = fileName;
+																						fileInfo.data = blobData;
+																						fileLi.push(fileInfo);
+																						bodySize = bodySize + blobData.size;
+																						EntryIndex++;
+																						readSingleFile();
+																    				});
+																			}
+																		});
+																	}
+														
+																	function createZipWriter() {
+														                   zip.createWriter(writer, function(writer) {
+																			zipWriter = writer;
+																			nextFile();
+																		}, onerror);
+																	}
+																	writer = new zip.Data64URIWriter();
+																	createZipWriter();
+																}
+																else
+																{
+																	var fileInfo = new Object();
+																	fileInfo.name = fileName;
+																	fileInfo.data = blobData;
+																	fileLi.push(fileInfo);
+																	bodySize = bodySize + blobData.size;
+																	EntryIndex++;
+																	readSingleFile();
+																}
+													    	});	
+													    }
+													    else
+													    {
+													    	if(fileLi.length > 0)
+													    	{
+																	var addIndex = 0;
+																	function nextFile() 
+																	{
+																		var file = fileLi[addIndex];
+																			zipWriter.add(file.name, new zip.BlobReader(file.data), function() {
+																			addIndex++;
+																			if(addIndex < fileLi.length)
+																				nextFile();
+																			else
+																			{
+																				zipWriter.close(function(base64Data) {
+																    					base64Data = base64Data.slice(base64Data.indexOf(';base64,') + 8);
+																    					bodySize = 0;
+																						fileLi = [];
+																						backupObjectList.push({ParentId: deploymentLogId,Name : ROLL_BACK_ZIP_DESCRIPTION,Description:ROLL_BACK_ZIP_DESCRIPTION,Body:base64Data,ContentType : ROLL_BACK_FILE_TYPE});
+																						backupSingleFileSaver();
+																    				});
+																			}
+																		});
+																	}
+														
+																	function createZipWriter() {
+														                   zip.createWriter(writer, function(writer) {
+																			zipWriter = writer;
+																			nextFile();
+																		}, onerror);
+																	}
+																	writer = new zip.Data64URIWriter();
+																	createZipWriter();
+													    	}
+													    	else
+													    	{
+																backupSingleFileSaver();
+													    	}
+													    }
+													}
+													readSingleFile();
+												}
+												else
+												{
+													console.log('!entries.length');
+												}
+											});
+									}, function(error) {
+									  // onerror callback
+										if(error.message != undefined)
+										{
+											showMessage(error.message);
+										}
+										else
+										{
+											showMessage('Unknown error.');
+										}
+									});
+								}
+							}
+							else
+							{
+								startDeployment();
+							}
+						}
+						else
+						{
+							UnknownErrorInDeploy.push(result.errorMessage);
+               				finishDeployment();
+						}
+               		}
+               		else
+               		{
+               			var AsyncId = result.id;
+               			var remainingTime = 10;
+	        			var timeCounter = function(){
+	        				if(remainingTime > 0)
+	        				{
+								setMessageOnPage("Backup Retrieval status check is scheduled after "+remainingTime+" seconds.");
+	                            setTimeout(timeCounter, 1000);
+	                            remainingTime--;
+	        				}
+	        				else
+	        				{
+	        					checkRetrieveStatus(AsyncId);
+	        				}
+	        			}
+	        			timeCounter();
+               		}
+               	}
+               	else
+               	{
+               		UnknownErrorInDeploy.push('Unknown error while getting backup of target org.');
+               		finishDeployment();
+               	}
+            }
+        }
+        
+        function backupSingleFileSaver()
+		{
+			if(backupObjectList.length > 0)
+			{
+				setMessageOnPage("Saving backup file...");
+				var attObj = backupObjectList[0];
+				var selfConn = new flosumsf.Connection({ accessToken: '{!$API.Session_Id}' });
+				selfConn.sobject('Attachment').create(attObj,function(err, result){
+					if(err)
+					{
+						showMessage(err.errorCode);
+					}
+					else
+					{
+						backupSingleFileSaver();
+					}
+				});
+				backupObjectList.shift();
+			}
+			else
+			{
+				startDeployment();
+			}
+		}
+        
+        //Save backup zip for rollback
+        function saveBackupZip(attParentId,NameOfAtt,attDescription,base64data,fileType)
+        {
+        	setMessageOnPage("Saving backup file...");
+        	
+        	var selfConn = new flosumsf.Connection({ accessToken: '{!$API.Session_Id}' });
+	        	selfConn.sobject('Attachment').create({ 
+	                ParentId: attParentId,
+	                Name : NameOfAtt,
+	                Body: base64data,
+	                ContentType : fileType, 
+	                Description :  attDescription,
+	            },attachmentSaveHandler);
+        }
+        
+        function attachmentSaveHandler(err, ret)
+        {
+        	if (err || !ret.success) 
+           	{ 
+           		console.error(err, ret); 
+           		//start deployment
+           		startDeployment();
+           	}
+           	else
+           	{
+           		//start deployment
+				startDeployment();
+           	}
+        }
+        
+        function getRetrieveRequest(retrieveMap)
+        {
+        	var retrieveRequest = new Object();
+        	retrieveRequest.apiVersion = 34.0;
+        	retrieveRequest.singlePackage = true;
+        	retrieveRequest.unpackaged = {};
+        	retrieveRequest.unpackaged.types = [];
+        	for(var metaType in retrieveMap)
+        	{
+        		var oneType = {};
+        		oneType.name = metaType;
+        		oneType.members = [];
+        		var li = retrieveMap[metaType];
+        		for(var index in li)
+        		{
+        			if(index< li.length)
+        			{
+        				oneType.members.push(li[index]);
+        			}
+        		}
+        		retrieveRequest.unpackaged.types.push(oneType);
+        	}
+        	return retrieveRequest;
+        }
+		
+		function createConnection(accessToken,refreshToken,instanceUrl)
+		{
+			var temp =  new flosumsf.Connection({
+				oauth2 : {
+			    	clientId : '{!cred.ConsumerKey__c}',
+			    	clientSecret : '{!cred.ConsumerSecret__c}',
+			    	redirectUri : '{!cred.Redirect_URL__c}'
+			  	},
+				accessToken : accessToken,
+	            proxyUrl: "/services/proxy",
+				refreshToken : refreshToken,
+				maxRequest: 100000,
+				serverUrl: instanceUrl
+			});
+		  return temp;
+		}
+		
+		function childXMLJoin(zipData,newData,metaType,fullName)
+		{
+			if(metaType != 'CustomLabel')
+			{
+				fullName = fullName.slice(fullName.lastIndexOf(".")+1,(fullName.length));
+			}
+			var joinData = ''+zipData;
+			if(mmap[metaType] != undefined)
+			{
+				var fullParentObject = new Object();
+				var x2js = new X2JS();
+				var tgtmap = {};
+				var srcjson = x2js.xml_str2json(newData);
+				if(srcjson != null)
+				{
+					var srcitems;
+					if(metaType == 'CustomLabel')
+					{
+						var srcMetaItem = srcjson.CustomLabels;
+						srcitems = srcMetaItem.labels;
+					}
+					else if(metaType == 'CustomField')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.fields;
+					}
+					else if(metaType == 'ListView')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.listViews;
+					}
+					else if(metaType == 'CompactLayout')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.compactLayouts;
+					}
+					else if(metaType == 'WebLink')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.webLinks;
+					}
+					else if(metaType == 'RecordType')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.recordTypes;
+					}
+					else if(metaType == 'FieldSet')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.fieldSets;
+					}
+					else if(metaType == 'ValidationRule')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.validationRules;
+					}
+					else if(metaType == 'AssignmentRule')
+					{
+						var srcMetaItem = srcjson.AssignmentRules;
+						srcitems = srcMetaItem.assignmentRule;
+					}
+					else if(metaType == 'AutoResponseRule')
+					{
+						var srcMetaItem = srcjson.AutoResponseRules;
+						srcitems = srcMetaItem.autoResponseRule;
+					}
+					else if(metaType == 'WorkflowTask')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.tasks;
+					}
+					else if(metaType == 'WorkflowOutboundMessage')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.outboundMessages;
+					}
+					else if(metaType == 'WorkflowFieldUpdate')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.fieldUpdates;
+					}
+					else if(metaType == 'WorkflowAlert')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.alerts;
+					}
+					else if( metaType == 'WorkflowRule')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.rules;
+					}
+					else if(metaType == 'SharingCriteriaRule')
+					{
+						var srcMetaItem = srcjson.SharingRules;
+						srcitems = srcMetaItem.sharingCriteriaRules;
+					}
+					else if(metaType == 'SharingOwnerRule')
+					{
+						var srcMetaItem = srcjson.SharingRules;
+						srcitems = srcMetaItem.sharingOwnerRules;
+					}
+					else if(metaType == 'BusinessProcess')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.businessProcesses;
+					}
+					else if(metaType == 'SharingReason')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.sharingReasons;
+					}
+					else if(metaType == 'EscalationRule')
+					{
+						var srcMetaItem = srcjson.EscalationRules;
+						srcitems = srcMetaItem.escalationRule;
+					}
+					else if(metaType == 'MatchingRule')
+					{
+						var srcMetaItem = srcjson.MatchingRules;
+						srcitems = srcMetaItem.matchingRules;
+					}
+					else if(metaType == 'ManagedTopic')
+					{
+						var srcMetaItem = srcjson.ManagedTopics;
+						srcitems = srcMetaItem.ManagedTopic;
+					}
+					
+					if(srcitems != undefined)
+					{
+						if(srcitems.fullName == undefined)
+					    {			    	
+					    	$.each(srcitems, function( i, v )
+						    {
+						    	tgtmap[v.fullName] = JSON.stringify(v);
+						    });  
+					    }
+					    else
+					    {
+						    tgtmap[srcitems.fullName] = JSON.stringify(srcitems);
+					    }
+				    }
+				    if(tgtmap[fullName] != undefined)
+				    {
+				    	var oldjson = x2js.xml_str2json(zipData);
+				    	if(oldjson != undefined)
+				    	{
+				    		var srcitems;
+				    		if(metaType == 'CustomLabel')
+							{
+								var srcMetaItem = oldjson.CustomLabels;
+								srcitems = srcMetaItem.labels;
+							}
+							else if(metaType == 'CustomField')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.fields;
+							}
+							else if(metaType == 'ListView')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.listViews;
+							}
+							else if(metaType == 'CompactLayout')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.compactLayouts;
+							}
+							else if(metaType == 'WebLink')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.webLinks;
+							}
+							else if(metaType == 'RecordType')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.recordTypes;
+							}
+							else if(metaType == 'FieldSet')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.fieldSets;
+							}
+							else if(metaType == 'ValidationRule')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.validationRules;
+							}
+							else if(metaType == 'AssignmentRule')
+							{
+								var srcMetaItem = oldjson.AssignmentRules;
+								srcitems = srcMetaItem.assignmentRule;
+							}
+							else if(metaType == 'AutoResponseRule')
+							{
+								var srcMetaItem = oldjson.AutoResponseRules;
+								srcitems = srcMetaItem.autoResponseRule;
+							}
+							else if(metaType == 'WorkflowTask')
+							{
+								var srcMetaItem = oldjson.Workflow;
+								srcitems = srcMetaItem.tasks;
+							}
+							else if(metaType == 'WorkflowOutboundMessage')
+							{
+								var srcMetaItem = oldjson.Workflow;
+								srcitems = srcMetaItem.outboundMessages;
+							}
+							else if(metaType == 'WorkflowFieldUpdate')
+							{
+								var srcMetaItem = oldjson.Workflow;
+								srcitems = srcMetaItem.fieldUpdates;
+							}
+							else if(metaType == 'WorkflowAlert')
+							{
+								var srcMetaItem = oldjson.Workflow;
+								srcitems = srcMetaItem.alerts;
+							}
+							else if( metaType == 'WorkflowRule')
+							{
+								var srcMetaItem = oldjson.Workflow;
+								srcitems = srcMetaItem.rules;
+							}
+							else if(metaType == 'SharingCriteriaRule')
+							{
+								var srcMetaItem = oldjson.SharingRules;
+								srcitems = srcMetaItem.sharingCriteriaRules;
+							}
+							else if(metaType == 'SharingOwnerRule')
+							{
+								var srcMetaItem = oldjson.SharingRules;
+								srcitems = srcMetaItem.sharingOwnerRules;
+							}
+							else if(metaType == 'BusinessProcess')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.businessProcesses;
+							}
+							else if(metaType == 'SharingReason')
+							{
+								var srcMetaItem = oldjson.CustomObject;
+								srcitems = srcMetaItem.sharingReasons;
+							}
+							else if(metaType == 'EscalationRule')
+							{
+								var srcMetaItem = oldjson.EscalationRules;
+								srcitems = srcMetaItem.escalationRule;
+							}
+							else if(metaType == 'MatchingRule')
+							{
+								var srcMetaItem = oldjson.MatchingRules;
+								srcitems = srcMetaItem.matchingRules;
+							}
+							else if(metaType == 'ManagedTopic')
+							{
+								var srcMetaItem = oldjson.ManagedTopics;
+								srcitems = srcMetaItem.ManagedTopic;
+							}
+							var preMap = {};
+							if(srcitems != undefined)
+							{
+								if(srcitems.fullName == undefined)
+							    {			    	
+							    	$.each(srcitems, function( i, v )
+								    {
+								    	preMap[v.fullName] = JSON.stringify(v);
+								    });  
+							    }
+							    else
+							    {
+								    preMap[srcitems.fullName] = JSON.stringify(srcitems);
+							    }
+							}
+							preMap[fullName] = tgtmap[fullName];
+
+							var updatedJsn = '[';
+							for(var name in preMap)
+							{
+								if(updatedJsn == '[')
+								{
+									updatedJsn += preMap[name];
+								}
+								else
+								{
+									updatedJsn+=','+preMap[name];
+								}
+							}
+							updatedJsn+=']';
+							srcitems = JSON.parse(updatedJsn);
+							
+							
+							if(metaType == 'CustomLabel')
+							{
+								srcMetaItem.labels = srcitems;
+								oldjson.CustomLabels = srcMetaItem;
+							}
+							else if(metaType == 'CustomField')
+							{
+								srcMetaItem.fields = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							else if(metaType == 'ListView')
+							{
+								srcMetaItem.listViews = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							else if(metaType == 'CompactLayout')
+							{
+								srcMetaItem.compactLayouts = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							else if(metaType == 'WebLink')
+							{
+								srcMetaItem.webLinks = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							else if(metaType == 'RecordType')
+							{
+								srcMetaItem.recordTypes = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							else if(metaType == 'FieldSet')
+							{
+								srcMetaItem.fieldSets = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							else if(metaType == 'ValidationRule')
+							{	
+								srcMetaItem.validationRules = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							else if(metaType == 'AssignmentRule')
+							{		
+								srcMetaItem.assignmentRule = srcitems;
+								oldjson.AssignmentRules = srcMetaItem;
+							}
+							else if(metaType == 'AutoResponseRule')
+							{
+								srcMetaItem.autoResponseRule = srcitems;
+								oldjson.AutoResponseRules = srcMetaItem;
+							}
+							else if(metaType == 'WorkflowTask')
+							{
+								srcMetaItem.tasks = srcitems;
+								oldjson.Workflow = srcMetaItem;
+							}
+							else if(metaType == 'WorkflowOutboundMessage')
+							{
+								srcMetaItem.outboundMessages = srcitems;
+								oldjson.Workflow = srcMetaItem;
+							}
+							else if(metaType == 'WorkflowFieldUpdate')
+							{
+								srcMetaItem.fieldUpdates = srcitems;
+								oldjson.Workflow = srcMetaItem;
+							}
+							else if(metaType == 'WorkflowAlert')
+							{
+								srcMetaItem.alerts = srcitems;
+								oldjson.Workflow = srcMetaItem;
+							}
+							else if(metaType == 'WorkflowRule')
+							{
+								srcMetaItem.rules = srcitems;
+								oldjson.Workflow = srcMetaItem;
+							}
+							else if(metaType == 'SharingCriteriaRule')
+							{
+								srcMetaItem.sharingCriteriaRules = srcitems;
+								oldjson.SharingRules = srcMetaItem;
+							}
+							else if(metaType == 'SharingOwnerRule')
+							{
+								srcMetaItem.sharingOwnerRules = srcitems;
+								oldjson.SharingRules = srcMetaItem;
+							}
+							else if(metaType == 'EscalationRule')
+							{
+								srcMetaItem.escalationRule = srcitems;
+								oldjson.EscalationRules= srcMetaItem;
+							}
+							else if(metaType == 'MatchingRule')
+							{
+								srcMetaItem.matchingRules = srcitems;
+								oldjson.MatchingRules = srcMetaItem;
+							}
+							else if(metaType == 'ManagedTopic')
+							{
+								srcMetaItem.managedTopic = srcitems;
+								oldjson.ManagedTopics = srcMetaItem;
+							}
+							else if(metaType == 'BusinessProcess')
+							{
+								srcMetaItem.businessProcesses = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							else if(metaType == 'SharingReason')
+							{
+								srcMetaItem.sharingReasons = srcitems;
+								oldjson.CustomObject = srcMetaItem;
+							}
+							joinData = x2js.json2xml_str(oldjson);
+				    	}
+				    }
+				}
+			}
+			return joinData;
+		}
+		
+		function fileMapCreator(zipFile,metaType,parentId)
+		{
+			if(metaType == 'Profile' || metaType == 'PermissionSet')
+			{
+				for(var fileName in zipFile.files)
+				{
+					if(fileName != undefined && (fileName.indexOf("profiles/") == 0 || fileName.indexOf("permissionsets/") == 0)) 
+	            	{
+	            		var keyFileName = parentId+'#'+metaType+'#'+fileName;
+						if(patchDataMap[keyFileName] != undefined)
+						{
+							var profileXmlList = [];
+							profileXmlList.push(patchDataMap[keyFileName]);
+							profileXmlList.push(zipFile.files[fileName].asText());
+							var fileData = '';
+							if(metaType == 'Profile')
+							{
+								fileData = profileJoin(profileXmlList);
+							}
+							else if(metaType == 'PermissionSet')
+							{
+								fileData = permissionSetJoin(profileXmlList);
+							}
+							patchDataMap[keyFileName] = fileData;
+						}	
+						else
+						{
+							patchDataMap[keyFileName] = zipFile.files[fileName].asText();
+						}
+					}
+				}
+			}
+			else if(mmap[metaType] == undefined)
+			{
+				for(var fileName in zipFile.files)
+				{
+					if(fileName != undefined && fileName.charAt(fileName.length - 1) != '/' && fileName != 'package.xml' && fileName != 'undefined') 
+	            	{
+						patchDataMap[parentId+'#'+metaType+'#'+fileName] = zipFile.files[fileName].asBinary();
+					}
+				}
+			}
+			else
+			{
+				for(var fileName in zipFile.files)
+				{
+					if(fileName != undefined && fileName.charAt(fileName.length - 1) != '/' && fileName != 'package.xml' && fileName != 'undefined') 
+	            	{
+	            		childSplitter(zipFile.files[fileName].asText(),metaType,parentId,fileName);
+					}
+				}
+			}
+		}
+		
+		function childSplitter(fullXml,metaType,parentId,fileName)
+		{
+			if(fullXml != undefined)
+			{
+				var fullName = '';
+				if(metaType != 'CustomLabel')
+				{
+					fullName = fileName.slice(fileName.indexOf("/")+1,fileName.lastIndexOf('.'))+".";
+				}
+				var x2js = new X2JS();
+				var tgtmap = {};
+				var srcjson = x2js.xml_str2json(fullXml);
+				if(srcjson != null)
+				{
+					var srcitems;
+					if(metaType == 'CustomLabel')
+					{
+						var srcMetaItem = srcjson.CustomLabels;
+						srcitems = srcMetaItem.labels;
+					}
+					else if(metaType == 'CustomField')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.fields;
+					}
+					else if(metaType == 'ListView')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.listViews;
+					}
+					else if(metaType == 'CompactLayout')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.compactLayouts;
+					}
+					else if(metaType == 'WebLink')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.webLinks;
+					}
+					else if(metaType == 'RecordType')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.recordTypes;
+					}
+					else if(metaType == 'FieldSet')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.fieldSets;
+					}
+					else if(metaType == 'ValidationRule')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.validationRules;
+					}
+					else if(metaType == 'AssignmentRule')
+					{
+						var srcMetaItem = srcjson.AssignmentRules;
+						srcitems = srcMetaItem.assignmentRule;
+					}
+					else if(metaType == 'AutoResponseRule')
+					{
+						var srcMetaItem = srcjson.AutoResponseRules;
+						srcitems = srcMetaItem.autoResponseRule;
+					}
+					else if(metaType == 'WorkflowTask')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.tasks;
+					}
+					else if(metaType == 'WorkflowOutboundMessage')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.outboundMessages;
+					}
+					else if(metaType == 'WorkflowFieldUpdate')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.fieldUpdates;
+					}
+					else if(metaType == 'WorkflowAlert')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.alerts;
+					}
+					else if( metaType == 'WorkflowRule')
+					{
+						var srcMetaItem = srcjson.Workflow;
+						srcitems = srcMetaItem.rules;
+					}
+					else if(metaType == 'SharingCriteriaRule')
+					{
+						var srcMetaItem = srcjson.SharingRules;
+						srcitems = srcMetaItem.sharingCriteriaRules;
+					}
+					else if(metaType == 'SharingOwnerRule')
+					{
+						var srcMetaItem = srcjson.SharingRules;
+						srcitems = srcMetaItem.sharingOwnerRules;
+					}
+					else if(metaType == 'BusinessProcess')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.businessProcesses;
+					}
+					else if(metaType == 'SharingReason')
+					{
+						var srcMetaItem = srcjson.CustomObject;
+						srcitems = srcMetaItem.sharingReasons;
+					}
+					else if(metaType == 'EscalationRule')
+					{
+						var srcMetaItem = srcjson.EscalationRules;
+						srcitems = srcMetaItem.escalationRule;
+					}
+					else if(metaType == 'MatchingRule')
+					{
+						var srcMetaItem = srcjson.MatchingRules;
+						srcitems = srcMetaItem.matchingRules;
+					}
+					else if(metaType == 'ManagedTopic')
+					{
+						var srcMetaItem = srcjson.ManagedTopics;
+						srcitems = srcMetaItem.ManagedTopic;
+					}
+					
+					if(srcitems != undefined)
+					{
+						if(srcitems.fullName == undefined)
+					    {			    	
+					    	$.each(srcitems, function( i, v )
+						    {
+						    	tgtmap[fullName+''+v.fullName] = JSON.stringify(v);
+						    });  
+					    }
+					    else
+					    {
+						    tgtmap[fullName+''+srcitems.fullName] = JSON.stringify(srcitems);
+					    }
+				    }
+				    
+				    if(metadataTypeHeaderMap[metaType] != undefined && metadataTypePreTagMap[metaType]  != undefined && metadataTypePostTagMap[metaType]  != undefined && metadataTypeFooterMap[metaType] != undefined)
+				    {
+					    for(var itemName in tgtmap)
+					    {
+					    	tempXml = '';
+
+				    		//header
+				    		tempXml = metadataTypeHeaderMap[metaType];
+				    		//body
+				    		tempXml += metadataTypePreTagMap[metaType]+''+x2js.json2xml_str($.parseJSON(tgtmap[itemName]))+''+metadataTypePostTagMap[metaType];
+				    		//footer
+				    		tempXml += metadataTypeFooterMap[metaType];
+					    	
+							
+							if(tempXml != '')
+							{
+								patchDataMap[parentId+'#'+metaType+'#'+itemName] = tempXml;
+							}
+						}
+				    }
+				}
+			}
+		}
+		
+		function profileJoin(profileXmlList)
+		{
+			var x2js = new X2JS();
+			var fullProfile = '';
+			var fullProfileObj = new Object();
+			for(var index in profileXmlList)
+			{
+				if(index < profileXmlList.length)
+				{
+					var xml = profileXmlList[index];
+					var orignal = x2js.xml_str2json(xml);
+					if(orignal.Profile != undefined)
+					{
+						if(fullProfileObj.Profile == undefined)
+						{
+							fullProfileObj.Profile = orignal.Profile;
+						}
+						else if(fullProfileObj.Profile != undefined)
+						{
+							srcjson = orignal.Profile;
+							var profile = fullProfileObj.Profile;
+							if(srcjson._xmlns != undefined)
+							{
+								profile._xmlns = srcjson._xmlns;
+							}
+							if(srcjson.applicationVisibilities != undefined)
+							{
+								profile.applicationVisibilities = srcjson.applicationVisibilities;
+							}
+							if(srcjson.classAccesses != undefined)
+							{
+								profile.classAccesses = srcjson.classAccesses;
+							}
+							if(srcjson.custom != undefined)
+							{
+								profile.custom = srcjson.custom;
+							}
+							if(srcjson.customPermissions != undefined)
+							{
+								profile.customPermissions = srcjson.customPermissions;
+							}
+							if(srcjson.description != undefined)
+							{
+								profile.description = srcjson.description;
+							}
+							if(srcjson.externalDataSourceAccesses != undefined)
+							{
+								profile.externalDataSourceAccesses = srcjson.externalDataSourceAccesses;
+							}
+							if(srcjson.fieldLevelSecurities != undefined)
+							{
+								profile.fieldLevelSecurities = srcjson.fieldLevelSecurities;
+							}
+							if(srcjson.fieldPermissions != undefined)
+							{
+								profile.fieldPermissions = srcjson.fieldPermissions;
+							}
+							if(srcjson.fullName != undefined)
+							{
+								profile.fullName = srcjson.fullName;
+							}
+							if(srcjson.layoutAssignments != undefined)
+							{
+								profile.layoutAssignments = srcjson.layoutAssignments;
+							}
+							if(srcjson.loginHours != undefined)
+							{
+								profile.loginHours = srcjson.loginHours;
+							}
+							if(srcjson.loginIpRanges != undefined)
+							{
+								profile.loginIpRanges = srcjson.loginIpRanges;
+							}
+							if(srcjson.objectPermissions != undefined)
+							{
+								profile.objectPermissions = srcjson.objectPermissions;
+							}
+							if(srcjson.pageAccesses != undefined)
+							{
+								profile.pageAccesses = srcjson.pageAccesses;
+							}
+							if(srcjson.recordTypeVisibilities != undefined)
+							{
+								profile.recordTypeVisibilities = srcjson.recordTypeVisibilities;
+							}
+							if(srcjson.tabVisibilities != undefined)
+							{
+								profile.tabVisibilities = srcjson.tabVisibilities;
+							}
+							if(srcjson.userLicense != undefined)
+							{
+								profile.userLicense = srcjson.userLicense;
+							}
+							if(srcjson.userPermissions != undefined)
+							{
+								profile.userPermissions = srcjson.userPermissions;
+							}
+							fullProfileObj.Profile = profile;
+						}	
+					}
+				}
+			}
+			fullXML = x2js.json2xml_str(fullProfileObj);
+			return fullXML;
+		}
+		
+		function permissionSetJoin(permissionSetXmlList)
+		{
+			var x2js = new X2JS();
+			var fullProfile = '';
+			var fullProfileObj = new Object();
+			for(var index in permissionSetXmlList)
+			{
+				if(index < permissionSetXmlList.length)
+				{
+					var xml = permissionSetXmlList[index];
+					var orignal = x2js.xml_str2json(xml);
+					if(orignal.PermissionSet != undefined)
+					{
+						if(fullProfileObj.PermissionSet == undefined)
+						{
+							fullProfileObj.PermissionSet = orignal.PermissionSet;
+						}
+						else if(fullProfileObj.PermissionSet != undefined)
+						{
+							srcjson = orignal.PermissionSet;
+							var permissionSet = fullProfileObj.PermissionSet;
+							if(srcjson._xmlns != undefined)
+							{
+								permissionSet._xmlns = srcjson._xmlns;
+							}
+							if(srcjson.applicationVisibilities != undefined)
+							{
+								permissionSet.applicationVisibilities = srcjson.applicationVisibilities;
+							}
+							if(srcjson.classAccesses != undefined)
+							{
+								permissionSet.classAccesses = srcjson.classAccesses;
+							}
+							if(srcjson.customPermissions != undefined)
+							{
+								permissionSet.customPermissions = srcjson.customPermissions;
+							}
+							if(srcjson.description != undefined)
+							{
+								permissionSet.description = srcjson.description;
+							}
+							if(srcjson.externalDataSourceAccesses != undefined)
+							{
+								permissionSet.externalDataSourceAccesses = srcjson.externalDataSourceAccesses;
+							}
+							if(srcjson.fieldLevelSecurities != undefined)
+							{
+								permissionSet.fieldLevelSecurities = srcjson.fieldLevelSecurities;
+							}
+							if(srcjson.fieldPermissions != undefined)
+							{
+								permissionSet.fieldPermissions = srcjson.fieldPermissions;
+							}
+							if(srcjson.label != undefined)
+							{
+								permissionSet.label = srcjson.label;
+							}
+							if(srcjson.objectPermissions != undefined)
+							{
+								permissionSet.objectPermissions = srcjson.objectPermissions;
+							}
+							if(srcjson.pageAccesses != undefined)
+							{
+								permissionSet.pageAccesses = srcjson.pageAccesses;
+							}
+							if(srcjson.recordTypeVisibilities != undefined)
+							{
+								permissionSet.recordTypeVisibilities = srcjson.recordTypeVisibilities;
+							}
+							if(srcjson.tabSettings != undefined)
+							{
+								permissionSet.tabSettings = srcjson.tabSettings;
+							}
+							if(srcjson.userLicense != undefined)
+							{
+								permissionSet.userLicense = srcjson.userLicense;
+							}
+							if(srcjson.userPermissions != undefined)
+							{
+								permissionSet.userPermissions = srcjson.userPermissions;
+							}
+							fullProfileObj.PermissionSet = permissionSet;
+						}	
+					}
+				}
+			}
+			fullXML = x2js.json2xml_str(fullProfileObj);
+			return fullXML;
+		}
+		
+		    	//Validation Profile
+    	function createValidDATA() {
+			var Items = patchItems;
+            for(var index in Items)
+			{
+				if(index < Items.length) {
+					if ((Items[index].metaType == 'ApexClass' || Items[index].metaType == 'CustomObject' || Items[index].metaType == 'ApexPage' || Items[index].metaType == 'CustomTab' || Items[index].metaType == 'Layout') && Items[index].items.length > 0) {
+						for(var index2 in Items[index].items) {
+							if(index2 <  Items[index].items.length) {
+								var oldList = ValidName[Items[index].metaType];
+								ValidName[Items[index].metaType].push(Items[index].items[index2].itemName);
+
+							}
+						}
+					}
+				}
+			}
+        }
+
+		function validationProfileAndPermissionSet(objectForValidation) {
+			var x2js = new X2JS();
+			var orignal = x2js.xml_str2json(objectForValidation);
+			var ObjectForVal;
+			if (orignal.Profile != undefined) {
+				ObjectForVal = orignal.Profile;
+			}
+			else if (orignal.PermissionSet != undefined) {
+				ObjectForVal = orignal.PermissionSet;
+			}
+			if (ObjectForVal != null) {
+				//APEX CLASS
+				if (ObjectForVal.classAccesses != undefined) {
+					var NewArr =[];
+					var EtallonClasses = ValidName.ApexClass;
+					for(var index in ObjectForVal.classAccesses) {
+						if (jQuery.inArray(ObjectForVal.classAccesses[index].apexClass, EtallonClasses) !== -1) {
+							NewArr.push(ObjectForVal.classAccesses[index]);
+						}
+						
+					}
+					if (NewArr.length > 0) {
+						ObjectForVal.classAccesses = NewArr;
+					}
+					else {
+						delete ObjectForVal.classAccesses;
+					}
+				}
+
+				//APEX PAGE
+				if (ObjectForVal.pageAccesses != undefined) {
+					var NewArr =[];
+					var EtallonPages = ValidName.ApexPage;
+					for(var index in ObjectForVal.pageAccesses) {
+						if (jQuery.inArray(ObjectForVal.pageAccesses[index].apexPage, EtallonPages) !== -1) {
+							NewArr.push(ObjectForVal.pageAccesses[index]);
+						}
+						
+					}
+					if (NewArr.length > 0) {
+						ObjectForVal.pageAccesses = NewArr;
+					}
+					else {
+						delete ObjectForVal.pageAccesses;
+					}
+				}
+
+				//TAB permision
+				if (ObjectForVal.tabSettings != undefined && orignal.PermissionSet != undefined) {
+					var NewArr =[];
+					var EtallonTab = ValidName.CustomTab;
+					for(var index in ObjectForVal.tabSettings) {
+						if (jQuery.inArray(ObjectForVal.tabSettings[index].tab, EtallonTab) !== -1) {
+							NewArr.push(ObjectForVal.tabSettings[index]);
+						}
+						
+					}
+					if (NewArr.length > 0) {
+						ObjectForVal.tabSettings = NewArr;
+					}
+					else {
+						delete ObjectForVal.tabSettings;
+					}
+				}
+
+
+				//TAB Profile
+				if (ObjectForVal.tabVisibilities != undefined && orignal.Profile != undefined) {
+					var NewArr =[];
+					var EtallonTab = ValidName.CustomTab;
+					for(var index in ObjectForVal.tabVisibilities) {
+						if (jQuery.inArray(ObjectForVal.tabVisibilities[index].tab, EtallonTab) !== -1) {
+							NewArr.push(ObjectForVal.tabVisibilities[index]);
+						}
+						
+					}
+					if (NewArr.length > 0) {
+						ObjectForVal.tabVisibilities = NewArr;
+					}
+					else {
+						delete ObjectForVal.tabVisibilities;
+					}
+				}
+
+				//OBJECT
+				if (ObjectForVal.objectPermissions != undefined) {
+					var NewArr =[];
+					var EtallonObject = ValidName.CustomObject;
+					for(var index in ObjectForVal.objectPermissions) {
+						if (jQuery.inArray(ObjectForVal.objectPermissions[index].object, EtallonObject) !== -1) {
+							NewArr.push(ObjectForVal.objectPermissions[index]);
+						}
+						
+					}
+					if (NewArr.length > 0) {
+						ObjectForVal.objectPermissions = NewArr;
+					}
+					else {
+						delete ObjectForVal.objectPermissions;
+					}
+				}
+
+				//Layout
+				if (ObjectForVal.layoutAssignments != undefined) {
+					var NewArr =[];
+					var EtallonLauout = ValidName.Layout;
+					for(var index in ObjectForVal.layoutAssignments) {
+						if (jQuery.inArray(ObjectForVal.layoutAssignments[index].layout, EtallonLauout) !== -1) {
+							NewArr.push(ObjectForVal.layoutAssignments[index]);
+						}
+						
+					}
+					if (NewArr.length > 0) {
+						ObjectForVal.layoutAssignments = NewArr;
+					}
+					else {
+						delete ObjectForVal.layoutAssignments;
+					}
+				}
+
+				//recordType
+				if (ObjectForVal.recordTypeVisibilities != undefined) {
+					var NewArr =[];
+					var EtallonObject = ValidName.CustomObject;
+					if (EtallonObject.length > 0) {
+						for(var index =0; index < ObjectForVal.recordTypeVisibilities.length; index++) {
+							var RecordTypeName = ObjectForVal.recordTypeVisibilities[index].recordType.toString(); 
+							for (var index2 =0; index2 < EtallonObject.length; index2++) {
+								if (RecordTypeName.indexOf(EtallonObject[index2].toString()) !== -1) {
+									NewArr.push(ObjectForVal.recordTypeVisibilities[index]);
+									break;
+								}
+							}
+						}
+					}
+					if (NewArr.length > 0) {
+						ObjectForVal.recordTypeVisibilities = NewArr;
+					}
+					else {
+						delete ObjectForVal.recordTypeVisibilities;
+					}
+				}
+
+				//fieldPermissions
+				if (ObjectForVal.fieldPermissions != undefined) {
+					var NewArr =[];
+					var EtallonObject = ValidName.CustomObject;
+					if (EtallonObject.length > 0) {
+						for(var index =0; index < ObjectForVal.fieldPermissions.length; index++) {
+							var MassName = ObjectForVal.fieldPermissions[index].field.split('.')
+							var ObjectName = MassName.length > 0 ? MassName[0] : '';
+							if (jQuery.inArray(ObjectName, EtallonObject) !== -1) {
+								NewArr.push(ObjectForVal.fieldPermissions[index]);
+							}
+						}
+					}
+					if (NewArr.length > 0) {
+						ObjectForVal.fieldPermissions = NewArr;
+					}
+					else {
+						delete ObjectForVal.fieldPermissions;
+					}
+				}
+				
+			}
+
+			if (orignal.Profile != undefined && ObjectForVal != null) {
+				 orignal.Profile = ObjectForVal;
+			}
+			else if (orignal.PermissionSet != undefined && ObjectForVal != null) {
+				orignal.PermissionSet = ObjectForVal;
+			}
+            
+            var returnXML = x2js.json2xml_str(orignal);
+			return returnXML;
+		}
+		
+		function packageXmlCreator(metaItesList)
+		{
+			var xml = '<?xml version="1.0" encoding="UTF-8"?><Package xmlns="http://soap.sforce.com/2006/04/metadata">';
+			if(metaItesList.length > 0)
+			{
+				for(var index in metaItesList)
+				{
+					if(index < metaItesList.length)
+					{
+						var metaItems = metaItesList[index];
+						var packageXmlLi = metaItems.items;
+						xml = xml + '<types>';
+						for(var index2 in packageXmlLi)
+						{
+							if(index2 < packageXmlLi.length)
+							{
+								xml = xml + '<members>';
+								xml = xml + packageXmlLi[index2].itemName;
+								xml = xml + '</members>';
+							}
+						}
+						xml = xml + '<name>'+metaItems.metaType+'</name></types>';
+					}
+				}
+				xml = xml + '<version>34.0</version></Package>';
+			}
+			else
+				xml = '<?xml version="1.0" encoding="UTF-8"?><Package xmlns="http://soap.sforce.com/2006/04/metadata"><version>34.0</version></Package>';
+			return xml;
+		}
+		
+		function destructiveXmlCreator(packageXmlMap)
+		{
+			var xml = '<?xml version="1.0" encoding="UTF-8"?><Package xmlns="http://soap.sforce.com/2006/04/metadata">';
+			var isFound = false;
+			for(var mType in packageXmlMap)
+			{
+				if(!isFound)
+					isFound = true;
+				var packageXmlLi = [];
+				packageXmlLi = packageXmlMap[mType];
+				xml = xml + '<types>';
+				for(var index in packageXmlLi)
+				{
+					if(index < packageXmlLi.length)
+					{
+						xml = xml + '<members>';
+						xml = xml + packageXmlLi[index];
+						xml = xml + '</members>';
+					}
+				}
+				xml = xml + '<name>'+mType+'</name></types>';
+			}
+			xml = xml + '<version>34.0</version></Package>';
+			if(!isFound)
+			{
+				return '';
+			}
+			return xml;
+		}
+		
+		function disableBoth()
+		{
+			var toDisableItems = document.getElementsByClassName('disableitem');
+			for (var i = 0; i < toDisableItems.length; i++) 
+			{
+				if(toDisableItems[i].type == 'button' || toDisableItems[i].type == 'select-one' || toDisableItems[i].type == 'text' || toDisableItems[i].type == 'checkbox')
+				{
+					toDisableItems[i].disabled = true;
+				}
+			}
+		}
+		
+		function enableBoth()
+		{
+			var toDisableItems = document.getElementsByClassName('disableitem');
+			for (var i = 0; i < toDisableItems.length; i++) 
+			{
+				if(toDisableItems[i].type == 'button' || toDisableItems[i].type == 'select-one' || toDisableItems[i].type == 'text' || toDisableItems[i].type == 'checkbox')
+				{
+					toDisableItems[i].disabled = false;
+				}
+			}
+		}
+		
+		function succ(input) 
+		{
+			var alphabet = 'abcdefghijklmnopqrstuvwxyz',
+		    length = alphabet.length,
+		    result = input,
+		    i = input.length;
+		
+			while(i >= 0) 
+			{
+			    var last = input.charAt(--i),
+			        next = '',
+			        carry = false;
+			
+			    if (isNaN(last)) 
+			    {
+			        index = alphabet.indexOf(last.toLowerCase());
+			
+			        if (index === -1) 
+			        {
+			            next = last;
+			            carry = true;
+			        }
+			        else 
+			        {
+			            var isUpperCase = last === last.toUpperCase();
+			            next = alphabet.charAt((index + 1) % length);
+			            if (isUpperCase) 
+			            {
+			                next = next.toUpperCase();
+			            }
+			
+			            carry = index + 1 >= length;
+			            if (carry && i === 0) 
+			            {
+			                var added = isUpperCase ? 'A' : 'a';
+			                result = added + next + result.slice(1);
+			                break;
+			            }
+			        }
+			    }
+			    else 
+			    {
+			        next = +last + 1;
+			        if(next > 9) 
+			        {
+			            next = 0;
+			            carry = true
+			        }
+			
+			        if (carry && i === 0) 
+			        {
+			            result = '1' + next + result.slice(1);
+			            break;
+			        }
+			    }
+			
+			    result = result.slice(0, i) + next + result.slice(i + 1);
+			    if (!carry) 
+			    {
+			        break;
+			    }
+		  	}
+		  	return result;
+		}
+		
+		function mapCounter(localMap)
+		{
+			var temp = 0;
+			for(var key in localMap)
+			{
+				temp++;
+			}
+			return temp;
+		}
+		
+		function setMessageOnPage(msg)
+		{
+			var parentVal = $("[id$='msg']");
+			if(parentVal != undefined)
+			{
+				var childVal = parentVal.find('.messageText');
+				if(childVal != undefined)
+				{
+					if(msg.indexOf('#') > -1)
+					{
+						var li = msg.split('#');
+						var strHtml = '<span></span>';
+						for(var index=0; index < li.length; index++)
+							strHtml+= '<li>'+li[index]+'</li>';
+						childVal.html(strHtml);
+					}
+					else
+						childVal.text(msg);
+				}
+			}
+		}
+		
+		function bindWindow()
+		{
+		    $(window).bind("beforeunload", function() { 
+		        return "Deployment may be in progress.";
+		    });
+		    
+		}
+		
+		function unbindWindow()
+		{
+			$(window).unbind();
+		}
+	</script>       
+</apex:page>

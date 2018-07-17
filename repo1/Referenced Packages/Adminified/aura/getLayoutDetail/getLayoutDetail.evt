@@ -1,0 +1,3 @@
+<aura:event type="COMPONENT" Description="Get all layout details of particular object.">
+    <aura:attribute type="String" name="layoutName"/>
+</aura:event>

@@ -1,0 +1,28 @@
+.THIS .confirm-box-org{
+     display:block;
+}
+
+.THIS .toggle-orgsection {
+    background-color: #eef1f6;
+    box-shadow: #d8dde6 0 -1px 0 inset;
+}
+
+.THIS .hover-class {
+	background-color: #f4f6f9;
+    box-shadow: #d8dde6 0 -1px 0 inset;
+    
+    
+}
+.THIS .managetbody .slds-is-sortable:hover{
+    color:#7485a2;
+}
+
+.THIS .managetbody .slds-is-sortable{
+    cursor: auto;
+}
+.THIS .delOr .slds-icon{
+    fill:#ef6e64;
+}
+.THIS .trail .slds-icon{
+    fill:#3c97dd;
+}

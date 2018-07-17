@@ -1,0 +1,6 @@
+<aura:component implements="force:appHostable">
+    <ltng:require styles="/resource/stivadmn__slds0120/assets/styles/salesforce-lightning-design-system.css" /> 
+    <ltng:require styles="/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.css,/resource/stivadmn__AdminifiedStaticResource/smoothness/jquery-ui.css,/resource/stivadmn__AdminifiedStaticResource/loaderStyle.css" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js,/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.js,/resource/stivadmn__AdminifiedStaticResource/jquery.blockUI.js,/resource/stivadmn__AdminifiedStaticResource/svg4everybody.js" afterScriptsLoaded="{!c.documentReady}" />
+    <aura:registerEvent name="WhichTabEvent" type="stivadmn:WhichTabEvent" Description="Set default tab in app."/>
+    <stivadmn:AdminifiedMain aura:id="AdminifiedMain"/>
+</aura:component>

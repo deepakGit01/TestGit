@@ -1,0 +1,87 @@
+<aura:component controller="stivadmn.PermissionSetModuleController">
+    <ltng:require scripts="/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.js,/resource/stivadmn__AdminifiedStaticResource/jquery.js" afterScriptsLoaded="{!c.doInit}" />
+    <!--Define Attributes-->
+    <aura:attribute name="orgId" type="String" access="GLOBAL" Description="Hold the organization id for edit the particular permission set."/>
+    <aura:attribute name="permissionSetId" type="String" access="GLOBAL" Description="Hold the permission set id for edit the particular permission set."/>
+    <aura:attribute name="permissionSetMeta" type="Object" access="GLOBAL" Description="Holds json format data for checking the field at the time of creating permission set edit structure."/>
+    <aura:attribute name="permissionSetData" type="Object" access="GLOBAL" Description="Holds json format data for creating the permission set edit information."/>
+    <aura:attribute name="permissionSetStructure" type="Object" access="GLOBAL" Description="Holds json format data for creating the permission set edit structure."/>
+    <aura:attribute name="randomNo" type="String" access="GLOBAL" Description="Unique number for identifying the particular permission set information block."/>
+    <aura:attribute name="permissionSetName" type="String" access="GLOBAL" Description="Showing permission set name on permission set edit component."/>
+    <aura:attribute name="flag" type="Boolean" default="false" access="GLOBAL" Description="Set flag for open permission set edit component of particular permission set."/>
+    <aura:attribute name="index" type="Integer" access="GLOBAL" Description="Maintain permission set information block indexing."/>
+    <aura:attribute name="strOrgName" type="String" access="GLOBAL" Description="Showing organization name on permission set edit component."/>
+    <aura:attribute name="objectNameList" type="List"/>
+    <aura:attribute name="objectPermissions" type="Object"/>
+    <aura:attribute name="orgNameSpace" type="String"/>
+    
+    <!--Register Events-->
+    <aura:registerEvent name="PermissionSetAfterEditEvent" type="stivadmn:PermissionSetAfterEditEvent" Description="Create permission set module structure after edit in permission set edit component."/>
+    <aura:registerEvent name="DisabledSreenButtonEvent" type="stivadmn:DisabledSreenButtonEvent" Description="Disable all input when performing some action."/>
+    <aura:registerEvent name="handleError" type="stivadmn:handleError" Description="Handle error which is getting from server."/>
+    
+    <div class="{!'slds-modal-backdrop slds-modal-backdrop--open edit-permissionset-layer edit-permissionset-layer-'+v.randomNo}" style="display:none"></div>
+    <div class="{!'slds edit-permissionset-section edit_section slds-is-fixed edit-permissionset-'+v.randomNo}" id="remove_cmp" style="display:none">
+        <div class="custom-slds">
+            <div class="slds-popover slds-fade-in-open loader-cls" aria-hidden="true" role="dialog">
+                <div class="slds-popover__content">            
+                    <div class="slds-popover__header" style="background-color: #f4f6f9;border-bottom: 2px solid #d8dde6;">
+                        <section class="slds-clearfix">
+                            <div class="slds-float--left">
+                                <div class="slds-media" >
+                                    <div class="slds-media__figure"> <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__SLDS0120/assets/icons/action-sprite/svg/symbols.svg#edit" category="action" size="small" name="edit" class="slds-icon icon__svg slds-icon-action-edit slds-p-around_none"/></div>
+                                    <div class="slds-media__body">
+                                        <div class="slds-grid">
+                                            <h1 class="slds-text-heading--medium slds-m-right--small slds-truncate slds-align-middle">Edit: <span class="edit-permissionset-name">{!v.permissionSetName}</span></h1>
+                                        </div>
+                                        <p class=""><span class="edit-permissionset">{!v.strOrgName}</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-float--right">
+                                <button class="slds-button slds-button--icon-bare forPermissionSetDisable" onclick="{!c.closePermissionSetEdit}">
+                                    <stivadmn:adminifiedIcons svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#close" category="utility" size="x-small" name="close" class="slds-button__icon"/>
+                                    <span class="slds-assistive-text">close</span>
+                                </button>
+                            </div>
+                        </section>
+                    </div>
+                    <div class="slds-popover__body">
+                        <div class="slds-notify slds-notify--alert slds-theme--alert-texture alert-permissionset-edit" style="display:none" role="alert">
+                            <span class="slds-assistive-text">Info</span>
+                            <h2><div class="edit-permissionset-response"></div></h2>
+                        </div> 
+                        <div class="slds-scrollable--y">
+                            <table class="slds-table slds-table--bordered slds-max-medium-table--stacked slds-table--bordered addRow-edit-permissionset" style=" border-left: 1px solid #D8DDE6;  border-right: 1px solid #D8DDE6;">
+                                
+                            </table> 
+                        </div>
+                    </div>
+                    
+                    <div class="slds-popover__header slds-modal__footer">
+                        <button class="slds-button slds-button--neutral resetBtn forPermissionSetDisable" onclick="{!c.permissionSetReset}" disabled="disabled">Reset</button> &nbsp;&nbsp;
+                        <button class="slds-button slds-button--neutral slds-button--brand save-btn editBtn forPermissionSetDisable" onclick="{!c.permissionSetConfirm}" disabled="disabled">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class='confirm-box-permissionset confirm-box header-color-cls' style="display:none">
+            <div aria-hidden="false" role="dialog" class="slds-modal slds-modal--prompt slds-fade-in-open">
+                <div class="slds-modal__container slds-modal--prompt">
+                    <div class="slds-modal__header slds-theme--error slds-theme--alert-texture">
+                        <h2 class="slds-text-heading--medium">Confirm</h2>
+                    </div>
+                    <div class="slds-modal__content">
+                        <div>
+                            <p>Are you sure you want to edit <b><span class="edit-permissionset-name">{!v.permissionSetName}</span></b>?</p>
+                        </div>
+                    </div>
+                    <div class="slds-modal__footer slds-theme--default">
+                        <button class="slds-button slds-button--neutral" onclick="{!c.permissionSetCancel}">Cancel</button>&nbsp;&nbsp;
+                        <button class="slds-button slds-button--neutral slds-button--brand" onclick="{!c.permissionSetSave}">Ok</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</aura:component>

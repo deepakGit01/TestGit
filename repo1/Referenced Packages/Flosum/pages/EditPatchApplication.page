@@ -1,0 +1,3 @@
+<apex:page standardController="Flosum__Patch_Application__c">
+<h1>You can't edit a Deployment record.</h1>
+</apex:page>

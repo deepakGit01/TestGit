@@ -1,0 +1,3 @@
+<aura:event type="COMPONENT" Description="Get setting data for creating a structure of particular module.">
+    <aura:attribute type="String" name="moduleName"/>
+</aura:event>

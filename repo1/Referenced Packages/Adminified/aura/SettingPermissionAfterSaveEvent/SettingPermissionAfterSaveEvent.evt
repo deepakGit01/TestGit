@@ -1,0 +1,4 @@
+<aura:event type="APPLICATION" description="Event template">
+    <aura:attribute type="Object" name="sectionObj"/>
+    <aura:attribute type="List" name="secList"/>
+</aura:event>

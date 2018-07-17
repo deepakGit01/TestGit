@@ -1,0 +1,723 @@
+<apex:page controller="Comparator.CompareProfileController" showHeader="true" sidebar="false" tabStyle="Compare_Profile__tab">
+    <apex:includeScript value="{!$Resource.Comparator__jQuery2_1_1}"/>
+    <apex:includeScript value="{!$Resource.Comparator__jQuery_template}"/> 
+    <style>
+        .customPopup {
+            background-color: transparent;
+            padding: 10px;
+            position: fixed;
+            z-index: 9997;
+            width: 100%;
+            top: 45%;
+            left: 0;
+        }
+        
+        .popupBackground{
+            background-color: black;
+            opacity: 0.20;
+            filter: alpha(opacity = 20);
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 9996;
+        }
+
+        .titleStyle {
+            padding: 5px;
+            background: #3f6075; 
+            font-weight: bold;
+            color: white;
+            margin: 10px 5px 5px 5px;
+            border-radius: 2px;
+        }
+
+        .tableHeaderStyle {
+            padding: 5px;
+            background: #3f6075; 
+            font-weight: bold;
+            color: white;
+            border-radius: 2px;
+            text-align: center;
+        }
+
+        .comparisonTitleStyle {
+            padding: 5px;
+            background: #3f6075; 
+            font-weight: bold;
+            color: white;
+            margin: 15px 5px 5px 5px;
+            border-radius: 2px;
+        }
+
+        .comparisonTable {
+            width: 100%;
+            text-align: center;
+            margin: 7px 5px 5px 5px;
+        }
+
+        .comparisonTableLeftColumn {
+            width:50%;
+            /*background:#CCCC99;*/
+            overflow: hidden;
+        }
+
+        .comparisonTableRightColumn {
+            width:50%;
+            /*background:#E7F2A5;*/
+            overflow: hidden;
+        }
+
+        .footerLineStyle {
+            border-top: 1px solid #3f6075;
+            padding-top: 5px;
+            margin: 10px 5px 5px 5px;
+        }
+
+        .emptyPanel {
+            min-height: 2%;
+            border-bottom: 1px solid #3f6075;
+        }
+
+        .contentMargin {
+            margin-left: 20px;
+        }
+
+        #profileComponentTable tr:hover { 
+            background: #F2C249;
+            font-weight: bold;
+            overflow: visible;
+            z-index: 1000;
+
+            -webkit-transform: scale(1.02);
+            -moz-transform: scale(1.02);
+            -o-transform: scale(1.02);
+            transform: scale(1.02);
+            -webkit-transform-origin: top center;
+            -moz-transform-origin: top center;
+            -o-transform-origin: top center;
+            transform-origin: top center;
+        }
+    </style>
+    
+    <script>
+        j$ = jQuery.noConflict();
+
+        j$( document ).ready(function() {
+           // disableCompareButton();
+        });
+
+        function showLoadingIndicator() {
+            j$('[id$="loading-message"]').css('position','fixed');
+            j$('[id$="loading-message"]').css('width','100%');
+            j$('[id$="loading-message"]').css('height','100%');
+            j$('[id$="loading-message"]').css('z-index','10000');
+            j$('[id$="loading-message"]').show();
+        }
+        
+        function hideLoadingIndicator() {
+            j$('[id$="loading-message"]').hide();
+        }
+
+        //@author : Arxxus
+        //@description : invoked on complete of get profile function
+        function enableCompareButton() {            
+            var leftProfileSelected = j$( "select[id$='leftProfileId'] option:selected" ).val();
+            var rightProfileSelected = j$( "select[id$='rightProfileId'] option:selected" ).val();
+            console.log('left ' + leftProfileSelected);
+
+            // enable/disable button
+            if (leftProfileSelected != 'NONE' && rightProfileSelected != 'NONE' 
+                            && leftProfileSelected != undefined && rightProfileSelected != undefined) {
+                j$("[id$='CompareButton']").removeAttr('disabled');
+            } else {
+                disableCompareButton();
+            }
+        }
+
+        //@author : Arxxus
+        //@description : invoked on load of page and on complete of get profile function
+        function disableCompareButton() {
+            j$("[id$='CompareButton']").attr("disabled", true);
+        }
+
+        //@author : Arxxus
+        //@description : invoked on click of compare button 
+        function checkValidProfileNames() {
+            var leftProfileSelected = j$( "select[id$='leftProfileId'] option:selected" ).val();
+            var rightProfileSelected = j$( "select[id$='rightProfileId'] option:selected" ).val();    
+                                
+            if (leftProfileSelected != 'NONE' && rightProfileSelected != 'NONE' 
+                            && leftProfileSelected != undefined && rightProfileSelected != undefined) {
+
+                showLoadingIndicator();
+                // calling action function
+                compareProfilesFunction();                
+            } else {
+                alert('Please select profile names for environment 1 and 2.'); 
+                return false;              
+            }        
+        }        
+
+    </script>
+    
+    <apex:pageMessage rendered="{!!hasPermission}" severity="ERROR" title="Invalid Previliges. Please contact your Manager or Administrator"></apex:pageMessage>
+
+    <apex:form id="ComparisonForm" rendered="{!hasPermission}">
+        
+        <apex:pageMessages id="pageMsgId"/>
+        <div id="loading-message" title="Loading..." style="display:none"> 
+            <div class="popupBackground"></div>
+            <div class="customPopup" align="center" style="top:45%;">
+                <img src="{!$Resource.ajaxLoadingTrans}" align="center" style="top:45%;z-index:9999;"/>                
+            </div>
+        </div>
+
+        <apex:sectionHeader title="Profile Comparator" subtitle="Compare Profiles"></apex:sectionHeader>
+
+        <div style="width:100%;height:25px;">
+            <!-- Colour Scheme -->
+            <table align="right">
+                <tr>
+                    <td><div style="height:20px;width:30px;background:#E6E6E6"></div></td><td> Existing Elements With No Difference </td>
+                    <td><div style="height:20px;width:30px;background:#FAAFAF"></div></td><td> Existing Elements With Difference    </td>
+                    <td><div style="height:20px;width:30px;background:#A9DEAA"></div></td><td> Elements Exist in Only Profile       </td>
+                </tr>
+            </table>
+        </div>
+        
+        <apex:outputPanel id="OuterPanel" style="width:100%;margin-top:5px;" rendered="{!hasPermission}">
+            <!-- Left Panel -->
+            <apex:outputPanel id="LeftPanel" styleClass="pageBlockStyle" style="width:25%;float:left;">
+                
+                <!-- Environment Panel-->
+                <apex:outputPanel id="EnvironmentPanel">
+                    <div class="titleStyle">Select Environments</div>
+                    <br/>
+                    <div id="Environment1">
+                        <apex:outputLabel value="Environment 1: " style="font-weight:bold;color:#587058;" styleClass="contentMargin"/>
+                        <apex:selectList value="{!selectedLeftEnvironment}" multiselect="false" size="1" styleClass="contentMargin" style="width:60%">
+                            <apex:selectOptions value="{!leftEnvironments}"/>
+                        </apex:selectList>
+                    </div>
+                    <br/>
+                    <div id="Environment2">
+                        <apex:outputLabel value="Environment 2: " style="font-weight:bold;color:#587498;" styleClass="contentMargin"/>
+                        <apex:selectList value="{!selectedRightEnvironment}" multiselect="false" size="1" styleClass="contentMargin" style="width:60%;">
+                            <apex:selectOptions value="{!rightEnvironments}"/>
+                        </apex:selectList>
+                    </div>
+                    <br/>
+                    <div align="center" class="footerLineStyle">
+                        <apex:commandButton id="GetProfileButton" value="Get Profiles" action="{!fetchProfileOptions}" onclick="showLoadingIndicator();" oncomplete="hideLoadingIndicator();" reRender="pageMsgId,ProfilePanel,ProfileComponentPanel,RightPanel"/>    
+                    </div>
+                </apex:outputPanel>
+
+                <!-- Profile Panel -->
+                <apex:outputPanel id="ProfilePanel">
+                    <div class="titleStyle">Select Profiles</div>
+                    <br/>
+                    <div id="Profile1">
+                        <apex:outputLabel value="Environment 1 Profile: " style="font-weight:bold;color:#587058;" styleClass="contentMargin"/>
+                        <apex:selectList value="{!selectedLeftProfile}" id="leftProfileId" multiselect="false" size="1" styleClass="contentMargin" style="width:60%">
+                            <apex:selectOptions value="{!leftOrgProfiles}"/>
+                        </apex:selectList>
+                    </div>
+                    <br/>
+                    <div id="Profile2">
+                        <apex:outputLabel value="Environment 2 Profile: " style="font-weight:bold;color:#587498;" styleClass="contentMargin"/>
+                        <apex:selectList value="{!selectedRightProfile}" id="rightProfileId" multiselect="false" size="1" styleClass="contentMargin" style="width:60%">
+                            <apex:selectOptions value="{!rightOrgProfiles}"/>
+                        </apex:selectList>
+                    </div>
+                    <br/>
+
+                    <!--
+                    // Pravin Shivle [29-12-2015]: removed this to reduce view state
+                    <div align="center" class="footerLineStyle">
+                        <apex:commandButton id="GetProfileComponentButton" value="Get Profile Components" action="{!fetchSelectedProfiles}" onclick="showLoadingIndicator();" oncomplete="hideLoadingIndicator();" disabled="{!IF((selectedLeftProfile != 'NONE' && selectedRightProfile != 'NONE'), false, true)}" reRender="pageMsgId,ProfileComponentPanel,RightPanel"/>
+                    </div>
+                    -->
+
+                </apex:outputPanel>
+
+                <!-- Profile Component Panel -->
+                <apex:outputPanel id="ProfileComponentPanel">
+
+                    <apex:actionfunction name="compareProfilesFunction" action="{!fetchSelectedProfileComponent}" oncomplete=" showProfileComponentComparison('{!profileComponentContent}');" reRender="pageMsgId,RightPanel" />
+
+                    <div class="titleStyle">Select Component</div>
+                    <div id="ProfileComponents">                            
+                        <apex:selectRadio value="{!selectedComponentOption}" layout="pageDirection" >
+                            <!-- disabled="{!IF((leftProfileString != null && rightProfileString != null), false, true)}" -->
+                            <apex:selectOptions value="{!profileComponentOptions}"/>
+                        </apex:selectRadio>
+                    </div>
+                    <div style="margin-left: 15px;">
+                        <apex:inputCheckbox value="{!hideFragmentsWithNoDifference}"/><span style="color:BLUE">Hide Elements With No Difference</span>
+                    </div>
+                    <div align="center" class="footerLineStyle">
+                        <input type="button" id="CompareButton" class="btn" value="Compare"  onclick="checkValidProfileNames();" />                        
+                        <!-- disabled="{!IF((selectedComponentOption != null && selectedComponentOption != 'NONE'), false, true)}" --> 
+                    </div>
+
+
+
+                </apex:outputPanel>
+            </apex:outputPanel>
+
+            <!-- Right Panel -->
+            <apex:outputPanel id="RightPanel" styleClass="pageBlockStyle" style="width:75%; float:left;">
+                <table id="profileComponentTable" style="width:100%; margin-top:7px;">
+                    <tr style="width:100%;">
+                        <th class="tableHeaderStyle" style="width:45%;" align="center">{!selectedLeftProfile} from {!selectedLeftEnvironment}</th>
+                        <th class="tableHeaderStyle" style="width:45%;" align="center">{!selectedRightProfile} from {!selectedRightEnvironment}</th>
+                    </tr>
+                </table>
+            </apex:outputPanel>
+
+        </apex:outputPanel>
+        
+    </apex:form>
+
+    <script>
+        function showProfileComponentComparison(profileComponentData) {
+            try {
+                var componentType = '';
+                var parsedContent = j$.parseJSON(profileComponentData);
+                if(parsedContent.length == 0) {
+                    componentType = "empty";
+                    parsedContent = [{"msg":"Oops! No Data Found"}];
+                } else {
+                    for(var compType in parsedContent) {
+                        var element = parsedContent[compType];
+                        if(element != undefined && element["profileComponentType"] != undefined) {
+                            componentType = element["profileComponentType"];
+                            break;
+                        }
+                    }
+                }
+
+                var templateName = "#" + componentType + "Template";
+                j$(templateName).tmpl(parsedContent).appendTo("#profileComponentTable");
+            
+            } catch(error) {
+                
+            }
+
+            hideLoadingIndicator();
+        }
+    </script>
+
+    <script id="emptyTemplate" type="text/x-jquery-tmpl">
+        <tr style="width:100%; margin:5px;">
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"> 
+                <span style="vertical-align:middle; display:inline-block; width:100%; padding:5px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; background:#FCE7D9;">
+                    <b><i> ${msg} </i></b>
+                </span>
+            </td>
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"> 
+                <span style="vertical-align:middle; display:inline-block; width:100%; padding:5px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; background:#FCE7D9;">
+                    <b><i> ${msg} </i></b>
+                </span>
+            </td>
+        </tr>
+    </script>
+
+    <script id="ApexClassesTemplate" type="text/x-jquery-tmpl">
+        <tr style="width:100%; margin:5px;">
+        {{if leftValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    ${leftValue.apexClass} 
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:5px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if leftValue.enabled}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Accessible: <input type="checkbox" disabled="true" {{if leftValue.enabled}} checked {{/if}} />
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+
+        {{if rightValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    ${rightValue.apexClass} 
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:5px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if rightValue.enabled}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Accessible: <input type="checkbox" disabled="true" {{if rightValue.enabled}} checked {{/if}} />
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+        </tr>
+    </script>
+
+    <script id="AppsTemplate" type="text/x-jquery-tmpl">
+        <tr style="width:100%; margin:5px;">
+        {{if leftValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    ${leftValue.application}
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:5px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if leftValue.visible}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Visible: <input type="checkbox" disabled="true" {{if leftValue.visible}} checked {{/if}} />
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+
+        {{if rightValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    ${rightValue.application}
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:5px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if rightValue.visible}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Visible: <input type="checkbox" disabled="true" {{if rightValue.visible}} checked {{/if}} />
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+        </tr>
+    </script>
+
+    <script id="CustomPermissionsTemplate" type="text/x-jquery-tmpl">
+        <tr style="width:100%; margin:5px;">
+        {{if leftValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    ${leftValue.name}
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:5px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if leftValue.enabled}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    <input type="checkbox" disabled="true" {{if leftValue.enabled}} checked {{/if}} />
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+
+        {{if rightValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    ${rightValue.name}
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:5px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if rightValue.enabled}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    <input type="checkbox" disabled="true" {{if rightValue.enabled}} checked {{/if}} />
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+        </tr>
+    </script>
+
+    <script id="DataSourcesTemplate" type="text/x-jquery-tmpl">
+        <tr style="width:100%; margin:5px;">
+        {{if leftValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}"> 
+                    ${leftValue.externalDataSource}
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:5px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if leftValue.enabled}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Accessible: <input type="checkbox" disabled="true" {{if leftValue.enabled}} checked {{/if}} />
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+
+        {{if rightValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}"> 
+                    ${rightValue.externalDataSource}
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:5px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if rightValue.enabled}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Accessible: <input type="checkbox" disabled="true" {{if rightValue.enabled}} checked {{/if}} />
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+        </tr>
+    </script>
+
+    <script id="FieldPermissionsTemplate" type="text/x-jquery-tmpl">
+        <tr style="width:100%; margin:3px;">
+        {{if leftValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:65%; padding:22px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}"> 
+                    ${leftValue.field}
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%;">  
+                    <div style="padding:5px; text-align:center; border-radius:3px; {{if leftValue.readable}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                        Visible <input type="checkbox" disabled="true" {{if leftValue.readable}} checked {{/if}} />
+                    </div>
+                    <div style="padding:5px; text-align:center; border-bottom:1px solid #a1a1a1; border-radius:3px; {{if leftValue.editable}} background:#FCE7D9; {{else}} background:#D9EEFC; {{/if}}">
+                        Read Only <input type="checkbox" disabled="true" {{if leftValue.readable}} {{if leftValue.editable}} {{else}} checked {{/if}} {{/if}} />
+                    </div>
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+
+        {{if rightValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:65%; padding:22px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}"> 
+                    ${rightValue.field}
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%;">  
+                    <div style="padding:5px; text-align:center; border-radius:3px; {{if rightValue.readable}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                        Visible <input type="checkbox" disabled="true" {{if rightValue.readable}} checked {{/if}} />
+                    </div>
+                    <div style="padding:5px; text-align:center; border-bottom:1px solid #a1a1a1; border-radius:3px; {{if rightValue.editable}} background:#FCE7D9; {{else}} background:#D9EEFC; {{/if}}">
+                        Read Only <input type="checkbox" disabled="true" {{if rightValue.readable}} {{if rightValue.editable}} {{else}} checked {{/if}} {{/if}} />
+                    </div>
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+        </tr>
+    </script>
+
+    <script id="LayoutAssignmentsTemplate" type="text/x-jquery-tmpl">
+        <tr style="width:100%; margin:5px;">
+        {{if leftValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:7px; text-align:center; border-right:2px solid #a1a1a1; border-bottom:1px dotted #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    Layout
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-bottom:1px dotted #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    ${leftValue.layout}
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:7px; text-align:center; border-right:2px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    Record Type
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    {{if leftValue.recordType}} ${leftValue.recordType} {{else}} None {{/if}}
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+
+        {{if rightValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:7px; text-align:center; border-right:2px solid #a1a1a1; border-bottom:1px dotted #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    Layout
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-bottom:1px dotted #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    ${rightValue.layout}
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:7px; text-align:center; border-right:2px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    Record Type
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    {{if rightValue.recordType}} ${rightValue.recordType} {{else}} None {{/if}}
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+        </tr>
+    </script>
+
+    <script id="ObjectPermissionsTemplate" type="text/x-jquery-tmpl">
+        <tr style="width:100%; margin:5px;">
+        {{if leftValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <div style="float:left; width:89%; padding:7px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    ${leftValue.object_x}
+                </div>
+                <div style="float:left; width:14%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if leftValue.allowCreate}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Create <input type="checkbox" disabled="true" {{if leftValue.allowCreate}} checked {{/if}} />
+                </div>
+                <div style="float:left; width:14%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if leftValue.allowRead}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Read <input type="checkbox" disabled="true" {{if leftValue.allowRead}} checked {{/if}} />
+                </div>
+                <div style="float:left; width:14%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if leftValue.allowEdit}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Edit <input type="checkbox" disabled="true" {{if leftValue.allowEdit}} checked {{/if}} />
+                </div>
+                <div style="float:left; width:14%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if leftValue.allowDelete}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Delete <input type="checkbox" disabled="true" {{if leftValue.allowDelete}} checked {{/if}} />
+                </div>
+                <div style="float:left; width:14%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if leftValue.viewAllRecords}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    View All <input type="checkbox" disabled="true" {{if leftValue.viewAllRecords}} checked {{/if}} />
+                </div>
+                <div style="float:left; width:14%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if leftValue.modifyAllRecords}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Modify All <input type="checkbox" disabled="true" {{if leftValue.modifyAllRecords}} checked {{/if}} />
+                </div>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+
+        {{if rightValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <div style="float:left; width:89%; padding:7px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}"> 
+                    ${rightValue.object_x}
+                </div>
+                <div style="float:left; width:14%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if rightValue.allowCreate}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Create <input type="checkbox" disabled="true" {{if rightValue.allowCreate}} checked {{/if}} />
+                </div>
+                <div style="float:left; width:14%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if rightValue.allowRead}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Read <input type="checkbox" disabled="true" {{if rightValue.allowRead}} checked {{/if}} />
+                </div>
+                <div style="float:left; width:14%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if rightValue.allowEdit}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Edit <input type="checkbox" disabled="true" {{if rightValue.allowEdit}} checked {{/if}} />
+                </div>
+                <div style="float:left; width:14%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if rightValue.allowDelete}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Delete <input type="checkbox" disabled="true" {{if rightValue.allowDelete}} checked {{/if}} />
+                </div>
+                <div style="float:left; width:14%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if rightValue.viewAllRecords}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    View All <input type="checkbox" disabled="true" {{if rightValue.viewAllRecords}} checked {{/if}} />
+                </div>
+                <div style="float:left; width:14%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if rightValue.modifyAllRecords}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Modify All <input type="checkbox" disabled="true" {{if rightValue.modifyAllRecords}} checked {{/if}} />
+                </div>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+        </tr>
+    </script>
+
+    <script id="RecordTypesTemplate" type="text/x-jquery-tmpl">
+        <tr style="width:100%; margin:5px;">
+        {{if leftValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <div style="float:left; width:91%; padding:7px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    ${leftValue.recordType}
+                </div>
+                <div style="float:left; width:30%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if leftValue.visible}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Visible <input type="checkbox" disabled="true" {{if leftValue.visible}} checked {{/if}} />
+                </div>
+                <div style="float:left; width:30%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if leftValue.default_x}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Default <input type="checkbox" disabled="true" {{if leftValue.default_x}} checked {{/if}} />
+                </div>
+                <div style="float:left; width:30%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if leftValue.personAccountDefault}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Account Deafult <input type="checkbox" disabled="true" {{if leftValue.personAccountDefault}} checked {{/if}} />
+                </div>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+
+        {{if rightValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <div style="float:left; width:91%; padding:7px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}"> 
+                    ${rightValue.recordType}
+                </div>
+                <div style="float:left; width:30%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if rightValue.visible}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Visible <input type="checkbox" disabled="true" {{if rightValue.visible}} checked {{/if}} />
+                </div>
+                <div style="float:left; width:30%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if rightValue.default_x}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Default <input type="checkbox" disabled="true" {{if rightValue.default_x}} checked {{/if}} />
+                </div>
+                <div style="float:left; width:30%; padding:3px; text-align:center; border:1px solid #a1a1a1; border-radius:3px; {{if rightValue.personAccountDefault}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Account Deafult <input type="checkbox" disabled="true" {{if rightValue.personAccountDefault}} checked {{/if}} />
+                </div>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+        </tr>
+    </script>
+
+    <script id="TabSettingsTemplate" type="text/x-jquery-tmpl">
+        <tr style="width:100%; margin:5px;">
+        {{if leftValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    ${leftValue.tab}
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if leftValue.visibility == 'DefaultOn'}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    ${leftValue.visibility}
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+
+        {{if rightValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    ${rightValue.tab}
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if rightValue.visibility == 'DefaultOn'}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    ${rightValue.visibility}
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+        </tr>
+    </script>
+
+    <script id="UserPermissionsTemplate" type="text/x-jquery-tmpl">
+        <tr style="width:100%; margin:5px;">
+        {{if leftValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    ${leftValue.name}
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:5px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if leftValue.enabled}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    <input type="checkbox" disabled="true" {{if leftValue.enabled}} checked {{/if}} />
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+
+        {{if rightValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}"> 
+                    ${rightValue.name}
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if rightValue.enabled}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    <input type="checkbox" disabled="true" {{if rightValue.enabled}} checked {{/if}} />
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+        </tr>
+    </script>
+
+    <script id="VisualforcePagesTemplate" type="text/x-jquery-tmpl">
+        <tr style="width:100%; margin:5px;">
+        {{if leftValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    ${leftValue.apexPage}
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:5px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if leftValue.enabled}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Accessible: <input type="checkbox" disabled="true" {{if leftValue.enabled}} checked {{/if}} />
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+
+        {{if rightValue}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center">
+                <span style="vertical-align:middle; display:inline-block; width:70%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if existsInOnlyProfile}} background:#A9DEAA; {{else hasConflict}} background:#FAAFAF; {{else}} background:#E6E6E6; {{/if}}">
+                    ${rightValue.apexPage}
+                </span>
+                <span style="vertical-align:middle; display:inline-block; width:25%; padding:7px; text-align:center; border-bottom: 1px solid #a1a1a1; border-radius:3px; {{if rightValue.enabled}} background:#D9EEFC; {{else}} background:#FCE7D9; {{/if}}">
+                    Accessible: <input type="checkbox" disabled="true" {{if rightValue.enabled}} checked {{/if}} />
+                </span>
+            </td>
+        {{else}}
+            <td style="width:50%; margin-top:5px; text-align:center;" align="center"></td>
+        {{/if}}
+        </tr>
+    </script>
+
+    
+</apex:page>

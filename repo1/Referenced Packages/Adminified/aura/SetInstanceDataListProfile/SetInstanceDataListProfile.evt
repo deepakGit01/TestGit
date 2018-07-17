@@ -1,0 +1,8 @@
+<aura:event type="COMPONENT" Description="Set organizations and profile name in list if they have already selected multiple time in other profile information block for comparison." >
+    <aura:attribute name="instanceData" type="String" />
+    <aura:attribute name="randomNo" type="String" />
+    <aura:attribute name="profileId" type="String" />
+    <aura:attribute name="index" type="String" />
+    <aura:attribute name="orgId" type="String" />
+    <aura:attribute name="profileName" type="String" />
+</aura:event>

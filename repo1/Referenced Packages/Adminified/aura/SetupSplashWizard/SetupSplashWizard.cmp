@@ -1,0 +1,91 @@
+<aura:component controller="stivadmn.SettingModuleController">
+    <ltng:require styles="" scripts="/resource/stivadmn__AdminifiedStaticResource/jquery.js" />
+    <aura:attribute name="count" type="Integer" default="1" Description="hold count for next splash."/>
+    <aura:registerEvent name="handleError" type="stivadmn:handleError" Description="Handle error which is getting from server."/>
+    <div class="setup-wizard-cls" style="display:none">
+        <div aria-hidden="false" role="dialog" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <div class="slds-modal__header">
+                    <h2 class="slds-text-heading--medium"> <stivadmn:adminifiedIcons class="slds-button__icon slds-icon--" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#setup" /> Setup Wizard</h2>
+                </div>
+                <div class="slds-modal__content">
+                    <div class="splash-1 splash-cls" >
+                        <div class="grid-card">
+                            <dl>
+                                <dt class="site-text-heading--label-weak-large">Remote Site Setting</dt>
+                                <dd>
+                                    <hr class="hr hr--blue" />
+                                    <p>This app is going to make apex call to other organization (external site) </p><p>So if you have not set url of remote site during installation please add it right now.</p>
+                                    <span>Set following URLs in <a href="/0rp" target="_blank">Remote Site Setting</a></span>
+                                    <p>URL1: http://login.salesforce.com</p>
+                                    <p>URL2: http://test.salesforce.com</p>
+                                </dd>
+                            </dl>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="splash-2 splash-cls" style="display:none">
+                        <div class="grid-card">
+                            <dl>
+                                <dt class="site-text-heading--label-weak-large">Create Connected app</dt>
+                                <dd>
+                                    <hr class="hr hr--blue" />
+                                    <p>To get started please create a connected app. <a href="javascript:void(0);" target="_blank" onclick="{!c.createConnctedApp}">Click here</a> or follow these steps </p><p> 1. Go to Settings Tab -> Go to Connected app Tab</p>
+                                </dd>
+                            </dl>
+                        </div>
+                        
+                    </div>
+                    
+                    
+                    <div class="splash-3 splash-cls" style="display:none">
+                        <div class="grid-card">
+                            <dl>
+                                
+                                <dt class="site-text-heading--label-weak-large">Add Organization</dt>
+                                <dd>
+                                    <hr class="hr hr--blue" />
+                                    <p>You can add all your sandboxes or other organization to manage from one centralized place</p><p> i.e. Adminified.</p>
+                                    <br></br>
+                                    <button class="slds-button slds-button--neutral" onclick="{!c.addOrg}">I want to add organization now!</button>
+                                </dd>
+                            </dl>
+                        </div>
+                        
+                    </div>
+                    
+                    
+                </div>
+                <div class="slds-modal__footer slds-modal__footer--directional">
+                    <div class="slds-x-small-buttons--horizontal">
+                        
+                        <button class="slds-button slds-button--neutral back-btn" onclick="{!c.back}" style="display:none">Back</button>
+                        <button class="slds-button slds-button--neutral skip-btn" onclick="{!c.skip}" style="display:none">Skip</button>
+                        <button class="slds-button slds-button--brand next-btn" onclick="{!c.next}">Next</button>
+                        <button class="slds-button slds-button--brand got-it-btn" onclick="{!c.gotIt}" style="display:none">Okay, I got It</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop--open"></div>
+    </div>
+    <div aura:id="orgnizationDiv1"></div>
+     <div class="">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal connectedAppModule ">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 class="slds-text-heading--medium"> <stivadmn:adminifiedIcons class="slds-button__icon slds-icon--" svgPath="/resource/stivadmn__SLDS0120/assets/icons/utility-sprite/svg/symbols.svg#connected_apps"  /> Connected App</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <div aura:id="ConnectedAppDiv"></div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <button class="slds-button slds-button--neutral" onclick="{!c.closeConnectedAppModule}">Cancel</button>
+                    
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </div>
+</aura:component>

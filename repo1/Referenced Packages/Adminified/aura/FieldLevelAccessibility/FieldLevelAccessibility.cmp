@@ -1,0 +1,63 @@
+<aura:component controller="stivadmn.ProfileModuleController">
+    <ltng:require scripts="/resource/stivadmn__AdminifiedStaticResource/jquery-ui.min.js,/resource/stivadmn__AdminifiedStaticResource/jquery.js" afterScriptsLoaded="{!c.jsLoad}" />
+    
+    <aura:registerEvent name="handleError" type="stivadmn:handleError" Description="Handle error which is getting from server."/>
+    <aura:registerEvent name="getLayoutDetail" type="stivadmn:getLayoutDetail" Description="Get all layout details of particular object."/>
+	<aura:registerEvent name="updateFieldPermisions" type="stivadmn:updateFieldPermisions" Description=""/>
+    <aura:registerEvent name="refreshFieldLevelAccessibility" type="stivadmn:refreshFieldLevelAccessibility" Description=""/>
+    <aura:registerEvent name="setAttrIdInEditList" type="stivadmn:setAttrIdInEditList" Description=""/>
+
+    <aura:handler name="getLayoutDetail" event="stivadmn:getLayoutDetail" action="{!c.getLayoutDetailInfo}" Description="Create structure for field dependent component."/>
+    <aura:handler name="updateFieldPermisions" event="stivadmn:updateFieldPermisions" action="{!c.updateFieldPermision}" Description="Create structure for field dependent component."/>
+    <aura:handler name="refreshFieldLevelAccessibility" event="stivadmn:refreshFieldLevelAccessibility" action="{!c.refreshFields}" Description="Refresh."/>
+    
+    <!--Define Attribute-->
+    <aura:attribute name="objNameMap" type="Object" access="GLOBAL" Description="Holds the map of objects details."/>
+    <aura:attribute type="Object" name="profileArray" access="GLOBAL" Description="Holds the all profile which is selected in multiple profile information blocks."/>
+    <aura:attribute type="String[]" name="profileArr" access="GLOBAL" Description="Hold list of selected profile id."/>
+    <aura:attribute name="layoutName" type="String" access="GLOBAL" Description="Hold layout name of an object."/>
+    <aura:attribute name="viewCreateData" type="Object" access="GLOBAL" Description="Store field level permission data which is getting from server."/>
+    <aura:attribute name="layoutSections" type="Object" access="GLOBAL" Description="Store layout section name."/>
+    <aura:attribute name="fieldPermissionMap" type="Object" access="GLOBAL" Description="Store field permission profile level."/>
+    <aura:attribute name="permissionSetIds" type="Object"/>
+    <aura:attribute name="metadataWithOrgId" type="Object"/>
+    <aura:attribute name="fieldSection" type="Object"/>
+    <aura:attribute name="fieldWithFieldItem" type="Object"/>
+    <aura:attribute name="metaDataForUpdate" type="Object"/>
+    <aura:attribute name="layoutIds" type="Object"/>
+    <aura:attribute name="layoutSectionsOptionObj" type="Object"/>
+    <aura:attribute name="objectRefFieldsByLayout" type="Object"/>
+    <aura:attribute name="keyMapForAttr" type="Map"/>
+    <aura:attribute name="idAttrMap" type="Map"/>
+    
+    
+        
+    <div>
+        <table class="slds-table slds-table--bordered custom-border fieldLevelSecurityTable view-table-search" style="border-top: none;width:1200px;">
+            <thead>
+                <tr class="slds-text-heading--label">
+                    <th class="slds-cell-shrink custom-heading slds-text-align--center" colspan="2">Field</th>
+                    <th class="slds-cell-shrink custom-heading slds-text-align--center field-security" scope="col" colspan="2">Field-Level Security</th>
+                    <th class="slds-cell-shrink custom-heading slds-text-align--center field-accessible" scope="col" colspan="3">Page Layout</th>
+                    <th class="slds-cell-shrink custom-heading slds-text-align--center field-mapping" scope="col" >Field Access</th>
+                </tr>
+                <tr class="slds-text-heading--label">
+                    <th class="slds-cell-shrink custom-heading-2" scope="col">Label</th>
+                    <th class="slds-cell-shrink custom-heading-2" scope="col">Name</th>
+                    <th class="slds-cell-shrink custom-heading-2 slds-text-align--center field-security" scope="col"> <div class="slds-truncate">Edit Access </div>
+                    </th>
+                    <th class="slds-cell-shrink custom-heading-2 slds-text-align--center field-security" scope="col"> <div class="slds-truncate">Read Access </div>
+                    </th>
+                    <th class="slds-cell-shrink custom-heading-2 slds-text-align--center field-accessible" scope="col"> <div class="slds-truncate">Visible <span class="edit-mode-fieldlevel edit-mode-fieldlevel-section"> | Section</span></div>
+                    </th>
+                    <th class="slds-cell-shrink custom-heading-2 slds-text-align--center field-accessible" scope="col"> <div class="slds-truncate">Required </div>
+                    </th>
+                    <th class="slds-cell-shrink custom-heading-2 slds-text-align--center field-accessible" scope="col"> <div class="slds-truncate">Read Only </div>
+                    </th>
+                    <th class="slds-cell-shrink custom-heading-2 field-mapping" scope="col"></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</aura:component>

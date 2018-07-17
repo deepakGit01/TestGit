@@ -1,0 +1,30 @@
+<apex:page standardController="Flosum__Snapshot__c" extensions="Flosum.SnapshotToPatchesExtension" sidebar="false">
+	<c:Wait />
+	<apex:form >
+		<apex:pagemessages id="msg"/>
+		<apex:pageBlock id="snapblock">
+			<apex:pageBlockSection columns="1">
+				<apex:outputField value="{!Flosum__Snapshot__c.Name}"/>
+				<apex:outputField value="{!Flosum__Snapshot__c.Flosum__Organisation__c}"/>
+				<apex:outputField value="{!Flosum__Snapshot__c.Flosum__No_of_Metadata_Items__c}"/>
+			</apex:pageBlockSection>
+           	<apex:pageBlockSection columns="1">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Patch" />
+                    <apex:selectList size="1" value="{!selectedPatch}">
+                        <apex:selectOptions value="{!patchOptions}"/>
+                        <apex:actionSupport event="onchange" action="{!listDuplicate}" reRender="snapblock,msg" oncomplete="hide();" onsubmit="show();"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!If(selectedPatch == null || selectedPatch == '',true,false)}">
+                    <apex:outputLabel value="Patch Name" />
+                    <apex:inputText value="{!patchName}"/>
+                </apex:pageBlockSectionItem>
+           	</apex:pageBlockSection>
+			<apex:pageBlockButtons >
+				<apex:commandButton value="Transfer To Patch" onClick="show();" rendered="{!If(IsExist,false,true)}" action="{!addToPatches}" reRender="msg,snapblock" oncomplete="hide();"/>
+			</apex:pageBlockButtons>
+		</apex:pageBlock>
+	</apex:form>
+	<apex:relatedList subject="{!Flosum__Snapshot__c}" list="Metadata_Items__r" id="relatedList"/>
+</apex:page>

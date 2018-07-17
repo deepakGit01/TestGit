@@ -1,0 +1,7 @@
+<aura:event type="COMPONENT" Description="Create permission set module structure after edit in permission set edit component." >
+    <aura:attribute name="index" type="Integer"/>
+    <aura:attribute name="afterOrgId" type="String"/>
+	<aura:attribute name="afterPermissionSetId" type="String"/>
+	<aura:attribute name="randomNo" type="Integer"/>
+    <aura:attribute name="afterFlag" type="Integer"/>
+</aura:event>

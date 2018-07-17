@@ -1,0 +1,47 @@
+.THIS .addMorePermissionSetBtn{
+    position:absolute;
+    right:20px;
+   	top:2.5rem
+}
+
+.THIS .element-profile {
+    /*height: 163px;*/
+}
+
+.THIS .difference-row{
+	background:#f9edbe;
+}
+
+.THIS .toggle-cls{display:none}
+.THIS .hide-row{display:none}
+.THIS .section-field-hide{display:none}
+
+
+.THIS .layer{
+    opacity: .8;
+    background-color: rgb(168, 183, 199);
+    position:absolute;
+    z-index:9999;
+    width:100%;
+    height:100%;
+    border-radius: .20rem;
+}
+
+.THIS .toggle-section-panel{
+    display:none;
+}
+.THIS .slds-form-element .slds-checkbox [type="checkbox"] ~ .slds-checkbox--faux {
+    margin-right: 0.5rem;
+}
+
+.THIS .custom-chekbox{
+    display:table!important;
+}
+.THIS .custom-chekbox .slds-form-element__label{
+    display:table-cell!important;
+}
+
+.THIS .custom-border.slds-table--bordered td, .THIS .custom-border.slds-table--bordered th {
+    border-top: 1px solid #d8dde6;
+    border-right: 1px solid #d8dde6;
+}

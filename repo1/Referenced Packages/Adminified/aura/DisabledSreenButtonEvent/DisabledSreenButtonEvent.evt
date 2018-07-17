@@ -1,0 +1,4 @@
+<aura:event type="COMPONENT" Description="Disable all input when performing some action.">
+    <aura:attribute name="isDisabled" type="boolean" Description="Cheeck input has disabled or not."></aura:attribute>
+	<aura:attribute name="tabName" type="String" Description="hold tab name for indicate which module input disable."></aura:attribute>    
+</aura:event>

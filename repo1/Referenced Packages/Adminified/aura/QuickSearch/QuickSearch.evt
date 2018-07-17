@@ -1,0 +1,8 @@
+<aura:event type="COMPONENT" Description="Search standard fields in information section and generate searchable data. E.g. search user name in General information saction.">
+    <aura:attribute name="template" type="Object" Description="Store module information json formate data which is going for searching. "/>
+    <aura:attribute name="moduleName" type="String" Description="Hold module name indicate this event fire from which module."/>
+	<aura:attribute name="inputName" type="String" Description="Hold input name as a tab name for indicate this event is run for which tab. E.g. user, profile and permission set."/>
+    <aura:attribute name="evtName" type="String" Description="Indicate this event is use for searching in between many action."/>
+    <aura:attribute name="thisObj" type="Object"/>
+    
+</aura:event>

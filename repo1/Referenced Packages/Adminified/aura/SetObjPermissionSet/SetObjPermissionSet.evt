@@ -1,0 +1,2 @@
+<aura:event type="APPLICATION" Description="Set object of particular permission set in permission set module.">
+</aura:event>

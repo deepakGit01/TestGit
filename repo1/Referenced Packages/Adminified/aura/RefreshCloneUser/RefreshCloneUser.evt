@@ -1,0 +1,6 @@
+<aura:event type="APPLICATION" Description="Clone the particular user information and showing cloned data with new user information.">
+    <aura:attribute name="index" type="Integer"/>
+    <aura:attribute name="newUserName" type="String"/>
+    <aura:attribute name="newUserId" type="String"/>
+    <aura:attribute name="orgId" type="String"/>
+</aura:event>

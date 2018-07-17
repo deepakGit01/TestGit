@@ -1,0 +1,7 @@
+<aura:event type="COMPONENT" Description="Showing login history of particular user.">
+    <aura:attribute name="orgId" type="String" access="GLOBAL"/>
+    <aura:attribute name="userId" type="String" access="GLOBAL"/>
+    <aura:attribute name="userName" type="String" access="GLOBAL"/>
+    <aura:attribute name="apiUserName" type="String" access="GLOBAL"/>
+    <aura:attribute name="orgName" type="String" access="GLOBAL"/>
+</aura:event>

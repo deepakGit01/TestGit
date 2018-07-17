@@ -1,0 +1,477 @@
+.THIS .box {
+	
+	background: #fff;
+ 	border-radius: .20rem;
+	position: relative
+}
+ .THIS .box-containt {
+	padding: 0.75rem;
+}
+ .THIS .icon__svg--default {
+	background-color: #546991;
+}
+ .THIS .slds-picklist__label {
+	width: 100%
+}
+.THIS .fotter {
+	background: #eef1f6;
+	border-top: 1px solid #d8dde6;
+	padding: 0.75rem;
+ border-bottom-left-radius: .20rem;
+ border-bottom-right-radius: .20rem;
+ -moz-border-radius-bottomright: .20rem;
+ -moz-border-radius-bottomleft: .20rem;
+ -webkit-border-bottom-right-radius: .20rem;
+ -webkit-border-bottom-left-radius: .20rem;
+}
+.THIS .box-heading {
+	margin-left: 0.75rem;
+}
+.THIS .header {
+	background: #eef1f6;
+	border-bottom: 1px solid #d8dde6;
+	border-top:none;
+	/*padding: 0.75rem;*/
+}
+.THIS .c-padding {
+	padding: 0.75rem;
+	padding-bottom:0.50rem;
+    position:relative;
+}
+.THIS .sectionHeader{
+
+	background: #f4f6f9;
+}
+.THIS .slds-button-group .slds-button:last-child {
+	border-radius: 0px 0.20rem 0.20rem 0px;
+}
+.THIS .slds-button-group .slds-button:first-child {
+	border-radius: 0.20rem 0px 0px 0.20rem;
+}
+
+.THIS .slds-col-rule--right {
+	border-right: 1px solid #D8DDE6;
+}
+ .THIS .slds-col-rule--top {
+	border-top: 1px solid #D8DDE6;
+}
+.THIS .slds-col-rule--left {
+	border-left: 1px solid #D8DDE6;
+}
+.THIS .slds-col-rule--bottom {
+	border-bottom: 1px solid #D8DDE6;
+}
+.THIS .slds-table th .THIS .slds-table td {
+	padding: 0.5rem 0.75rem;
+}
+.THIS .textUppercase {
+	text-transform: uppercase;
+	color: #0070d2;
+}
+.THIS .textlowercase {
+	text-transform: capitalize;
+}
+.THIS .custom-input {
+    position: relative!important;
+  }
+.THIS .custom-combobox a{
+	position:absolute!important;
+	right:-2.3px!important;
+	} 
+.THIS .ui-widget .custom-add	{
+	position:absolute!important;
+	right:30px!important;
+	top: 0;
+	border-radius: 0;
+	border-right:none
+}
+.THIS .ui-widget .custom-add .slds-icon--x-small {
+width: .751rem;
+height: .751rem;
+}
+.THIS .custom-combobox-toggle {
+    position: absolute!important;
+    top: 0!important;
+    bottom: 0!important;
+    margin-left: -1px!important;
+    padding: 0!important;
+  }
+ .THIS .custom-combobox-input {
+	margin: 0;
+	padding-right:4.3rem!important;
+	background:#fff!important;
+	border-color:#d8dde6
+  }
+.THIS .custom-combobox-toggle{
+	background:#fff!important;
+	border-color:#d8dde6!important;
+ }
+.THIS .ui-widget-content{
+	
+} 
+.THIS .ui-autocomplete{
+border-color:#d8dde6!important;
+	
+}
+.THIS .ui-widget .THIS .ui-autocomplete{
+    font: 100%/1.875rem "Salesforce Sans", Arial, sans-serif!important;
+    color: #16325c!important;
+    -webkit-tap-highlight-color: transparent!important;
+}
+.THIS .ui-autocomplete .ui-widget-content {
+    
+    background: #d8dde6!important;
+    color: #16325c!important;
+	
+}
+.THIS .ui-menu-item.ui-state-focus{
+	background:#eef1f6!important;
+	border-color:#d8dde6!important;
+}
+
+.THIS .slds-form-element__static {
+   
+    line-height: 2.125rem!important;
+    min-height: calc(2.125rem - 2px)!important;
+}
+.THIS .ui-widget .THIS .slds-form-element__label{ font-size: 0.875rem;
+}
+
+
+
+.THIS .layer{
+    opacity: .8;
+    background-color: rgb(168, 183, 199);
+	position:absolute;
+	z-index:9999;
+	width:100%;
+	height:100%;
+	border-radius: .20rem;
+}
+
+.THIS .hide-row{
+    display : none;
+}
+
+
+.THIS .slds-form-element .slds-checkbox [type="checkbox"] ~ .slds-checkbox--faux {
+    margin-right: 0.5rem;
+}
+
+.THIS .ltcss{color:red}
+.THIS .slds-table td {
+    padding: 0.3rem .50rem;
+}
+.THIS .slds-table td .THIS .slds-truncate {
+    white-space: normal
+}
+.THIS span.slds-icon__container.slds-icon-action-close {
+    padding: 0.5rem;
+}
+.THIS .custom-close{
+	position: absolute;
+	top: -7px;
+	right: 0px;
+}
+ .THIS.custom-close span{
+}
+.THIS .custom-close .slds-button__icon{
+    width: 0.625rem;
+    height: 0.625rem
+}
+.THIS .custom-close .slds-button__icon:hover {
+	background-color: #ef6e64;
+    fill: #fff;
+	border-radius: 50%;
+}
+
+.THIS .slds-popover{
+max-width: 40rem;
+}
+.THIS .slds-popover__body{
+max-height: 25rem;
+overflow:auto
+}
+.THIS .slds-popover__header {
+    padding: 0.75rem;
+}
+.THIS .slds-popover__body {
+    padding: 0!important;
+}
+.THIS .row-bg-color{
+background:#f9edbe
+}
+.THIS .slds-table--bordered .row-bg-color td .THIS .slds-table--bordered .row-bg-color th {
+border-top: 1px solid #f0c36d;
+border-bottom: 1px solid #f0c36d;
+}
+.THIS .slds-table:not(.slds-no-row-hover) tbody .row-bg-color:hover > td .THIS .slds-table:not(.slds-no-row-hover) tbody .row-bg-color:hover > th {
+background-color: #f9edbe;
+}
+.THIS .slds-table--bordered:not(.slds-no-row-hover) tbody .row-bg-color:hover > td .THIS .slds-table--bordered:not(.slds-no-row-hover) tbody .row-bg-color:hover > th {
+box-shadow: #f0c36d 0 -1px 0 inset;
+}
+ .THIS .row-eq-height {
+display: -webkit-box;
+display: -webkit-flex;
+display: -ms-flexbox;
+display: flex;
+}
+.THIS .ui-menu-item a{background:none; border:none;text-decoration:none;color: #16325c; font-size: 0.75rem}
+.THIS .ui-menu-item a:hover{
+background:none;
+    border:none;
+}
+.THIS .ui-menu-item:hover{
+background:#eef1f6!important;
+}
+.THIS .ui-menu-item:hover a{border:none;}
+.THIS .showClass {
+    display: block;
+}
+.THIS .hideClass .THIS .toggle-cls {
+    display: none;
+}
+
+
+.THIS .slds-tabs--default__nav .slds-tabs__item a{
+    height: 2.5rem;
+line-height: 2.5rem;
+}
+.THIS .slds-tabs--default > .slds-tabs__content {
+padding: 0;
+}
+.THIS .slds-icon__container.slds-icon-action-edit .THIS .slds-icon__container.slds-icon-action-join-group {
+    padding: 0.5rem;
+}
+.THIS .slds-text-heading--medium {
+font-weight: 400;
+font-size: 1.2rem;
+line-height: 1.25;
+}
+.THIS .custom-slds{
+font-size: 0.75rem !important;
+}
+
+.THIS .slds-input::-webkit-input-placeholder { font-size: 0.75rem !important; }
+.THIS .slds-input:-moz-placeholder { font-size: 0.75rem !important; }
+.THIS .slds-input::-moz-placeholder { font-size: 0.75rem !important; }
+.THIS .slds-input:-ms-input-placeholder { font-size: 0.75rem !important; }
+.THIS .slds-checkbox .slds-form-element__label {
+font-size: 0.75rem;
+}
+
+.THIS td .slds-button--icon-container{
+	height:auto;
+}
+.THIS td  .slds-tile__title{
+ 	cursor:pointer
+ }
+.THIS .focus-none:focus{ outline: 0; box-shadow: none;}
+.THIS .slds-icon-action-approval-custom .THIS .slds-icon-action-close-custom{
+    padding: 4px !important;
+    line-height: 0 !important;
+}
+.THIS .slds-icon-action-approval-custom .slds-icon--x-small .THIS .slds-icon-action-close-custom .slds-icon--x-small  {
+    line-height: 1;
+    width: 12px;
+    height: 12px;
+}
+.THIS .slds-popover__body {
+	min-height:20rem;
+}
+.THIS .slds-popover{min-width: 40rem;}
+.THIS .button-small{line-height: 1rem; font-size:85%; min-height: 1.5rem; padding-left: .75rem; padding-right: .75rem;}
+.THIS .users{
+ background:#fff;
+ }
+
+.THIS .srollbarNone{ 
+overflow:auto;
+overflow: -moz-scrollbars-none;
+-moz-box-orient: vertical;
+
+
+}
+
+.THIS .srollbarNone::-webkit-scrollbar{
+display:none;}
+.THIS .srollbarNone::-moz-vertical-scrollbar{
+display:none;
+
+}
+.THIS .homePageBodyContainer {
+display: -webkit-flex;
+display: flex;
+-webkit-flex: 1;
+flex: 1;
+}
+.THIS .homePageLeftNav {
+float: left;
+display: flex;
+flex-flow: column;
+}
+.THIS .listViewContainer {height:100%; width:100%; position:relative; -webkit-box-flex:1; -ms-box-flex:1; -webkit-flex:1; -ms-flex:1; flex:1}
+.THIS .listViewContainer {width:100%; -webkit-flex:1; -moz-flex:1; flex:1; position:relative}
+.THIS .listViewContainer {width:100%; -webkit-flex:1; flex:1; position:relative}
+.THIS .listViewContainer {
+border-left: 1px solid rgb(224, 229, 238);
+padding-right: 5px;
+margin-left: 200px;
+width: calc(100% - 200px);
+-webkit-flex: 1;
+-moz-flex: 1;
+flex: 1;
+position: relative;
+}
+.THIS .uiTabset--default .tabs__nav {
+border-bottom: 1px solid rgb(216, 221, 230);
+background-color: transparent;
+}
+.THIS .analyticsHomeLeftNav {
+float: left;
+width: 200px;
+text-align: left;
+background-color: rgb(255, 255, 255);
+padding-top: 0.5rem;
+position: absolute;
+}
+.THIS .analyticsHomeLeftNav .tabs__nav {
+border: none!important;
+display: block!important;
+}
+.THIS .uiTabset--default .tabs__item {
+text-transform: uppercase;
+letter-spacing: .0625em;
+}
+.THIS .analyticsHomeLeftNav .tabs__item.active {
+background-color: rgb(0, 112, 210);
+}
+.THIS .analyticsHomeLeftNav .tabs__item+.tabs__item {
+margin: 0!important;
+}
+.THIS .uiTabset--default .tabs__item {
+text-transform: uppercase;
+letter-spacing: .0625em;
+}
+.THIS .analyticsHomeLeftNav .tabs__item a.tabHeader {
+text-transform: none;
+letter-spacing: normal;
+border: none;
+padding: 0px 12px 0px 24px;
+outline: none;
+overflow: hidden;
+text-overflow: ellipsis;
+background-color: rgb(255, 255, 255);
+}
+.THIS .uiTabset--default .tabs__item a {
+border-bottom: 2px solid transparent;
+padding: 1.5rem 1rem .5rem;
+color: rgb(84, 105, 141);
+}
+.THIS .uiTabset--base .tabs__item a {
+display: block;
+text-decoration: none;
+cursor: pointer;
+}
+.THIS .analyticsHomeLeftNav .tabs__item.active a.tabHeader {
+color: rgb(0, 112, 210);
+background-color: rgb(240, 248, 252);
+font-family: 'SalesforceSans-Regular',Arial,sans-serif;
+font-size: .75rem;
+-webkit-transform: translateX(4px);
+-ms-transform: translateX(4px);
+transform: translateX(4px);
+width: calc(100% - 4px);
+}
+.THIS .uiTabset--default .tabs__item.active a {
+border-color: rgb(0, 112, 210);
+color: rgb(22, 50, 92);
+}
+.THIS .analyticsHomeLeftNav .tabs__item {
+display: block!important;
+-webkit-transition: background-color .5s;
+transition: background-color .5s;
+height: 50px;
+line-height: 50px;
+}
+.THIS .listViewContent {
+background-color: rgb(244, 246, 249);
+}
+.THIS .uiScroller {
+position: relative;
+width: 100%;
+height: 100%;
+}
+.THIS .uiScroller.native {
+overflow: auto;
+-webkit-overflow-scrolling: touch;
+-ms-overflow-style: none;
+}
+.THIS .centerRegion {
+padding: 0;
+display: -webkit-flex;
+display: flex;
+height: 100%;
+-webkit-flex: 1;
+flex: 1;
+}
+.THIS .uiTabset--default .tabs__item a:hover .THIS .uiTabset--default .tabs__item a:focus {
+border-color: rgb(0, 112, 210);
+color: rgb(22, 50, 92);
+}
+.THIS .analyticsHomeLeftNav .tabs__item a:hover {
+background-color: rgb(244, 246, 249);
+}
+
+.THIS .toggleContent{
+    border: 1px solid #d8dde6;
+    border-top:none;
+    padding:.75rem
+}
+.THIS .toggleWp{
+    margin-bottom:.75rem
+}
+.THIS .toggleH{
+    background: #eef1f6;
+    border: 1px solid #d8dde6;
+}
+
+.THIS .Displaynone{
+   Display:none;
+}
+.THIS .Display-Block{
+    display:block;
+}
+
+.THIS .slds-form-element .slds-checkbox [type="checkbox"] ~ .slds-checkbox--faux {
+    margin-right: 0.5rem;
+}
+.THIS .setting_list{
+     -moz-column-count: 3;
+    -moz-column-gap: 10px;
+    -webkit-column-count: 3;
+    -webkit-column-gap: 10px;
+    column-count: 3;
+    column-gap: 10px;
+    border-bottom:2px solid #d8dde6;
+    padding:0.75rem;
+    margin-bottom:0.75rem
+}
+.THIS .settingHeader{
+   	padding: 0.5rem;
+	background-color: #f4f6f9;
+	text-align: right; 
+}
+.THIS .custom-chekbox{
+    display:table!important;
+}
+.THIS .custom-chekbox .slds-form-element__label{
+   display:table-cell!important;
+}
+.THIS .helpIconPadding{
+      padding: 0.3rem;
+}
+.THIS .IconPadding{
+      padding: 0.2rem;
+}

@@ -1,0 +1,8 @@
+<aura:event type="COMPONENT" Description="Update organizations and users name list if they have already selected multiple time in other user information block for comparison." >
+    <aura:attribute name="instanceData" type="String" />
+    <aura:attribute name="randomNo" type="String" />
+    <aura:attribute name="userId" type="String" />
+    <aura:attribute name="index" type="String" />
+    <aura:attribute name="orgId" type="String" />
+    <aura:attribute name="userName" type="String" />
+</aura:event>

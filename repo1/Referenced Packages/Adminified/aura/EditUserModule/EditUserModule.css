@@ -1,0 +1,13 @@
+.THIS .slds-popover{
+max-width: 40rem;
+}
+.THIS .slds-popover__body{
+max-height: 22rem;
+overflow:auto
+}
+.THIS .slds-popover__header {
+padding: 1rem;
+}
+.THIS .custom-slds{
+   font-size:0.75rem 
+}

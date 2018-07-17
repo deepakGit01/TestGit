@@ -1,0 +1,12 @@
+<aura:component implements="flexipage:availableForAllPageTypes"
+                access="global" controller="stivadmn.settingmoduleclass">
+    <ltng:require afterScriptsLoaded="{!c.documentReady}" />
+    <aura:attribute name="vfHost" type="String" />
+   
+    <div class="connectedAppIframe">
+        <div class="alert alert-info" role="alert"> <strong>Note</strong>: A connected app integrates an application with Salesforce using APIs. Connected apps use standard SAML and OAuth protocols to authenticate, provide single sign-on, and provide tokens for use with Salesforce APIs. In addition to standard OAuth capabilities, connected apps allow Salesforce admins to set various security policies and have explicit control over who can use the corresponding apps. </div>
+        
+        <iframe width="100%" height="150" aura:id="vfFrame" src="{!v.vfHost+'/apex/stivadmn__ConnAppVF'}"  frameborder="0"></iframe>
+    </div>
+    
+</aura:component>

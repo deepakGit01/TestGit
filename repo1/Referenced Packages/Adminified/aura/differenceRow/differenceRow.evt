@@ -1,0 +1,8 @@
+<aura:event type="COMPONENT" Description="Show difference in multiple organizations users fields. E.g user name,User role,profile etc.">
+    <aura:attribute name="compDivId" type="String" description="hold module section name for identifying this event call from which module."/>
+    <aura:attribute name="mainModule" type="String" description="hold module name for identifying comparison between information blocks."/>
+    <aura:attribute name="currentComparableModule" type="String" description="hold class name which is append after getting information in blocks. "/>
+    <aura:attribute name="showHideId" type="String" description="Check this event has already triggered or not."/>
+    <aura:attribute name="tabName" type="String" description="hold tab name. e.g. user,profile."/>
+    <aura:attribute name="showDifference" type="Boolean" description="Show only the difference."/>
+ </aura:event>

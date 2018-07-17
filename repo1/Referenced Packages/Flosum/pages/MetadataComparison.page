@@ -1,0 +1,786 @@
+<apex:page controller="Flosum.MetadataComparisonController" Extensions="Flosum.ComputeComparisonController" sidebar="false" doctype="html-5.0">
+<apex:includeScript value="{!URLFOR($Resource.Flosum__jszipmaster, 'jszip-master/dist/jszip.js')}"/>
+<style>
+.red {
+    background-color:rgba(255, 158, 158, 0.65);
+    font-weight:bold;
+}
+.yellow {
+	background-color:rgba(252, 252, 164, 1);
+	font-weight:bold;
+}
+.red:hover {
+    background-color:red;!important 
+    font-weight:bold;
+}
+.hideItem{
+	display:none;
+}
+label {
+	font-weight: normal;
+}
+.source{
+	white-space: pre;
+}
+.target{
+	white-space: pre;
+}
+div .pagination {
+	text-align: center;
+}
+span.paginationEle {
+margin-left: 4px;
+}
+.pagination input {
+margin-left: 4px;
+}
+
+</style>
+<c:Wait />
+<script src="{!$Resource.xmltojson}"></script>
+<apex:form id="form">
+	<apex:actionfunction name="compareApexType" action="{!compareApexType}" rerender="form" onComplete="hide();" >
+		<apex:param assignTo="{!crcMap}" value="" name="crcMap"/>
+		<apex:param assignTo="{!targetCrcMap}" value="" name="targetCrcMap"/>
+	</apex:actionfunction>
+	
+	<apex:actionfunction name="compareNonApex" action="{!compareNonApex}" rerender="form" oncomplete="hide();" >
+		<apex:param assignTo="{!isMismatch}" value="" name="ismatch"/>
+	</apex:actionfunction>
+	
+	<apex:actionfunction action="{!updateMetaItems}" reRender="msg" name="saveRecords" onComplete="computeCompare(_mtype,s2,false);">
+			<apex:param assignTo="{!UpdateJson}" value="" name="newstr"/>
+	</apex:actionfunction>
+    <apex:pagemessages id="msg"/>
+    <apex:pageblock title="Select Organizations" id="pblock" >
+           <apex:pageBlockSection columns="2" id="selectBlock">
+               <apex:pageBlockSectionItem >   
+                   <apex:outputLabel value="Organization 1:" />
+                   <apex:selectList value="{!selectedOrganisations}" multiselect="false" size="1">
+                       <apex:selectOptions value="{!organisationNames}"/>
+                       <apex:actionSupport event="onchange" action="{!listSourceSnapshot}" onSubmit="show();" reRender="selectBlock,selectoption" onComplete="hide();" />
+                   </apex:selectList>  
+               </apex:pageBlockSectionItem> 
+               <apex:pageBlockSectionItem >
+                   <apex:outputLabel value="Organization 2:" />
+                   <apex:selectList value="{!organisationTargetName}" multiselect="false" size="1">
+                       <apex:selectOptions value="{!organisationTarget}"/>
+                       <apex:actionSupport event="onchange" action="{!listTargetSnapshot}" onSubmit="show();" reRender="selectBlock,selectoption" onComplete="hide();" />
+                   </apex:selectList>
+               </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                   <apex:outputLabel value="Snapshot 1:" />
+                   <apex:selectList value="{!sourceSnapshotName}" multiselect="false" size="1" id="sourceSnap">
+                       <apex:selectOptions value="{!sourceSnapshot}"/>
+                       <apex:actionSupport event="onchange" action="{!listMetadataType}" onSubmit="show();" reRender="selectBlock,selectoption" onComplete="hide();setS1('{!sourceSnapshotName}');" />
+                   </apex:selectList>
+               </apex:pageBlockSectionItem>       
+               <apex:pageBlockSectionItem >
+                   <apex:outputLabel value="Snapshot 2:" />
+                   <apex:selectList value="{!targetSnapshotName}" multiselect="false" size="1" id="targetSnap">
+                       <apex:selectOptions value="{!targetSnapshot}"/>
+                       <apex:actionSupport event="onchange" action="{!listMetadataType}" onSubmit="show();" reRender="selectBlock,selectoption" onComplete="hide();setS2('{!targetSnapshotName}');" />
+                   </apex:selectList>
+               </apex:pageBlockSectionItem>
+            </apex:pageBlockSection> 
+            <apex:pageBlockSection columns="1" id="selectoption">
+               <apex:pageBlockSectionItem >
+                   <apex:outputLabel value="Metadata Type:" />
+                   <apex:selectList value="{!MetaDataTypeId}" multiselect="false" size="1" id="metadatatype" styleclass="mtt">
+                       <apex:selectOptions value="{!metadataTypes}"/>
+                       <apex:actionSupport event="onchange" onSubmit="startComparison();" rerender="tr"/>
+                   </apex:selectList>
+               </apex:pageBlockSectionItem>
+               <apex:pageBlockSectionItem >
+					<apex:outputlabel value="Compare Different"/>
+					<apex:inputCheckbox value="{!isCompareDiff}" id="comparediff" onchange="compareOnCheck();">
+<!-- 						<apex:actionSupport event="onchange" onsubmit="show();" action="{!compareApexType}" reRender="form" onComplete="hide();" /> -->
+					</apex:inputCheckbox>
+				</apex:pageBlockSectionItem>
+			</apex:pageBlockSection>	
+	    	<apex:pageBlockSection id="compareBlock" columns="1">
+					<apex:pageBlockTable value="{!sourceTargetChildList}" var="item" rendered="{!if(sourceTargetChildList.size > 0,true,false)}">
+						<apex:facet name="header">
+							<apex:commandbutton value="View Detail" action="{!viewDetail}" rendered="{!isApex}" reRender="msg" onClick="show();" onComplete="hide();"/>
+						</apex:facet>
+						<apex:column headerValue="View Detail" width="40px" rendered="{!isApex}" styleClass="{!if(item.metaDataItemRecord.Flosum__CRC32__c == 'NULL' || item.metaDataItemTargetRecord.Flosum__CRC32__c == 'NULL','red',if(item.metaDataItemRecord.Flosum__CRC32__c != item.metaDataItemTargetRecord.Flosum__CRC32__c,'yellow',''))}">
+							<apex:inputCheckbox value="{!item.check}" />
+						</apex:column>
+						<apex:column headerValue="Name" styleClass="{!if(item.metaDataItemRecord.Flosum__CRC32__c == 'NULL' || item.metaDataItemTargetRecord.Flosum__CRC32__c == 'NULL','red',if(item.metaDataItemRecord.Flosum__CRC32__c != item.metaDataItemTargetRecord.Flosum__CRC32__c,'yellow',''))}">
+							<label id="{!item.metaDataItemName}">{!item.metaDataItemName}</label>
+						</apex:column>
+						<apex:column headerValue="Modified On({!sourceName})" styleClass="{!if(item.metaDataItemRecord.Flosum__CRC32__c == 'NULL' || item.metaDataItemTargetRecord.Flosum__CRC32__c == 'NULL','red',if(item.metaDataItemRecord.Flosum__CRC32__c != item.metaDataItemTargetRecord.Flosum__CRC32__c,'yellow',''))}">
+							<label>{!item.metaDataItemRecord.Flosum__Last_Modified_Date__c}</label>
+						</apex:column>
+						<apex:column headerValue="Modified On({!TargetName})" styleClass="{!if(item.metaDataItemRecord.Flosum__CRC32__c == 'NULL' || item.metaDataItemTargetRecord.Flosum__CRC32__c == 'NULL','red',if(item.metaDataItemRecord.Flosum__CRC32__c != item.metaDataItemTargetRecord.Flosum__CRC32__c,'yellow',''))}">
+							<label>{!item.metaDataItemTargetRecord.Flosum__Last_Modified_Date__c}</label>
+						</apex:column>
+					</apex:pageBlockTable>
+					<apex:outputPanel rendered="{!if(sourceTargetChildList.size > 0,true,false)}" layout="block" styleClass="pagination">
+						<apex:commandbutton value="First" action="{!FirstPage}" reRender="compareBlock,msg" disabled="{!prev}" onClick="show();" onComplete="hide();"/>
+						<apex:commandbutton value="Previous" action="{!previous}" reRender="compareBlock,msg" disabled="{!prev}" onClick="show();" onComplete="hide();"/>
+						<apex:outputText value="{!paginationStr}" styleClass="paginationEle"/>
+						<apex:commandbutton value="Next" action="{!next}" reRender="compareBlock,msg" disabled="{!nxt}" onClick="show();" onComplete="hide();"/>
+						<apex:commandbutton value="Last" action="{!LastPage}" reRender="compareBlock,msg" disabled="{!nxt}" onClick="show();" onComplete="hide();"/>
+					</apex:outputPanel>
+			</apex:pageBlockSection>
+			<apex:pageBlockButtons >
+				<apex:commandbutton value="Show Detailed Comparison" onclick="startDeepComparison(); return false;" reRender="form" rendered="{!isMismatch}"/>
+			</apex:pageBlockButtons>
+		</apex:pageblock>
+		<apex:actionfunction action="{!showMessage}" reRender="msg" name="showMessage" onComplete="">
+			<apex:param assignTo="{!message}" value="" name="newstr"/>
+		</apex:actionfunction> 
+		<apex:actionfunction action="{!clearList}" reRender="form" name="clearList" onComplete="hide();">
+		</apex:actionfunction> 
+</apex:form>
+	
+	<script>
+		var isDetail = false;
+		var nonapex = {0:{},1:{}};
+	    var s1, s2, _mtype;
+	    var firstcall = true;
+	    Visualforce.remoting.timeout = 120000; // Set timeout at page level
+		var sid = '{!JSENCODE(snapId)}';
+		var typeAttMap = {};
+		var tmap = {};
+		var attIds = [];
+		var attachmentMap = {};
+		var metaItems = new Object();
+		var allTypes = [];
+		var mmap = new Object();
+		mmap['CustomLabel'] = true;
+	    mmap['CustomField'] = true;
+	    mmap['CompactLayout'] = true;
+	    mmap['WebLink'] = true;
+	    mmap['RecordType'] = true;
+	    mmap['ListView'] = true;
+	    mmap['FieldSet'] = true;
+	    mmap['AssignmentRule'] = true;
+	    mmap['AutoResponseRule'] = true;
+	    mmap['ValidationRule'] = true;
+	    mmap['WorkflowTask'] = true;
+		mmap['WorkflowOutboundMessage'] = true;
+		mmap['WorkflowFieldUpdate'] = true;
+		mmap['WorkflowAlert'] = true;
+		mmap['WorkflowRule'] = true;
+		mmap['SharingOwnerRule'] = true;
+		mmap['SharingCriteriaRule'] = true;
+		mmap['BusinessProcess'] = true;
+		mmap['SharingReason'] = true;
+		mmap['EscalationRule'] = true;
+		mmap['MatchingRule'] = true;
+		mmap['ManagedTopic'] = true;
+		/*mmap['WorkflowKnowledgePublish'] = true;
+		mmap['WorkflowFlowAction'] = true;
+		mmap['WorkflowSend'] = true;*/
+
+		
+		var crcMap = {};
+		var targetCrcMap = {};
+
+		$( document ).ready(function() {
+			//computeCompare();
+		});
+		
+		s1 = '{!JSENCODE(sourceSnapshotName)}';
+		s2 = '{!JSENCODE(targetSnapshotName)}';
+		
+		function setS1(s)
+		{
+			s1 = s;
+		}
+		
+		//set snpashot 1 id
+		function setS2(s)
+		{
+			s2 = s;
+		}
+		
+		//set snpashot 2 id
+		function _setDetail(s)
+		{
+			isDetail = s;
+		}
+		
+		// start comparsion
+		function startComparison()
+		{
+			nonapex = {0:{},1:{}};
+			crcMap = {};
+	    	targetCrcMap = {};
+			isDetail = false;
+			firstcall = true;
+			show();
+			_mtype = $('.mtt option:selected').text();
+			if(_mtype != '--None--')
+			{
+				computeCompare(_mtype,s1,true);
+			}
+			else
+			{
+				hide();
+			}
+		}
+		
+		//deep comparison for metadata type like CustomField
+		function startDeepComparison()
+		{
+			isDetail = true;
+			firstcall = true;
+			show();
+			_mtype = $('.mtt option:selected').text();
+			
+			computeCompare(_mtype,s1,true);
+		}
+		
+		//collect items of first snapshot
+		function computeCompare(metaType,s,call)
+		{
+			if(firstcall)
+			{
+				show();
+				if(!call)
+				{
+					firstcall = false;
+				}
+				getItems(metaType,s);
+			}
+			else 
+			{
+				show();
+				//showMessage('Please wait...#i');
+				if(metaType == 'CustomLabel' || metaType == 'CustomField')
+					compareApexType(JSON.stringify(crcMap),JSON.stringify(targetCrcMap));
+				else
+					compareApexType('','');
+			}
+			if(s == s2)
+			{
+				//firstcall = false;
+			}
+		}
+		
+		//collect items of second snapshot
+		function computeCompareOther(metaType,s, call)
+		{
+			if(firstcall)
+			{
+				show();
+				if(!call)
+				{
+					firstcall = false;
+				}
+				getItems(metaType,s);
+			}
+			else 
+			{
+				show();
+				findMismatch();
+			}
+			if(s == s2) 
+			{
+				//firstcall = false;
+			}
+		}
+		
+		function compareOnCheck()
+		{
+			show();
+			_mtype = $('.mtt option:selected').text();
+			firstcall = false;
+			if(_mtype != '--None--')
+			{
+				if(mmap[_mtype] == undefined || _mtype == 'CustomLabel' || _mtype == 'CustomField')
+				{
+					computeCompare(_mtype,s2,firstcall);
+				}
+				else
+				{
+					computeCompareOther('',s2,firstcall);
+				}
+			}
+			else
+			{
+				hide();
+			}
+			
+		}
+		
+		//find mismatch between first and second snapshot
+		function findMismatch()
+		{
+			var data1 = nonapex[0];
+			var data2 = nonapex[1];
+			for(var fileName in data1)
+			{
+				if(data1[fileName] == undefined || data2[fileName] == undefined || data1[fileName] != data2[fileName])
+				{
+					compareNonApex(true);
+					return;
+				}
+			}
+			for(var fileName in data2)
+			{
+				if(data2[fileName] == undefined || data1[fileName] == undefined || data1[fileName] != data2[fileName])
+				{
+					compareNonApex(true);
+					return;
+				}
+			}
+			clearList();
+		}
+		
+		//get metaitems from snapshot of particular metatype.
+		function getItems(metaType,s)
+		{
+			if(s1!=null)
+			{
+				attachmentMap = {};
+				 Visualforce.remoting.Manager.invokeAction(
+			        '{!$RemoteAction.MetadataComparisonController.getMetaItems}',
+			        s,
+			        metaType,
+			        handleMetaItems
+			    );
+		    }
+		    else
+		    {
+		    	showMessage('Snapshot not found.');
+		    }
+		}
+		
+		//handle metaItems
+		function handleMetaItems(r,e)
+		{
+			if(e.status) 
+		    {
+		    	attIds = [];
+		    	attIds = JSON.parse(JSON.stringify(r.attids));
+                metaItems = r;
+				if((attIds.length > 0) && (r.items.length > 0 || mmap[r.metaType] != undefined))
+				{
+					for(var index in attIds)
+					{
+						if(index < 2 && index < attIds.length)
+						{
+							if(attIds.length > 2)
+							{
+								var tempId = ""+attIds[index];
+								getSourceAttachments(tempId,index,1);
+							}
+							else
+							{
+								var tempId = ""+attIds[index];
+								getSourceAttachments(tempId,index,(attIds.length -1));
+							}
+							
+						}		
+					}
+				}
+				else
+				{
+					allTypes.remove(r.metaType);
+					
+					if(mmap[r.metaType] == undefined || isDetail == true || r.metaType == 'CustomLabel' || r.metaType == 'CustomField')
+    				{
+    					computeCompare(r.metaType,s2,false)
+    				}
+    				else if(!isDetail)
+    				{
+    					computeCompareOther(r.metaType,s2,false)
+    				}
+				}
+		    } 
+		    else 
+		    {
+		        showMessage(e.message);	
+		        hide();
+		    }
+		}
+		
+		// get attachments
+		function getSourceAttachments(aId,index,total) 
+		{
+		    Visualforce.remoting.Manager.invokeAction(
+		        '{!$RemoteAction.ComputeComparisonController.getComponentsZip}',
+		        aId,
+		        index,
+		        total,
+		        handleSourceAttachments
+		    );
+		}
+ 		
+ 		//collect attachments for snapshot
+ 		function handleSourceAttachments(r,e) 
+		{
+		    if(e.status && r) 
+		    {
+		    	attIds.remove(r.Id);
+		    	if(r.basedata != null && r.Id != null)
+		    	{
+		    		attachmentMap[r.Id] = ""+r.basedata;
+		    	}
+		    	if(r.index == r.total)
+		    	{
+		    		if(attIds.length > 0)
+			    	{
+			    		for(var index in attIds)
+						{
+							if(index < 2 && index < attIds.length)
+							{
+								if(attIds.length > 2)
+								{
+									var tempId = ""+attIds[index];
+									getSourceAttachments(tempId,index,1);
+								}
+								else
+								{
+									var tempId = ""+attIds[index];
+									getSourceAttachments(tempId,index,(attIds.length -1));
+								}
+								
+							}		
+						}
+			    	}
+			    	else
+			    	{
+		    			if(metaItems.items != undefined && metaItems.metaType != undefined)
+		    			{
+		    				var items = metaItems.items;
+		    				var currentType = ""+metaItems.metaType;
+		    				var itemlength = items.length;
+		    				
+		    				if(currentType == 'Workflow')
+					        {
+					           for (var i = itemlength; i--; ) 
+		    				   {
+		    				   	   var tfileName = ""+items[i].fileName;
+					               if(tfileName.indexOf('Workflow/') > -1)
+					               {
+					                   items[i].fileName = tfileName.replace('Workflow/','workflows/');
+					               }
+				               }
+					        }
+					        
+					        var zipinstances = [];
+					        for(var j in attachmentMap)
+			    			{
+			    				var base64Str = ''+attachmentMap[j];
+			    				var tempZip = new JSZip(base64Str,{base64:true});
+			    				zipinstances.push(tempZip);
+			    			}
+		    				var ziplength = zipinstances.length;
+		    				
+		    						
+		    				var isApex = true;	
+    						if(mmap[currentType] == undefined)
+    						{
+    							for (var i = itemlength; i--; ) 
+    							{
+    								var oneItem = items[i];
+		    						var fileName = ""+oneItem.fileName;
+		    						var itemName = ""+oneItem.itemName;
+	    							var k=0;
+		    						while( k<ziplength)
+		    						{
+		    							var zip = zipinstances[k];
+		    							if(zip.files[fileName] != undefined)
+		    							{
+		    								items[i].crcCode = ""+zip.files[fileName]._data.crc32+"";
+		    							}
+		    							k++;
+		    						}
+	    						}
+	    					}
+	    					else if(currentType == 'CustomLabel' || currentType == 'CustomField')
+	    					{
+	    						isApex = false;	
+   								
+    							var k=0;
+	    						while( k < ziplength)
+	    						{
+	    							var zip = zipinstances[k];
+	    							
+	    							for(var fileName in zip.files)
+	    							{
+	    								if(fileName != 'package.xml' && zip.files[fileName] != undefined)
+			    						{
+		    								if(firstcall )
+											{
+												if(crcMap[fileName] == undefined)
+												{
+													crcMap[fileName] = ""+zip.files[fileName]._data.crc32;
+												}
+		    									else
+		    									{
+		    										crcMap[fileName] = crcMap[fileName]+""+zip.files[fileName]._data.crc32;
+		    									}
+		    								}
+		    								else if(!firstcall)
+		    								{
+		    									if(targetCrcMap[fileName] == undefined)
+		    									{
+		    										targetCrcMap[fileName] = ""+zip.files[fileName]._data.crc32;
+		    									}
+		    									else
+		    									{
+		    										targetCrcMap[fileName] = targetCrcMap[fileName]+""+zip.files[fileName]._data.crc32;
+		    									}
+		    								}
+		    							}
+	    							}
+	    							k++;
+	    						}
+	    					}
+    						else
+    						{
+    							var k=0; 
+    							isApex = false;	
+    							if(!isDetail)
+    							{
+		    						while( k<ziplength)
+		    						{
+		    							var zip = zipinstances[k];
+		    							for(var fileName in zip.files)
+		    							{
+			    							if(fileName != 'package.xml' && zip.files[fileName] != undefined)
+			    							{
+			    								var filemap = {};
+			    								
+			    								if(firstcall)
+												{
+													if(nonapex[0] != undefined)
+													{
+														filemap = nonapex[0];
+													}
+													filemap[fileName] = zip.files[fileName]._data.crc32+''+fileName;
+			    									nonapex[0] = filemap;
+			    									//firstcall = false;
+			    								}
+			    								else
+			    								{
+			    									if(nonapex[1] != undefined)
+													{
+														filemap = nonapex[1];
+													}
+													filemap[fileName] = zip.files[fileName]._data.crc32+''+fileName;
+			    									nonapex[1] = filemap;
+			    								}
+			    								
+			    							}
+		    							}
+		    							k++;
+		    						}
+	    						}
+	    						else
+	    						{
+	    							var zip = new JSZip();
+	    							for (var i = itemlength; i--; ) 
+    								{
+	    								var oneItem = items[i];
+			    						var fileName = ""+oneItem.fileName;
+			    						var itemName = ""+oneItem.itemName;
+		    							var k=0;
+		    							var xmlLi = [];
+		    							var k=0;
+			    						while( k<ziplength)
+			    						{
+			    							var zip = zipinstances[k];
+			    							
+			    							if(zip.files[fileName] != undefined)
+			    							{
+			    								xmlLi.push(""+zip.files[fileName].asText());
+			    							}
+			    							k++;
+			    						}
+			    						var srcMap = {};
+			    						srcMap = getSourceTargetMap(currentType,xmlLi);
+						    	    	var res = itemName.split(".");
+						    	    	var scomp = null;
+						    	    	if(res.length > 0)
+						    	    	{
+						    	    		if(srcMap[res[res.length - 1]] != undefined)
+						    	    		{
+						    	    			scomp = srcMap[res[res.length - 1]];
+						    	    		}
+						    	    	}
+						    	    	if(scomp != null)
+						    	    	{
+						    	    		items[i].crcCode = ""+zip.crc32(scomp,32);
+						    	    	}
+					    	    	}
+				    	    	}
+    						}
+		    				allTypes.remove(currentType);
+		    				if(isApex || isDetail)
+		    				{
+		    					saveRecords(JSON.stringify(items));
+		    				}
+		    				else if(currentType == 'CustomLabel' || currentType == 'CustomField')
+		    				{
+		    					computeCompare(currentType,s2, false);
+		    				}
+		    				else
+		    				{
+		    					computeCompareOther(currentType,s2, false);
+		    				}
+	    				}
+		    		}
+		    	}
+		    }
+		    else
+		    {
+		    	showMessage(e.message);
+		    	hide();
+		    }
+		}
+		
+		//get next type items or show message.
+		function callNext()
+		{
+			if(allTypes.length > 0)
+			{
+				getItems(allTypes[0]);
+			}
+			else
+			{
+				showMessage('Files Processed Successfully.#confirm');
+			}
+		}
+		
+		//to get map of child components from file.
+		function getSourceTargetMap(metaType,srcxml)
+		{
+			var srcmap = {};
+			
+			var srcxmllength = srcxml.length;
+		    for (var index = srcxmllength; index--; ) 
+			{
+				if(index < srcxml.length)
+				{
+					var srcjson = $.xml2json(srcxml[index]);
+					if(srcjson != undefined)
+					{
+						var srcitems;
+						if(metaType == 'SharingCriteriaRule')
+						{
+							srcitems = srcjson.sharingCriteriaRules;
+						}
+						else if(metaType == 'SharingOwnerRule')
+						{
+						    srcitems = srcjson.sharingOwnerRules;
+						}
+						else if(metaType == 'BusinessProcess')
+						{
+							srcitems = srcjson.businessProcesses;
+						}
+						else if(metaType == 'SharingReason')
+						{
+						    srcitems = srcjson.sharingReasons;
+						}
+						else if(metaType == 'EscalationRule')
+						{
+						    srcitems = srcjson.escalationRule;
+						}
+						else if(metaType == 'MatchingRule')
+						{
+						    srcitems = srcjson.matchingRules;
+						}
+						else if(metaType == 'ManagedTopic')
+						{
+						    srcitems = srcjson.ManagedTopic;
+						}
+						else if(metaType == 'CustomLabel')
+						{
+							srcitems = srcjson.labels;
+						}
+						else if(metaType == 'CompactLayout')
+						{
+						    srcitems = srcjson.compactLayouts;
+						}
+						else if(metaType == 'CustomField')
+						{
+						    srcitems = srcjson.fields;
+						}
+						else if(metaType == 'WebLink')
+						{
+						    srcitems = srcjson.webLinks;
+						}
+						else if(metaType == 'RecordType')
+						{
+						    srcitems = srcjson.recordTypes;
+						}
+						else if(metaType == 'ListView')
+						{
+						    srcitems = srcjson.listViews;
+						}
+						else if(metaType == 'FieldSet')
+						{
+						    srcitems = srcjson.fieldSets;
+						}
+						else if(metaType == 'AssignmentRule')
+						{
+						    srcitems = srcjson.assignmentRule;
+						}
+						else if(metaType == 'AutoResponseRule')
+						{
+						    srcitems = srcjson.autoResponseRule;
+						}
+						else if(metaType == 'ValidationRule')
+						{
+						    srcitems = srcjson.validationRules;
+						}
+						else if(metaType == 'WorkflowTask')
+						{
+						    srcitems = srcjson.tasks;
+						}
+						else if(metaType == 'WorkflowOutboundMessage')
+						{
+						    srcitems = srcjson.outboundMessages;
+						}
+						else if(metaType == 'WorkflowFieldUpdate')
+						{
+						    srcitems = srcjson.fieldUpdates;
+						}
+						else if(metaType == 'WorkflowAlert')
+						{
+						    srcitems = srcjson.alerts;
+						}
+						else if(metaType == 'WorkflowRule')
+						{
+							srcitems = srcjson.rules;
+						}
+						/*else if(metaType == 'WorkflowKnowledgePublish')
+						{
+							srcitems = srcjson.;
+						}
+						else if(metaType == 'WorkflowSend')
+						{
+						    srcitems = srcjson.;
+						}
+						else if(metaType == 'WorkflowFlowAction')
+						{
+						    srcitems = srcjson.;
+						}*/
+						if(srcitems != undefined)
+						{
+							if(srcitems.length != undefined && srcitems.fullName == undefined)
+						    {
+							    $.each(srcitems, function( i, v )
+							    {
+							    	srcmap[v.fullName] = JSON.stringify(v);
+							    });
+						    }
+						    else
+						    {
+						    	srcmap[srcitems.fullName] = JSON.stringify(srcitems);   
+						    }
+						}
+					}    
+				}
+			}
+		    return srcmap;
+		}
+	</script>
+</apex:page>

@@ -1,0 +1,5 @@
+<aura:event type="COMPONENT" Description="Maintain the standard fields row height.">
+    <aura:attribute name="compDivId" type="String" />
+    <aura:attribute name="mainModule" type="String" />
+    <aura:attribute name="moduleName" type="String" />
+</aura:event>

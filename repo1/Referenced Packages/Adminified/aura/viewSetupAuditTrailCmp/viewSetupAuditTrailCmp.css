@@ -1,0 +1,50 @@
+.THIS .calendar {
+    width: 13rem;
+}
+    
+.THIS .slds-picklist__input {
+    width: 13rem;
+}
+
+.THIS .setupAuditTrailTable tr { background-color: white }
+.THIS .setupAuditTrailTable tr:hover { background-color: #f4f6f9;
+    box-shadow: #d8dde6 0 -1px 0 inset; }
+
+.THIS .customeViewContent {
+    border-left: 1px solid rgb(224, 229, 238);
+    border-right: 1px solid rgb(224, 229, 238);
+   
+    margin-left: 220px;
+    width: calc(100% - 220px);
+   
+    -ms-flex: 1;
+    flex: 1;
+    position: relative;
+}
+.THIS .leftFilter .slds-form-element{
+    margin-bottom:10px;
+}
+.THIS .hide-row{
+    display:none;
+}
+.THIS .manage-org.slds-table--fixed-layout thead th{
+    padding: 0.5rem;
+}
+.THIS .viewSetupAuditTrail .slds-page-header{
+    border-top-left-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
+}
+.THIS .slds-datepicker {
+
+    top: -144PX;
+}
+.THIS .line-left{
+    
+   background-color: #c00;
+    position: absolute;
+    border-top-left-radius: .25rem;
+    border-bottom-left-radius: .25rem;
+    width: 4px;
+    top: 0px;
+    bottom: 0px;
+}
